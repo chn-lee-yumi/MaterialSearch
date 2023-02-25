@@ -29,16 +29,16 @@
     <el-row>
         <el-tabs type="border-card" style="margin-top:5px;">
             <el-tab-pane label="用文字搜索">
-                <el-form ref="form" :model="form">
-                    <el-input placeholder="请输入搜索内容（仅支持英文）" v-model="form.text" class="input-with-select" @change="search">
-                        <el-select v-model="form.top_n" slot="prepend" placeholder="查看前n个结果" style="width:100px">
-                            <el-option label="Top 6" value="6"></el-option>
-                            <el-option label="Top 12" value="12"></el-option>
-                            <el-option label="Top 30" value="30"></el-option>
-                            <el-option label="Top 150" value="150"></el-option>
-                        </el-select>
-                        <el-button slot="append" icon="el-icon-search" @click="search"></el-button>
-                    </el-input>
+                <el-form ref="form" :model="form" :inline="true">
+                    <el-input placeholder="搜索内容（仅支持英文，不能为空）" v-model="form.positive" class="input-with-select" @keyup.enter.native="search"></el-input>
+                    <el-input placeholder="过滤内容（仅支持英文，可以留空）" v-model="form.negative" class="input-with-select" @keyup.enter.native="search"></el-input>
+                    <el-select v-model="form.top_n" placeholder="查看前n个结果" style="width:100px">
+                        <el-option label="Top 6" value="6"></el-option>
+                        <el-option label="Top 12" value="12"></el-option>
+                        <el-option label="Top 30" value="30"></el-option>
+                        <el-option label="Top 150" value="150"></el-option>
+                    </el-select>
+                    <el-button type="success" icon="el-icon-search" @click="search">搜索</el-button>
                 </el-form>
             </el-tab-pane>
 
@@ -54,7 +54,7 @@
                         <el-option label="Top 30" value="30"></el-option>
                         <el-option label="Top 150" value="150"></el-option>
                     </el-select>
-                    <el-button type="success" icon="el-icon-search" @click="search(true)">搜索</el-button>
+                    <el-button type="success" icon="el-icon-search" @click="search(false)">搜索</el-button>
                 </el-row>
             </el-tab-pane>
         </el-tabs>
@@ -67,11 +67,12 @@
                           :preview-src-list="[file.url]"></el-image>
                 <video v-if="file.type==2" style="width: 100%; height: 240px;" :src="file.url" controls></video>
                 <div>
-                    <el-tooltip content="素材的匹配度" placement="bottom">
-                        <el-tag size="mini" effect="dark">{{file.softmax_score}}</el-tag>
+                    <el-tooltip content="素材的匹配度和得分" placement="bottom">
+                        <el-tag size="mini" effect="dark">{{file.softmax_score}} | {{file.score}}</el-tag>
                     </el-tooltip>
                     <el-tooltip :content="file.path" placement="bottom">
-                        <el-tag size="mini" type="info" effect="dark" class="copy" :data-clipboard-text="file.path">{{file.path.split('/').pop()}}</el-tag>
+                        <el-tag size="mini" type="info" effect="dark" class="copy" :data-clipboard-text="file.path">{{file.path.split('/').pop()}}
+                        </el-tag>
                     </el-tooltip>
                 </div>
             </el-card>
@@ -98,7 +99,8 @@ new Vue({
 		isScanning: false,
 		scanStatus: null,
 		form: {
-			text: '',
+			positive: '',
+			negative: '',
 			top_n: '6',
 			is_img: false,
 		},
@@ -121,26 +123,24 @@ new Vue({
 		loadData: function() {
 			var that = this;
 			axios.get('api/scan_status')
-				.then(function(response) {
-					console.log(response);
-					that.scanStatus = response["data"];
-					that.isScanning = response["data"]["status"];
-				})
-				.
-			catch (function(error) {
-				console.log(error);
-				that.$message.error(error);
+            .then(function(response) {
+                console.log(response);
+                that.scanStatus = response["data"];
+                that.isScanning = response["data"]["status"];
+            })
+            .catch (function(error) {
+                console.log(error);
+                that.$message.error(error);
 			})
 		},
 		scan: function() {
 			var that = this;
 			axios.get('api/scan')
-				.then(function(response) {
-					console.log(response);
-					that.loadData();
-				})
-				.
-			catch (function(error) {
+            .then(function(response) {
+                console.log(response);
+                that.loadData();
+            })
+            .catch (function(error) {
 				console.log(error);
 				that.$message.error(error.response.data);
 			})
@@ -153,15 +153,19 @@ new Vue({
 				that.form.is_img = true;
 			} else {
 				that.form.is_img = false;
+				if (that.form.positive=="") {
+				    that.$message.error("搜索内容不能为空");
+			        that.loading = false;
+			        return;
+				}
 			}
 			axios.post('/api/match', that.form)
-				.then(function(response) {
-					console.log(response);
-					that.files = response["data"];
-					that.loading = false;
-				})
-				.
-			catch (function(error) {
+            .then(function(response) {
+                console.log(response);
+                that.files = response["data"];
+                that.loading = false;
+            })
+            .catch (function(error) {
 				console.log(error);
 				that.loading = false;
 				that.$message.error(error.response.data);

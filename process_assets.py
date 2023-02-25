@@ -12,6 +12,8 @@ VIDEO_EXTENSIONS = (".mp4", ".flv", ".mov")  # 支持的视频拓展名
 IGNORE_STRINGS = ("thumb", "avatar", "thumb", "icon", "cache")  # 如果路径或文件名包含这些字符串，就跳过（先把字符串转小写再对比）
 FRAME_INTERVAL = 10  # 视频每隔多少秒取一帧
 MAX_FRAMES = 50  # 一个视频最多提取多少帧
+POSITIVE_THRESHOLD = 27  # 正向搜索词搜出来的素材，高于这个分数才展示
+NEGATIVE_THRESHOLD = 27  # 反向搜索词搜出来的素材，低于这个分数才展示
 # DEVICE = "cpu"  # 推理设备，mps或cpu
 # cpu: 18s
 # mps: 40s
@@ -145,28 +147,49 @@ def process_text(input_text):
     return model.get_text_features(**inputs)
 
 
-def match_image(text_feature, image_feature):
+def match_image(positive_feature, negative_feature, image_feature):
     """
     匹配文字和图片
-    :param text_feature: <class 'torch.Tensor'>
+    :param positive_feature: <class 'torch.Tensor'>
+    :param negative_feature: <class 'torch.Tensor'>
     :param image_feature: <class 'torch.Tensor'>
     :return: <class 'torch.Tensor'>
     """
-    new_text_feature = text_feature / text_feature.norm(dim=-1, keepdim=True)
     new_image_feature = image_feature / image_feature.norm(dim=-1, keepdim=True)
-    return (new_image_feature @ new_text_feature.T) * 100
+    new_text_positive_feature = positive_feature / positive_feature.norm(dim=-1, keepdim=True)
+    positive_score = (new_image_feature @ new_text_positive_feature.T) * 100
+    if positive_score < POSITIVE_THRESHOLD:
+        return None
+    if negative_feature is not None:
+        new_text_negative_feature = negative_feature / negative_feature.norm(dim=-1, keepdim=True)
+        negative_score = (new_image_feature @ new_text_negative_feature.T) * 100
+        if negative_score > NEGATIVE_THRESHOLD:
+            return None
+    return positive_score
 
 
-def match_video(text_feature, image_feature):
+def match_video(positive_feature, negative_feature, image_feature):
     """
     匹配文字和视频
-    :param text_feature: <class 'torch.Tensor'>
+    :param positive_feature: <class 'torch.Tensor'>
+    :param negative_feature: <class 'torch.Tensor'>
     :param image_feature: <class 'torch.Tensor'>
     :return: <class 'torch.Tensor'>
     """
-    new_text_feature = text_feature / text_feature.norm(dim=-1, keepdim=True)
+    new_text_positive_feature = positive_feature / positive_feature.norm(dim=-1, keepdim=True)
+    if negative_feature is not None:
+        new_text_negative_feature = negative_feature / negative_feature.norm(dim=-1, keepdim=True)
     scores = set()
     for feature in image_feature:
-        new_feature = feature / feature.norm(dim=-1, keepdim=True)
-        scores.add((new_feature @ new_text_feature.T) * 100)
-    return max(scores)
+        new_image_feature = feature / feature.norm(dim=-1, keepdim=True)
+        positive_score = (new_image_feature @ new_text_positive_feature.T) * 100
+        if positive_score < POSITIVE_THRESHOLD:
+            continue
+        if negative_feature is not None:
+            negative_score = (new_image_feature @ new_text_negative_feature.T) * 100
+            if negative_score > NEGATIVE_THRESHOLD:
+                continue
+        scores.add(positive_score)
+    if scores:
+        return max(scores)
+    return None

@@ -1,14 +1,15 @@
+import hashlib
 import os
 import threading
 import time
 from datetime import datetime
-from flask import Flask, jsonify, request, send_file
-from database import db, FileType, File
+from flask import Flask, jsonify, request, send_file, abort
+from database import db, FileType, File, Cache
 from process_assets import scan_dir, process_image, process_video, process_text, match_image, match_video, IMAGE_EXTENSIONS, VIDEO_EXTENSIONS
 import pickle
 import numpy as np
 
-# TODO：增加反向提示、查询缓存、展示阈值（相似度超过xx分才展示），把top_n改成分页显示？多进程加速搜索？
+# TODO：把top_n改成分页显示？多进程加速搜索？修复不能播放flv和部分jpg的bug
 
 ASSETS_PATH = ("/Users/liyumin/",
                "/srv/dev-disk-by-uuid-5b249b15-24f2-4796-a353-5ba789dc1e45/",
@@ -24,6 +25,7 @@ app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///assets.db'
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = True
 db.init_app(app)
 
+MAX_RESULT_NUM = 150  # 最大搜索出来的结果数量
 AUTO_SCAN = True
 is_scanning = False
 scan_thread = None
@@ -39,10 +41,52 @@ def init():
     with app.app_context():
         db.create_all()  # 初始化数据库
         total_files = db.session.query(File).count()  # 获取文件总数
+    clean_cache()  # 清空搜索缓存
     if AUTO_SCAN:
         is_scanning = True
         scan_thread = threading.Thread(target=scan, args=())
         scan_thread.start()
+
+
+def clean_cache():
+    """
+    清空搜索缓存
+    :return:
+    """
+    with app.app_context():
+        db.session.query(Cache).delete()
+        db.session.commit()
+
+
+def get_file_hash(path):
+    """
+    计算文件hash
+    :param path: 文件路径
+    :return: 十六进制字符串
+    """
+    _hash = hashlib.sha1()
+    try:
+        with open(path, "rb") as f:
+            while True:
+                data = f.read(1048576)
+                if not data:
+                    break
+                _hash.update(data)
+    except Exception as e:
+        print("计算hash出错：", repr(e))
+        return None
+    return _hash.hexdigest()
+
+
+def get_string_hash(string):
+    """
+    计算字符串hash
+    :param string: 字符串
+    :return: 十六进制字符串
+    """
+    _hash = hashlib.sha1()
+    _hash.update(string.encode("utf8"))
+    return _hash.hexdigest()
 
 
 def softmax(scores):
@@ -118,14 +162,19 @@ def scan():
         total_files = db.session.query(File).count()  # 获取文件总数
     os.remove("assets.pickle")
     print("扫描完成，用时%d秒" % int(time.time() - start_time))
+    clean_cache()  # 清空搜索缓存
     is_scanning = False
 
 
-def match(text, is_img=False):
-    if not is_img:
-        text = process_text(text)
+def match(positive="", negative="", img_path=""):
+    if img_path:
+        text_positive = process_image(img_path)
     else:
-        text = process_image(text)
+        text_positive = process_text(positive)
+    if negative:
+        text_negative = process_text(negative)
+    else:
+        text_negative = None
     scores_list = []
     with app.app_context():
         for file in db.session.query(File):
@@ -135,10 +184,12 @@ def match(text, is_img=False):
                 db.session.commit()
                 continue
             if file.type == FileType.Image:
-                score = float(match_image(text, features))
+                score = match_image(text_positive, text_negative, features)
             else:
-                score = float(match_video(text, features))
-            scores_list.append({"url": "api/get_file/%d" % file.id, "path": file.path, "score": score, "type": file.type})
+                score = match_video(text_positive, text_negative, features)
+            if score is None:
+                continue
+            scores_list.append({"url": "api/get_file/%d" % file.id, "path": file.path, "score": float(score), "type": file.type})
     sorted_list = sorted(scores_list, key=lambda x: x["score"], reverse=True)
     return sorted_list
 
@@ -189,16 +240,33 @@ def api_match():
     top_n = int(data['top_n'])
     is_img = data['is_img']
     print(data)
+    # 计算hash
     if is_img:
-        sorted_list = match("upload.tmp", is_img=is_img)[:top_n]
+        _hash = get_file_hash("upload.tmp")
     else:
-        sorted_list = match(data['text'])[:top_n]
+        _hash = get_string_hash("positive: %r\nnegative: %r" % (data['positive'], data['negative']))
+    if not _hash:
+        abort(500)
+    # 查找cache
+    with app.app_context():
+        result = db.session.query(Cache).filter_by(id=_hash).first()
+        if result:
+            print("命中缓存：", _hash)
+            return jsonify(pickle.loads(result.result)[:top_n])
+    # 如果没有cache，进行匹配并写入cache
+    if is_img:
+        sorted_list = match(img_path="upload.tmp")[:MAX_RESULT_NUM]
+    else:
+        sorted_list = match(positive=data['positive'], negative=data['negative'])[:MAX_RESULT_NUM]
     scores = [item["score"] for item in sorted_list]
     softmax_scores = softmax(scores)
     new_sorted_list = [{
         "url": item["url"], "path": item["path"], "score": "%.2f" % item["score"], "softmax_score": "%.2f%%" % (score * 100), "type": item["type"]
     } for item, score in zip(sorted_list, softmax_scores)]
-    return jsonify(new_sorted_list)
+    with app.app_context():
+        db.session.add(Cache(id=_hash, result=pickle.dumps(new_sorted_list)))
+        db.session.commit()
+    return jsonify(new_sorted_list[:top_n])
 
 
 @app.route('/api/get_file/<int:file_id>', methods=['GET'])
