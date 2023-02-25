@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>本地素材搜索器</title>
+    <!--    <link rel="stylesheet" href="https://cdnjs.loli.net/ajax/libs/element-ui/2.11.1/theme-chalk/index.css">-->
+    <link rel="stylesheet" href="static/index.css">
+</head>
+<body>
+<el-main id="app" v-loading="loading" class="">
+    <el-row>
+        <h1 style="margin:0;">本地素材搜索器</h1>
+    </el-row>
+
+    <el-row>
+        <el-tag :key="isScanning" effect="dark">扫描状态：{{ isScanning ? "扫描中" : "扫描完成" }}</el-tag>
+        <el-tag :key="scanStatus.file" type="info" effect="dark">文件总数：{{ scanStatus.total }}</el-tag>
+        <el-tag v-if="isScanning" :key="scanStatus.remain_files" type="info" effect="dark">待扫描文件数：{{ scanStatus.remain_files }}</el-tag>
+        <el-tag v-if="isScanning" :key="scanStatus.remain_time" type="info" effect="dark">预估剩余时间：{{ scanStatus.remain_time }} 秒</el-tag>
+        <el-tag v-if="isScanning" :key="scanStatus.progress" type="danger" effect="dark">
+            扫描进度：{{ Math.trunc(scanStatus.progress*100) }}%
+        </el-tag>
+        <el-button-group v-if="!isScanning">
+            <el-button round :loading="isScanning" type="primary" size="medium" @click="scan">扫描</el-button>
+        </el-button-group>
+        <el-progress v-if="scanStatus.progress" :percentage="Math.trunc(scanStatus.progress*100)" :stroke-width="10"></el-progress>
+    </el-row>
+
+    <el-row>
+        <el-tabs type="border-card" style="margin-top:5px;">
+            <el-tab-pane label="用文字搜索">
+                <el-form ref="form" :model="form">
+                    <el-input placeholder="请输入搜索内容（仅支持英文）" v-model="form.text" class="input-with-select" @change="search">
+                        <el-select v-model="form.top_n" slot="prepend" placeholder="查看前n个结果" style="width:100px">
+                            <el-option label="Top 6" value="6"></el-option>
+                            <el-option label="Top 12" value="12"></el-option>
+                            <el-option label="Top 30" value="30"></el-option>
+                            <el-option label="Top 150" value="150"></el-option>
+                        </el-select>
+                        <el-button slot="append" icon="el-icon-search" @click="search"></el-button>
+                    </el-input>
+                </el-form>
+            </el-tab-pane>
+
+            <el-tab-pane label="用图片搜索">
+                <el-upload ref="upload" drag action="api/upload" limit="1" multiple="false" :limit="1" :on-exceed="handleExceed">
+                    <i class="el-icon-upload"></i>
+                    <div class="el-upload__text">将文件拖到此处，或<em>点击上传</em></div>
+                </el-upload>
+                <el-row style="margin-top:10px;">
+                    <el-select v-model="form.top_n" placeholder="查看前n个结果" style="width:100px">
+                        <el-option label="Top 6" value="6"></el-option>
+                        <el-option label="Top 12" value="12"></el-option>
+                        <el-option label="Top 30" value="30"></el-option>
+                        <el-option label="Top 150" value="150"></el-option>
+                    </el-select>
+                    <el-button type="success" icon="el-icon-search" @click="search(true)">搜索</el-button>
+                </el-row>
+            </el-tab-pane>
+        </el-tabs>
+    </el-row>
+
+    <el-row :gutter="5">
+        <el-col :span="8" v-for="file in files">
+            <el-card style="margin-top: 5px;">
+                <el-image v-if="file.type==1" style="width: 100%; height: 240px;" fit="contain" :src="file.url"
+                          :preview-src-list="[file.url]"></el-image>
+                <video v-if="file.type==2" style="width: 100%; height: 240px;" :src="file.url" controls></video>
+                <div>
+                    <el-tooltip content="素材的匹配度" placement="bottom">
+                        <el-tag size="mini" effect="dark">{{file.softmax_score}}</el-tag>
+                    </el-tooltip>
+                    <el-tooltip :content="file.path" placement="bottom">
+                        <el-tag size="mini" type="info" effect="dark" class="copy" :data-clipboard-text="file.path">{{file.path.split('/').pop()}}</el-tag>
+                    </el-tooltip>
+                </div>
+            </el-card>
+        </el-col>
+    </el-row>
+
+</el-main>
+</body>
+
+<!--<script src="https://cdnjs.loli.net/ajax/libs/vue/2.6.10/vue.min.js"></script>-->
+<!--<script src="https://cdn.jsdelivr.net/npm/clipboard@2.0.6/dist/clipboard.min.js"></script>-->
+<!--<script src="https://cdnjs.loli.net/ajax/libs/element-ui/2.11.1/index.js"></script>-->
+<!--<script src="https://cdnjs.loli.net/ajax/libs/axios/0.19.0-beta.1/axios.min.js"></script>-->
+<script src="static/vue.min.js"></script><!-- import Vue before Element -->
+<script src="static/clipboard.min.js"></script>
+<script src="static/index.js"></script>
+<script src="static/axios.min.js"></script>
+
+<script>
+new Vue({
+	el: '#app',
+	data: {
+		loading: false,
+		isScanning: false,
+		scanStatus: null,
+		form: {
+			text: '',
+			top_n: '6',
+			is_img: false,
+		},
+		files: [],
+		timer: null,
+	},
+	mounted: function() {
+		this.loadData();
+		this.timer = setInterval(this.loadData, 5000);
+	},
+	created() {
+		var that = this
+		let clipboard = new ClipboardJS(".copy");
+		clipboard.on("success", function(e) {
+			that.$message.success("路径已复制到剪贴板");
+			e.clearSelection();
+		})
+	},
+	methods: {
+		loadData: function() {
+			var that = this;
+			axios.get('api/scan_status')
+				.then(function(response) {
+					console.log(response);
+					that.scanStatus = response["data"];
+					that.isScanning = response["data"]["status"];
+				})
+				.
+			catch (function(error) {
+				console.log(error);
+				that.$message.error(error);
+			})
+		},
+		scan: function() {
+			var that = this;
+			axios.get('api/scan')
+				.then(function(response) {
+					console.log(response);
+					that.loadData();
+				})
+				.
+			catch (function(error) {
+				console.log(error);
+				that.$message.error(error.response.data);
+			})
+		},
+		search: function(is_img) {
+			this.$refs.upload.submit();
+			var that = this;
+			that.loading = true;
+			if (is_img === true) {
+				that.form.is_img = true;
+			} else {
+				that.form.is_img = false;
+			}
+			axios.post('/api/match', that.form)
+				.then(function(response) {
+					console.log(response);
+					that.files = response["data"];
+					that.loading = false;
+				})
+				.
+			catch (function(error) {
+				console.log(error);
+				that.loading = false;
+				that.$message.error(error.response.data);
+			})
+		},
+		handleExceed(files, fileList) {
+			// 覆盖上传，参考：https://blog.csdn.net/lcy460692978/article/details/103072246
+			this.$set(fileList[0], 'raw', files[0]);
+			this.$set(fileList[0], 'name', files[0].name);
+			this.$refs.upload.clearFiles();
+			this.$refs.upload.handleStart(files[0]);
+			this.$refs.upload.submit();
+		},
+	}
+})
+</script>
+<style scoped>
+.el-upload, .el-upload-dragger{
+    width: 100% !important;
+}
+</style>
+</html>
