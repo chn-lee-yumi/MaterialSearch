@@ -209,3 +209,36 @@ def match_video(positive_feature, negative_feature, image_feature):
     if scores:
         return max(scores)
     return None
+
+
+def match_batch(positive_feature, negative_feature, image_features):
+    """
+    匹配image_feature列表并返回分数
+    :param positive_feature: <class 'torch.Tensor'>
+    :param negative_feature: <class 'torch.Tensor'>
+    :param image_features: [<class 'torch.Tensor'>]
+    :return: [float]
+    """
+    scores = []
+    # 将列表转换成Tensor
+    image_features = torch.stack(image_features)
+    # 归一化
+    new_text_positive_feature = positive_feature / positive_feature.norm(dim=-1, keepdim=True)
+    if negative_feature is not None:
+        new_text_negative_feature = negative_feature / negative_feature.norm(dim=-1, keepdim=True)
+    new_features = image_features / image_features.norm(dim=-1, keepdim=True)
+    # 计算匹配度
+    positive_scores = (new_features @ new_text_positive_feature.T) * 100
+    if negative_feature is not None:
+        negative_scores = (new_features @ new_text_negative_feature.T) * 100
+    # 根据阈值进行过滤
+    for i in range(len(positive_scores)):
+        if positive_scores[i] < POSITIVE_THRESHOLD:
+            scores.append(0)
+            continue
+        if negative_feature is not None:
+            if negative_scores[i] > NEGATIVE_THRESHOLD:
+                scores.append(0)
+                continue
+        scores.append(positive_scores[i])
+    return scores

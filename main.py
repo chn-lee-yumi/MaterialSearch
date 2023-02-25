@@ -5,9 +5,12 @@ import time
 from datetime import datetime
 from flask import Flask, jsonify, request, send_file, abort
 from database import db, FileType, File, Cache
-from process_assets import scan_dir, process_image, process_video, process_text, match_image, match_video, IMAGE_EXTENSIONS, VIDEO_EXTENSIONS
+from process_assets import scan_dir, process_image, process_video, process_text, match_image, match_video, match_batch, \
+    IMAGE_EXTENSIONS, VIDEO_EXTENSIONS
 import pickle
 import numpy as np
+
+# TODO: 视频改为每帧一行。视频另外分个表？定位出查询内容所在视频时间。
 
 MAX_RESULT_NUM = 150  # 最大搜索出来的结果数量
 AUTO_SCAN = False  # 是否在启动时进行一次扫描
@@ -177,16 +180,31 @@ def match(positive="", negative="", img_path=""):
     scores_list = []
     t0 = time.time()
     with app.app_context():
-        for file in db.session.query(File):
+        # 查询图片
+        batch = []
+        file_list = list(db.session.query(File).filter_by(type=FileType.Image).all())
+        for file in file_list.copy():
             features = pickle.loads(file.features)
-            if features is None:  # 内容损坏，删除改条记录
+            if features is None:  # 内容损坏，删除该条记录
+                db.session.delete(file)
+                db.session.commit()
+                file_list.remove(file)
+                continue
+            batch.append(features)
+        scores = match_batch(text_positive, text_negative, batch)
+        for i in range(len(file_list)):
+            if not scores[i]:
+                continue
+            scores_list.append(
+                {"url": "api/get_file/%d" % file_list[i].id, "path": file_list[i].path, "score": float(scores[i]), "type": file_list[i].type})
+        # 查询视频
+        for file in db.session.query(File).filter_by(type=FileType.Video):
+            features = pickle.loads(file.features)
+            if features is None:  # 内容损坏，删除该条记录
                 db.session.delete(file)
                 db.session.commit()
                 continue
-            if file.type == FileType.Image:
-                score = match_image(text_positive, text_negative, features)
-            else:
-                score = match_video(text_positive, text_negative, features)
+            score = match_video(text_positive, text_negative, features)
             if score is None:
                 continue
             scores_list.append({"url": "api/get_file/%d" % file.id, "path": file.path, "score": float(score), "type": file.type})
@@ -251,26 +269,34 @@ def api_match():
     # 查找cache
     if ENABLE_CACHE:
         with app.app_context():
-            result = db.session.query(Cache).filter_by(id=_hash).first()
-            if result:
+            sorted_list = db.session.query(Cache).filter_by(id=_hash).first()
+            if sorted_list:
                 print("命中缓存：", _hash)
-                return jsonify(pickle.loads(result.result)[:top_n])
+                sorted_list = sorted_list[:top_n]
+                scores = [item["score"] for item in sorted_list]
+                softmax_scores = softmax(scores)
+                new_sorted_list = [{
+                    "url": item["url"], "path": item["path"], "score": "%.2f" % item["score"], "softmax_score": "%.2f%%" % (score * 100),
+                    "type": item["type"]
+                } for item, score in zip(sorted_list, softmax_scores)]
+                return jsonify(new_sorted_list)
     # 如果没有cache，进行匹配并写入cache
     if is_img:
         sorted_list = match(img_path="upload.tmp")[:MAX_RESULT_NUM]
     else:
         sorted_list = match(positive=data['positive'], negative=data['negative'])[:MAX_RESULT_NUM]
+    # 写入缓存
+    if ENABLE_CACHE:
+        with app.app_context():
+            db.session.add(Cache(id=_hash, result=pickle.dumps(sorted_list)))
+            db.session.commit()
+    sorted_list = sorted_list[:top_n]
     scores = [item["score"] for item in sorted_list]
     softmax_scores = softmax(scores)
     new_sorted_list = [{
         "url": item["url"], "path": item["path"], "score": "%.2f" % item["score"], "softmax_score": "%.2f%%" % (score * 100), "type": item["type"]
     } for item, score in zip(sorted_list, softmax_scores)]
-    # 写入缓存
-    if ENABLE_CACHE:
-        with app.app_context():
-            db.session.add(Cache(id=_hash, result=pickle.dumps(new_sorted_list)))
-            db.session.commit()
-    return jsonify(new_sorted_list[:top_n])
+    return jsonify(new_sorted_list)
 
 
 @app.route('/api/get_file/<int:file_id>', methods=['GET'])
