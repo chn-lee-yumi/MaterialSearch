@@ -10,7 +10,8 @@ import pickle
 import numpy as np
 
 MAX_RESULT_NUM = 150  # 最大搜索出来的结果数量
-AUTO_SCAN = True  # 是否在启动时进行一次扫描
+AUTO_SCAN = False  # 是否在启动时进行一次扫描
+ENABLE_CACHE = False  # 是否启用缓存
 ASSETS_PATH = ("/Users/liyumin/",
                "/srv/dev-disk-by-uuid-5b249b15-24f2-4796-a353-5ba789dc1e45/",
                )  # 素材所在根目录
@@ -174,6 +175,7 @@ def match(positive="", negative="", img_path=""):
     else:
         text_negative = None
     scores_list = []
+    t0 = time.time()
     with app.app_context():
         for file in db.session.query(File):
             features = pickle.loads(file.features)
@@ -188,6 +190,7 @@ def match(positive="", negative="", img_path=""):
             if score is None:
                 continue
             scores_list.append({"url": "api/get_file/%d" % file.id, "path": file.path, "score": float(score), "type": file.type})
+    print("查询使用时间：%.2f" % (time.time() - t0))
     sorted_list = sorted(scores_list, key=lambda x: x["score"], reverse=True)
     return sorted_list
 
@@ -246,11 +249,12 @@ def api_match():
     if not _hash:
         abort(500)
     # 查找cache
-    with app.app_context():
-        result = db.session.query(Cache).filter_by(id=_hash).first()
-        if result:
-            print("命中缓存：", _hash)
-            return jsonify(pickle.loads(result.result)[:top_n])
+    if ENABLE_CACHE:
+        with app.app_context():
+            result = db.session.query(Cache).filter_by(id=_hash).first()
+            if result:
+                print("命中缓存：", _hash)
+                return jsonify(pickle.loads(result.result)[:top_n])
     # 如果没有cache，进行匹配并写入cache
     if is_img:
         sorted_list = match(img_path="upload.tmp")[:MAX_RESULT_NUM]
@@ -261,9 +265,11 @@ def api_match():
     new_sorted_list = [{
         "url": item["url"], "path": item["path"], "score": "%.2f" % item["score"], "softmax_score": "%.2f%%" % (score * 100), "type": item["type"]
     } for item, score in zip(sorted_list, softmax_scores)]
-    with app.app_context():
-        db.session.add(Cache(id=_hash, result=pickle.dumps(new_sorted_list)))
-        db.session.commit()
+    # 写入缓存
+    if ENABLE_CACHE:
+        with app.app_context():
+            db.session.add(Cache(id=_hash, result=pickle.dumps(new_sorted_list)))
+            db.session.commit()
     return jsonify(new_sorted_list[:top_n])
 
 

@@ -1,6 +1,7 @@
 # 预处理图片和视频，建立索引，加快搜索速度
 import os
 import pickle
+import time
 
 from PIL import Image
 from transformers import CLIPProcessor, CLIPModel
@@ -173,23 +174,38 @@ def match_video(positive_feature, negative_feature, image_feature):
     匹配文字和视频
     :param positive_feature: <class 'torch.Tensor'>
     :param negative_feature: <class 'torch.Tensor'>
-    :param image_feature: <class 'torch.Tensor'>
+    :param image_feature: [<class 'torch.Tensor'>]
     :return: <class 'torch.Tensor'>
     """
     new_text_positive_feature = positive_feature / positive_feature.norm(dim=-1, keepdim=True)
     if negative_feature is not None:
         new_text_negative_feature = negative_feature / negative_feature.norm(dim=-1, keepdim=True)
     scores = set()
-    for feature in image_feature:
-        new_image_feature = feature / feature.norm(dim=-1, keepdim=True)
-        positive_score = (new_image_feature @ new_text_positive_feature.T) * 100
-        if positive_score < POSITIVE_THRESHOLD:
+
+    features = torch.stack(image_feature)
+    new_features = features / features.norm(dim=-1, keepdim=True)
+    positive_scores = (new_features @ new_text_positive_feature.T) * 100
+    if negative_feature is not None:
+        negative_scores = (new_features @ new_text_negative_feature.T) * 100
+    for i in range(len(positive_scores)):
+        if positive_scores[i] < POSITIVE_THRESHOLD:
             continue
         if negative_feature is not None:
-            negative_score = (new_image_feature @ new_text_negative_feature.T) * 100
-            if negative_score > NEGATIVE_THRESHOLD:
+            if negative_scores[i] > NEGATIVE_THRESHOLD:
                 continue
-        scores.add(positive_score)
+        scores.add(positive_scores[i])
+
+    # for feature in image_feature:
+    #     new_image_feature = feature / feature.norm(dim=-1, keepdim=True)
+    #     positive_score = (new_image_feature @ new_text_positive_feature.T) * 100
+    #     if positive_score < POSITIVE_THRESHOLD:
+    #         continue
+    #     if negative_feature is not None:
+    #         negative_score = (new_image_feature @ new_text_negative_feature.T) * 100
+    #         if negative_score > NEGATIVE_THRESHOLD:
+    #             continue
+    #     scores.add(positive_score)
+
     if scores:
         return max(scores)
     return None
