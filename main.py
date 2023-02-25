@@ -9,8 +9,8 @@ from process_assets import scan_dir, process_image, process_video, process_text,
 import pickle
 import numpy as np
 
-# TODO：把top_n改成分页显示？多进程加速搜索？修复不能播放flv和部分jpg的bug
-
+MAX_RESULT_NUM = 150  # 最大搜索出来的结果数量
+AUTO_SCAN = True  # 是否在启动时进行一次扫描
 ASSETS_PATH = ("/Users/liyumin/",
                "/srv/dev-disk-by-uuid-5b249b15-24f2-4796-a353-5ba789dc1e45/",
                )  # 素材所在根目录
@@ -25,8 +25,6 @@ app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///assets.db'
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = True
 db.init_app(app)
 
-MAX_RESULT_NUM = 150  # 最大搜索出来的结果数量
-AUTO_SCAN = True
 is_scanning = False
 scan_thread = None
 scan_start_time = 0
