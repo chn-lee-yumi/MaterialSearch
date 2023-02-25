@@ -10,7 +10,7 @@ from process_assets import scan_dir, process_image, process_video, process_text,
 import pickle
 import numpy as np
 
-# TODO: 视频改为每帧一行。视频另外分个表？定位出查询内容所在视频时间。
+# TODO: 视频另外分个表？视频改为每采样帧一行记录？定位出查询内容所在视频时间。
 
 MAX_RESULT_NUM = 150  # 最大搜索出来的结果数量
 AUTO_SCAN = False  # 是否在启动时进行一次扫描
@@ -182,14 +182,14 @@ def match(positive="", negative="", img_path=""):
     with app.app_context():
         # 查询图片
         batch = []
-        file_list = list(db.session.query(File).filter_by(type=FileType.Image).all())
-        for file in file_list.copy():
+        file_list = []
+        for file in db.session.query(File).filter_by(type=FileType.Image):
             features = pickle.loads(file.features)
             if features is None:  # 内容损坏，删除该条记录
                 db.session.delete(file)
                 db.session.commit()
-                file_list.remove(file)
                 continue
+            file_list.append(file)
             batch.append(features)
         scores = match_batch(text_positive, text_negative, batch)
         for i in range(len(file_list)):
