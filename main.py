@@ -14,7 +14,7 @@ import numpy as np
 
 MAX_RESULT_NUM = 150  # 最大搜索出来的结果数量
 AUTO_SCAN = False  # 是否在启动时进行一次扫描
-ENABLE_CACHE = False  # 是否启用缓存
+ENABLE_CACHE = True  # 是否启用缓存
 ASSETS_PATH = ("/Users/liyumin/",
                "/srv/dev-disk-by-uuid-5b249b15-24f2-4796-a353-5ba789dc1e45/",
                )  # 素材所在根目录
@@ -271,6 +271,7 @@ def api_match():
         with app.app_context():
             sorted_list = db.session.query(Cache).filter_by(id=_hash).first()
             if sorted_list:
+                sorted_list = pickle.loads(sorted_list.result)
                 print("命中缓存：", _hash)
                 sorted_list = sorted_list[:top_n]
                 scores = [item["score"] for item in sorted_list]
