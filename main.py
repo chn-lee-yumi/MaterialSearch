@@ -5,12 +5,13 @@ import time
 from datetime import datetime
 from flask import Flask, jsonify, request, send_file, abort
 from database import db, FileType, File, Cache
-from process_assets import scan_dir, process_image, process_video, process_text, match_image, match_video, match_batch, \
+from process_assets import scan_dir, process_image, process_video, process_text, match_video, match_batch, \
     IMAGE_EXTENSIONS, VIDEO_EXTENSIONS
 import pickle
 import numpy as np
 
 # TODO: 视频另外分个表？视频改为每采样帧一行记录？定位出查询内容所在视频时间。
+# TODO: 增加图文相似度匹配计算功能
 
 MAX_RESULT_NUM = 150  # 最大搜索出来的结果数量
 AUTO_SCAN = False  # 是否在启动时进行一次扫描

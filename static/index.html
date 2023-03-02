@@ -164,6 +164,7 @@ new Vue({
                 console.log(response);
                 that.files = response["data"];
                 that.loading = false;
+                that.$message.info("共搜索出来" + that.files.length + "条素材");
             })
             .catch (function(error) {
 				console.log(error);
