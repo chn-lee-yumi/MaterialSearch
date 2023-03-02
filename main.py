@@ -5,7 +5,7 @@ import time
 from datetime import datetime
 from flask import Flask, jsonify, request, send_file, abort
 from database import db, FileType, File, Cache
-from process_assets import scan_dir, process_image, process_video, process_text, match_video, match_batch, \
+from process_assets import scan_dir, process_image, process_video, process_text, match_image, match_video, match_batch, \
     IMAGE_EXTENSIONS, VIDEO_EXTENSIONS
 import pickle
 import numpy as np
@@ -258,35 +258,44 @@ def api_match():
     """
     data = request.get_json()
     top_n = int(data['top_n'])
-    is_img = data['is_img']
+    search_type = data['search_type']
     print(data)
     # 计算hash
-    if is_img:
-        _hash = get_file_hash("upload.tmp")
-    else:
+    if search_type == 0:
         _hash = get_string_hash("positive: %r\nnegative: %r" % (data['positive'], data['negative']))
+    elif search_type == 1:
+        _hash = get_file_hash("upload.tmp")
+    elif search_type == 2:
+        _hash1 = get_string_hash("text: %r" % data['text'])
+        _hash2 = get_file_hash("upload.tmp")
+        _hash = get_string_hash("hash1: %r\nhash2: %r" % (_hash1, _hash2))
+    else:
+        abort(500)
     if not _hash:
         abort(500)
     # 查找cache
     if ENABLE_CACHE:
-        with app.app_context():
-            sorted_list = db.session.query(Cache).filter_by(id=_hash).first()
-            if sorted_list:
-                sorted_list = pickle.loads(sorted_list.result)
-                print("命中缓存：", _hash)
-                sorted_list = sorted_list[:top_n]
-                scores = [item["score"] for item in sorted_list]
-                softmax_scores = softmax(scores)
-                new_sorted_list = [{
-                    "url": item["url"], "path": item["path"], "score": "%.2f" % item["score"], "softmax_score": "%.2f%%" % (score * 100),
-                    "type": item["type"]
-                } for item, score in zip(sorted_list, softmax_scores)]
-                return jsonify(new_sorted_list)
+        if search_type == 0 or search_type == 1:
+            with app.app_context():
+                sorted_list = db.session.query(Cache).filter_by(id=_hash).first()
+                if sorted_list:
+                    sorted_list = pickle.loads(sorted_list.result)
+                    print("命中缓存：", _hash)
+                    sorted_list = sorted_list[:top_n]
+                    scores = [item["score"] for item in sorted_list]
+                    softmax_scores = softmax(scores)
+                    new_sorted_list = [{
+                        "url": item["url"], "path": item["path"], "score": "%.2f" % item["score"], "softmax_score": "%.2f%%" % (score * 100),
+                        "type": item["type"]
+                    } for item, score in zip(sorted_list, softmax_scores)]
+                    return jsonify(new_sorted_list)
     # 如果没有cache，进行匹配并写入cache
-    if is_img:
-        sorted_list = match(img_path="upload.tmp")[:MAX_RESULT_NUM]
-    else:
+    if search_type == 0:
         sorted_list = match(positive=data['positive'], negative=data['negative'])[:MAX_RESULT_NUM]
+    elif search_type == 1:
+        sorted_list = match(img_path="upload.tmp")[:MAX_RESULT_NUM]
+    elif search_type == 2:
+        return jsonify({"score": "%.2f" % match_image(process_text(data['text']), process_image("upload.tmp"))})
     # 写入缓存
     if ENABLE_CACHE:
         with app.app_context():

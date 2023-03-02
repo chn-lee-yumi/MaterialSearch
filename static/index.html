@@ -38,7 +38,7 @@
                         <el-option label="Top 30" value="30"></el-option>
                         <el-option label="Top 150" value="150"></el-option>
                     </el-select>
-                    <el-button type="success" icon="el-icon-search" @click="search">搜索</el-button>
+                    <el-button type="success" icon="el-icon-search" @click="search(0)">搜索</el-button>
                 </el-form>
             </el-tab-pane>
 
@@ -54,7 +54,18 @@
                         <el-option label="Top 30" value="30"></el-option>
                         <el-option label="Top 150" value="150"></el-option>
                     </el-select>
-                    <el-button type="success" icon="el-icon-search" @click="search(false)">搜索</el-button>
+                    <el-button type="success" icon="el-icon-search" @click="search(1)">搜索</el-button>
+                </el-row>
+            </el-tab-pane>
+
+            <el-tab-pane label="图文相似度匹配">
+                <el-input placeholder="文字内容（仅支持英文，不能为空）" v-model="form.text" class="input-with-select"></el-input>
+                <el-upload ref="upload" drag action="api/upload" limit="1" multiple="false" :limit="1" :on-exceed="handleExceed">
+                    <i class="el-icon-upload"></i>
+                    <div class="el-upload__text">将文件拖到此处，或<em>点击上传</em></div>
+                </el-upload>
+                <el-row style="margin-top:10px;">
+                    <el-button type="success" icon="el-icon-search" @click="search(2)">搜索</el-button>
                 </el-row>
             </el-tab-pane>
         </el-tabs>
@@ -102,7 +113,7 @@ new Vue({
 			positive: '',
 			negative: '',
 			top_n: '6',
-			is_img: false,
+			search_type: 0,
 		},
 		files: [],
 		timer: null,
@@ -145,26 +156,34 @@ new Vue({
 				that.$message.error(error.response.data);
 			})
 		},
-		search: function(is_img) {
+		search: function(search_type) {
 			this.$refs.upload.submit();
 			var that = this;
 			that.loading = true;
-			if (is_img === true) {
-				that.form.is_img = true;
-			} else {
-				that.form.is_img = false;
-				if (that.form.positive=="") {
-				    that.$message.error("搜索内容不能为空");
-			        that.loading = false;
-			        return;
-				}
+			that.form.search_type = search_type;
+			if (search_type === 0 && that.form.positive == "") {
+                that.$message.error("搜索内容不能为空");
+                that.loading = false;
+                return;
+			}
+			if (search_type === 2 && that.form.text == "") {
+                that.$message.error("文字内容不能为空");
+                that.loading = false;
+                return;
 			}
 			axios.post('/api/match', that.form)
             .then(function(response) {
                 console.log(response);
-                that.files = response["data"];
                 that.loading = false;
-                that.$message.info("共搜索出来" + that.files.length + "条素材");
+                if (search_type === 0 || search_type === 1) {
+                    that.files = response["data"];
+                    that.$message.info("共搜索出来" + that.files.length + "条素材");
+                    return;
+                }
+                if (search_type === 2) {
+                    that.$message.info("匹配得分为" + response["data"]["score"]);
+                    return;
+                }
             })
             .catch (function(error) {
 				console.log(error);

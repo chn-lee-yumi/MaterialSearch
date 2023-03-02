@@ -148,25 +148,17 @@ def process_text(input_text):
     return model.get_text_features(**inputs)
 
 
-def match_image(positive_feature, negative_feature, image_feature):
+def match_image(text_feature, image_feature):
     """
     匹配文字和图片
-    :param positive_feature: <class 'torch.Tensor'>
-    :param negative_feature: <class 'torch.Tensor'>
+    :param text_feature: <class 'torch.Tensor'>
     :param image_feature: <class 'torch.Tensor'>
     :return: <class 'torch.Tensor'>
     """
     new_image_feature = image_feature / image_feature.norm(dim=-1, keepdim=True)
-    new_text_positive_feature = positive_feature / positive_feature.norm(dim=-1, keepdim=True)
-    positive_score = (new_image_feature @ new_text_positive_feature.T) * 100
-    if positive_score < POSITIVE_THRESHOLD:
-        return None
-    if negative_feature is not None:
-        new_text_negative_feature = negative_feature / negative_feature.norm(dim=-1, keepdim=True)
-        negative_score = (new_image_feature @ new_text_negative_feature.T) * 100
-        if negative_score > NEGATIVE_THRESHOLD:
-            return None
-    return positive_score
+    new_text_feature = text_feature / text_feature.norm(dim=-1, keepdim=True)
+    score = (new_image_feature @ new_text_feature.T) * 100
+    return score
 
 
 def match_video(positive_feature, negative_feature, image_feature):
