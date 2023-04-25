@@ -2,6 +2,7 @@
 import os
 import pickle
 import time
+import numpy as np
 
 from PIL import Image
 from transformers import CLIPProcessor, CLIPModel
@@ -11,19 +12,17 @@ import torch
 IMAGE_EXTENSIONS = (".jpg", ".jpeg", ".png", ".gif")  # 支持的图片拓展名
 VIDEO_EXTENSIONS = (".mp4", ".flv", ".mov")  # 支持的视频拓展名
 IGNORE_STRINGS = ("thumb", "avatar", "thumb", "icon", "cache")  # 如果路径或文件名包含这些字符串，就跳过（先把字符串转小写再对比）
-FRAME_INTERVAL = 10  # 视频每隔多少秒取一帧
-MAX_FRAMES = 50  # 一个视频最多提取多少帧
+FRAME_INTERVAL = 2  # 视频每隔多少秒取一帧，视频展示的时候，间隔小于等于2倍FRAME_INTERVAL的算为同一个素材，同时开始时间和结束时间各延长0.5个FRAME_INTERVAL
 POSITIVE_THRESHOLD = 27  # 正向搜索词搜出来的素材，高于这个分数才展示
 NEGATIVE_THRESHOLD = 27  # 反向搜索词搜出来的素材，低于这个分数才展示
-# DEVICE = "cpu"  # 推理设备，mps或cpu
-# cpu: 18s
-# mps: 40s
+# 支持的模型：clip-vit-base-patch16 clip-vit-base-patch32 clip-vit-large-patch14 clip-vit-large-patch14-336
+# 推荐CPU或显存小于4G选clip-vit-base-patch32，显存大于等于4G选clip-vit-large-patch14
+MODEL_NAME = "openai/clip-vit-base-patch32"
+DEVICE = "cpu"  # 推理设备，cpu/cuda/mps，建议先跑benchmark.py看看cpu还是显卡速度更快，因为数据搬运也需要时间
 
 print("Loading model...")
-# 支持的模型：clip-vit-base-patch16 clip-vit-base-patch32 clip-vit-large-patch14 clip-vit-large-patch14-336
-model = CLIPModel.from_pretrained("openai/clip-vit-base-patch16")
-# model = CLIPModel.from_pretrained("openai/clip-vit-base-patch16").to(torch.device(DEVICE))
-processor = CLIPProcessor.from_pretrained("openai/clip-vit-base-patch16")
+model = CLIPModel.from_pretrained(MODEL_NAME).to(torch.device(DEVICE))
+processor = CLIPProcessor.from_pretrained(MODEL_NAME)
 print("Model loaded.")
 
 
@@ -81,7 +80,7 @@ def process_image(path):
     """
     处理图片并返回处理完成的数据
     :param path: string, 图片路径
-    :return: <class 'torch.Tensor'>
+    :return: <class 'numpy.nparray'>
     """
     try:
         image = Image.open(path)
@@ -93,135 +92,91 @@ def process_image(path):
         print("处理图片报错：", path, repr(e))
         return None
     try:
-        # inputs = processor(images=image, return_tensors="pt", padding=True).to(torch.device(DEVICE))
-        inputs = processor(images=image, return_tensors="pt", padding=True)
+        inputs = processor(images=image, return_tensors="pt", padding=True).to(torch.device(DEVICE))
     except Exception as e:
         print("处理图片报错：", path, repr(e))
         return None
-    feature = model.get_image_features(**inputs)
-    # return feature.to(torch.device("cpu"))
+    feature = model.get_image_features(**inputs).cpu().detach().numpy()
     return feature
 
 
 def process_video(path):
     """
     处理视频并返回处理完成的数据
-    :param path: string, 图片路径
-    :return: [<class 'torch.Tensor'>]
+    返回一个生成器，每调用一次则返回视频下一个帧的数据
+    :param path: string, 视频路径
+    :return: [int, <class 'numpy.nparray'>]
     """
     print("处理视频中：", path)
     video = cv2.VideoCapture(path)
-    frame_rate = video.get(cv2.CAP_PROP_FPS)
+    frame_rate = round(video.get(cv2.CAP_PROP_FPS))
     total_frames = video.get(cv2.CAP_PROP_FRAME_COUNT)
+    print("fps:", frame_rate, "total:", total_frames)
     try:
-        if total_frames / (frame_rate * FRAME_INTERVAL) > MAX_FRAMES:  # 超过最大帧数
-            frame_mod = int(total_frames / MAX_FRAMES)
-        else:  # 每FRAME_INTERVAL秒截一个图
-            frame_mod = frame_rate * FRAME_INTERVAL
         current_frame = 0
-        feature_list = []
         while True:
+            print("\r进度：%d/%d  " % (current_frame, total_frames), end='')
             ret, frame = video.read()
             if not ret:
-                break
-            if current_frame % frame_mod == 0:
-                # inputs = processor(images=frame, return_tensors="pt", padding=True).to(torch.device(DEVICE))
-                inputs = processor(images=frame, return_tensors="pt", padding=True)
-                feature = model.get_image_features(**inputs)
-                # feature_list.append(feature.to(torch.device("cpu")))
-                feature_list.append(pickle.loads(pickle.dumps(feature)))  # 先dump再load可以减少内存使用，不然一帧占用一百多M内存
+                return
+            if current_frame % (FRAME_INTERVAL * frame_rate) == 0:
+                inputs = processor(images=frame, return_tensors="pt", padding=True).to(torch.device(DEVICE))
+                feature = model.get_image_features(**inputs).cpu().detach().numpy()
+                if feature is None:
+                    print("feature is None")
+                    continue
+                yield current_frame / frame_rate, feature
             current_frame += 1
     except Exception as e:
         print("处理视频出错：", repr(e))
-        return None
-    return feature_list
+        return
 
 
 def process_text(input_text):
     """
     预处理文字列表
     :param input_text: string
-    :return: <class 'torch.Tensor'>
+    :return: <class 'numpy.nparray'>
     """
-    # inputs = processor(text=input_text, return_tensors="pt", padding=True).to(torch.device(DEVICE))
-    inputs = processor(text=input_text, return_tensors="pt", padding=True)
-    return model.get_text_features(**inputs)
+    if not input_text:
+        return None
+    inputs = processor(text=input_text, return_tensors="pt", padding=True).to(torch.device(DEVICE))
+    return model.get_text_features(**inputs).cpu().detach().numpy()
 
 
-def match_image(text_feature, image_feature):
+def match_text_and_image(text_feature, image_feature):
     """
     匹配文字和图片
-    :param text_feature: <class 'torch.Tensor'>
-    :param image_feature: <class 'torch.Tensor'>
-    :return: <class 'torch.Tensor'>
+    :param text_feature: <class 'numpy.nparray'>
+    :param image_feature: <class 'numpy.nparray'>
+    :return: <class 'numpy.nparray'>
     """
-    new_image_feature = image_feature / image_feature.norm(dim=-1, keepdim=True)
-    new_text_feature = text_feature / text_feature.norm(dim=-1, keepdim=True)
+    new_image_feature = image_feature / np.linalg.norm(image_feature)
+    new_text_feature = text_feature / np.linalg.norm(text_feature)
     score = (new_image_feature @ new_text_feature.T) * 100
     return score
-
-
-def match_video(positive_feature, negative_feature, image_feature):
-    """
-    匹配文字和视频
-    :param positive_feature: <class 'torch.Tensor'>
-    :param negative_feature: <class 'torch.Tensor'>
-    :param image_feature: [<class 'torch.Tensor'>]
-    :return: <class 'torch.Tensor'>
-    """
-    new_text_positive_feature = positive_feature / positive_feature.norm(dim=-1, keepdim=True)
-    if negative_feature is not None:
-        new_text_negative_feature = negative_feature / negative_feature.norm(dim=-1, keepdim=True)
-    scores = set()
-
-    features = torch.stack(image_feature)
-    new_features = features / features.norm(dim=-1, keepdim=True)
-    positive_scores = (new_features @ new_text_positive_feature.T) * 100
-    if negative_feature is not None:
-        negative_scores = (new_features @ new_text_negative_feature.T) * 100
-    for i in range(len(positive_scores)):
-        if positive_scores[i] < POSITIVE_THRESHOLD:
-            continue
-        if negative_feature is not None:
-            if negative_scores[i] > NEGATIVE_THRESHOLD:
-                continue
-        scores.add(positive_scores[i])
-
-    # for feature in image_feature:
-    #     new_image_feature = feature / feature.norm(dim=-1, keepdim=True)
-    #     positive_score = (new_image_feature @ new_text_positive_feature.T) * 100
-    #     if positive_score < POSITIVE_THRESHOLD:
-    #         continue
-    #     if negative_feature is not None:
-    #         negative_score = (new_image_feature @ new_text_negative_feature.T) * 100
-    #         if negative_score > NEGATIVE_THRESHOLD:
-    #             continue
-    #     scores.add(positive_score)
-
-    if scores:
-        return max(scores)
-    return None
 
 
 def match_batch(positive_feature, negative_feature, image_features):
     """
     匹配image_feature列表并返回分数
-    :param positive_feature: <class 'torch.Tensor'>
-    :param negative_feature: <class 'torch.Tensor'>
-    :param image_features: [<class 'torch.Tensor'>]
+    :param positive_feature: <class 'numpy.ndarray'>
+    :param negative_feature: <class 'numpy.ndarray'>
+    :param image_features: [<class 'numpy.ndarray'>]
     :return: [float]
     """
     scores = []
-    # 将列表转换成Tensor
-    image_features = torch.stack(image_features)
+    image_features = np.vstack(image_features)
     # 归一化
-    new_text_positive_feature = positive_feature / positive_feature.norm(dim=-1, keepdim=True)
-    if negative_feature is not None:
-        new_text_negative_feature = negative_feature / negative_feature.norm(dim=-1, keepdim=True)
-    new_features = image_features / image_features.norm(dim=-1, keepdim=True)
+    if image_features.shape[0] == 1:
+        new_features = image_features / np.linalg.norm(image_features)
+    else:
+        new_features = image_features / np.linalg.norm(image_features, axis=1, keepdims=True)
     # 计算匹配度
+    new_text_positive_feature = positive_feature / np.linalg.norm(positive_feature)
     positive_scores = (new_features @ new_text_positive_feature.T) * 100
     if negative_feature is not None:
+        new_text_negative_feature = negative_feature / np.linalg.norm(negative_feature)
         negative_scores = (new_features @ new_text_negative_feature.T) * 100
     # 根据阈值进行过滤
     for i in range(len(positive_scores)):

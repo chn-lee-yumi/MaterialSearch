@@ -1,21 +1,20 @@
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import Column, String, BINARY, Integer, DateTime
-from enum import IntEnum
-
-
-class FileType(IntEnum):
-    Image = 1
-    Video = 2
-
 
 db = SQLAlchemy()
 
 
-class File(db.Model):
+class Image(db.Model):
     id = Column(Integer, primary_key=True)
-    type = Column(Integer, index=True)  # 文件类型，FileType
-    # name = Column(String(255), index=True)  # 文件名
     path = Column(String(4096), index=True)  # 文件路径
+    modify_time = Column(DateTime)  # 文件修改时间
+    features = Column(BINARY)  # 文件预处理后的二进制数据
+
+
+class Video(db.Model):
+    id = Column(Integer, primary_key=True)
+    path = Column(String(4096), index=True)  # 文件路径
+    frame_time = Column(Integer, index=True)  # 这一帧所在的时间
     modify_time = Column(DateTime)  # 文件修改时间
     features = Column(BINARY)  # 文件预处理后的二进制数据
 

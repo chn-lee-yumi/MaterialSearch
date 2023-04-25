@@ -14,8 +14,9 @@
 
     <el-row>
         <el-tag :key="isScanning" effect="dark">扫描状态：{{ isScanning ? "扫描中" : "扫描完成" }}</el-tag>
-        <el-tag :key="scanStatus.file" type="info" effect="dark">文件总数：{{ scanStatus.total }}</el-tag>
-        <el-tag v-if="isScanning" :key="scanStatus.remain_files" type="info" effect="dark">待扫描文件数：{{ scanStatus.remain_files }}</el-tag>
+        <el-tag :key="scanStatus.file" type="info" effect="dark">图片总数：{{ scanStatus.total_images }}</el-tag>
+        <el-tag :key="scanStatus.file" type="info" effect="dark">视频帧总数：{{ scanStatus.total_video_frames }}</el-tag>
+        <el-tag v-if="isScanning" :key="scanStatus.remain_files" type="info" effect="dark">本次扫描文件数：{{ scanStatus.remain_files }}</el-tag>
         <el-tag v-if="isScanning" :key="scanStatus.remain_time" type="info" effect="dark">预估剩余时间：{{ scanStatus.remain_time }} 秒</el-tag>
         <el-tag v-if="isScanning" :key="scanStatus.progress" type="danger" effect="dark">
             扫描进度：{{ Math.trunc(scanStatus.progress*100) }}%
@@ -28,10 +29,12 @@
 
     <el-row>
         <el-tabs type="border-card" style="margin-top:5px;">
-            <el-tab-pane label="用文字搜索">
+            <el-tab-pane label="文字搜图">
                 <el-form ref="form" :model="form" :inline="true">
-                    <el-input placeholder="搜索内容（仅支持英文，不能为空）" v-model="form.positive" class="input-with-select" @keyup.enter.native="search"></el-input>
-                    <el-input placeholder="过滤内容（仅支持英文，可以留空）" v-model="form.negative" class="input-with-select" @keyup.enter.native="search"></el-input>
+                    <el-input placeholder="搜索内容（仅支持英文，不能为空）" v-model="form.positive" class="input-with-select"
+                              @keyup.enter.native="search(0)"></el-input>
+                    <el-input placeholder="过滤内容（仅支持英文，可以留空）" v-model="form.negative" class="input-with-select"
+                              @keyup.enter.native="search(0)"></el-input>
                     <el-select v-model="form.top_n" placeholder="查看前n个结果" style="width:100px">
                         <el-option label="Top 6" value="6"></el-option>
                         <el-option label="Top 12" value="12"></el-option>
@@ -42,7 +45,7 @@
                 </el-form>
             </el-tab-pane>
 
-            <el-tab-pane label="用图片搜索">
+            <el-tab-pane label="以图搜图">
                 <el-upload ref="upload" drag action="api/upload" limit="1" multiple="false" :limit="1" :on-exceed="handleExceed">
                     <i class="el-icon-upload"></i>
                     <div class="el-upload__text">将文件拖到此处，或<em>点击上传</em></div>
@@ -58,6 +61,38 @@
                 </el-row>
             </el-tab-pane>
 
+            <el-tab-pane label="文字搜视频">
+                <el-form ref="form" :model="form" :inline="true">
+                    <el-input placeholder="搜索内容（仅支持英文，不能为空）" v-model="form.positive" class="input-with-select"
+                              @keyup.enter.native="search(2)"></el-input>
+                    <el-input placeholder="过滤内容（仅支持英文，可以留空）" v-model="form.negative" class="input-with-select"
+                              @keyup.enter.native="search(2)"></el-input>
+                    <el-select v-model="form.top_n" placeholder="查看前n个结果" style="width:100px">
+                        <el-option label="Top 6" value="6"></el-option>
+                        <el-option label="Top 12" value="12"></el-option>
+                        <el-option label="Top 30" value="30"></el-option>
+                        <el-option label="Top 150" value="150"></el-option>
+                    </el-select>
+                    <el-button type="success" icon="el-icon-search" @click="search(2)">搜索</el-button>
+                </el-form>
+            </el-tab-pane>
+
+            <el-tab-pane label="以图搜视频">
+                <el-upload ref="upload" drag action="api/upload" limit="1" multiple="false" :limit="1" :on-exceed="handleExceed">
+                    <i class="el-icon-upload"></i>
+                    <div class="el-upload__text">将文件拖到此处，或<em>点击上传</em></div>
+                </el-upload>
+                <el-row style="margin-top:10px;">
+                    <el-select v-model="form.top_n" placeholder="查看前n个结果" style="width:100px">
+                        <el-option label="Top 6" value="6"></el-option>
+                        <el-option label="Top 12" value="12"></el-option>
+                        <el-option label="Top 30" value="30"></el-option>
+                        <el-option label="Top 150" value="150"></el-option>
+                    </el-select>
+                    <el-button type="success" icon="el-icon-search" @click="search(3)">搜索</el-button>
+                </el-row>
+            </el-tab-pane>
+
             <el-tab-pane label="图文相似度匹配">
                 <el-input placeholder="文字内容（仅支持英文，不能为空）" v-model="form.text" class="input-with-select"></el-input>
                 <el-upload ref="upload" drag action="api/upload" limit="1" multiple="false" :limit="1" :on-exceed="handleExceed">
@@ -65,7 +100,7 @@
                     <div class="el-upload__text">将文件拖到此处，或<em>点击上传</em></div>
                 </el-upload>
                 <el-row style="margin-top:10px;">
-                    <el-button type="success" icon="el-icon-search" @click="search(2)">搜索</el-button>
+                    <el-button type="success" icon="el-icon-search" @click="search(4)">搜索</el-button>
                 </el-row>
             </el-tab-pane>
         </el-tabs>
@@ -74,9 +109,9 @@
     <el-row :gutter="5">
         <el-col :span="8" v-for="file in files">
             <el-card style="margin-top: 5px;">
-                <el-image v-if="file.type==1" style="width: 100%; height: 240px;" fit="contain" :src="file.url"
+                <el-image v-if="form.search_type === 0 || form.search_type === 1" style="width: 100%; height: 240px;" fit="contain" :src="file.url"
                           :preview-src-list="[file.url]"></el-image>
-                <video v-if="file.type==2" style="width: 100%; height: 240px;" :src="file.url" controls></video>
+                <video v-if="form.search_type === 2 || form.search_type === 3" style="width: 100%; height: 240px;" :src="file.url" controls></video>
                 <div>
                     <el-tooltip content="素材的匹配度和得分" placement="bottom">
                         <el-tag size="mini" effect="dark">{{file.softmax_score}} | {{file.score}}</el-tag>
@@ -84,6 +119,9 @@
                     <el-tooltip :content="file.path" placement="bottom">
                         <el-tag size="mini" type="info" effect="dark" class="copy" :data-clipboard-text="file.path">{{file.path.split('/').pop()}}
                         </el-tag>
+                    </el-tooltip>
+                    <el-tooltip v-if="file.end_time" content="匹配的时间段范围" placement="bottom">
+                        <el-tag size="mini" type="warning" effect="dark">{{file.start_time}} ~ {{file.end_time}} 秒</el-tag>
                     </el-tooltip>
                 </div>
             </el-card>
@@ -161,12 +199,12 @@ new Vue({
 			var that = this;
 			that.loading = true;
 			that.form.search_type = search_type;
-			if (search_type === 0 && that.form.positive == "") {
+			if ((search_type === 0 || search_type === 2) && that.form.positive == "") {
                 that.$message.error("搜索内容不能为空");
                 that.loading = false;
                 return;
 			}
-			if (search_type === 2 && that.form.text == "") {
+			if (search_type === 5 && that.form.text == "") {
                 that.$message.error("文字内容不能为空");
                 that.loading = false;
                 return;
@@ -177,10 +215,15 @@ new Vue({
                 that.loading = false;
                 if (search_type === 0 || search_type === 1) {
                     that.files = response["data"];
-                    that.$message.info("共搜索出来" + that.files.length + "条素材");
+                    that.$message.info("共搜索出来" + that.files.length + "张图片");
                     return;
                 }
-                if (search_type === 2) {
+                if (search_type === 2 || search_type === 3) {
+                    that.files = response["data"];
+                    that.$message.info("共搜索出来" + that.files.length + "条视频");
+                    return;
+                }
+                if (search_type === 4) {
                     that.$message.info("匹配得分为" + response["data"]["score"]);
                     return;
                 }
@@ -201,10 +244,12 @@ new Vue({
 		},
 	}
 })
+
 </script>
 <style scoped>
 .el-upload, .el-upload-dragger{
     width: 100% !important;
 }
+
 </style>
 </html>
