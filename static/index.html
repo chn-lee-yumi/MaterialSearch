@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <title>本地素材搜索器</title>
-    <!--    <link rel="stylesheet" href="https://cdnjs.loli.net/ajax/libs/element-ui/2.11.1/theme-chalk/index.css">-->
+    <!--<link rel="stylesheet" href="https://cdnjs.loli.net/ajax/libs/element-ui/2.11.1/theme-chalk/index.css">-->
     <link rel="stylesheet" href="static/index.css">
 </head>
 <body>
@@ -14,17 +14,21 @@
 
     <el-row>
         <el-tag :key="isScanning" effect="dark">扫描状态：{{ isScanning ? "扫描中" : "扫描完成" }}</el-tag>
-        <el-tag :key="scanStatus.file" type="info" effect="dark">图片总数：{{ scanStatus.total_images }}</el-tag>
-        <el-tag :key="scanStatus.file" type="info" effect="dark">视频帧总数：{{ scanStatus.total_video_frames }}</el-tag>
-        <el-tag v-if="isScanning" :key="scanStatus.remain_files" type="info" effect="dark">本次扫描文件数：{{ scanStatus.remain_files }}</el-tag>
-        <el-tag v-if="isScanning" :key="scanStatus.remain_time" type="info" effect="dark">预估剩余时间：{{ scanStatus.remain_time }} 秒</el-tag>
-        <el-tag v-if="isScanning" :key="scanStatus.progress" type="danger" effect="dark">
-            扫描进度：{{ Math.trunc(scanStatus.progress*100) }}%
+        <el-tag :key="status.file" type="info" effect="dark">图片总数：{{ status.total_images }}</el-tag>
+        <el-tag :key="status.file" type="info" effect="dark">视频帧总数：{{ status.total_video_frames }}</el-tag>
+        <el-tag v-if="isScanning" :key="status.remain_files" type="info" effect="dark">本次扫描文件数：{{ status.remain_files }}</el-tag>
+        <el-tag v-if="isScanning" :key="status.remain_time" type="info" effect="dark">预估剩余时间：{{ status.remain_time }} 秒</el-tag>
+        <el-tag v-if="isScanning" :key="status.progress" type="danger" effect="dark">
+            扫描进度：{{ Math.trunc(status.progress*100) }}%
         </el-tag>
+        <el-tag v-if="status.enable_cache" type="info" effect="dark">已开启搜索缓存</el-tag>
         <el-button-group v-if="!isScanning">
             <el-button round :loading="isScanning" type="primary" size="medium" @click="scan">扫描</el-button>
         </el-button-group>
-        <el-progress v-if="scanStatus.progress" :percentage="Math.trunc(scanStatus.progress*100)" :stroke-width="10"></el-progress>
+        <el-button-group v-if="status.enable_cache">
+            <el-button round type="warning" size="medium" @click="cleanCache">清除缓存</el-button>
+        </el-button-group>
+        <el-progress v-if="status.progress" :percentage="Math.trunc(status.progress*100)" :stroke-width="10"></el-progress>
     </el-row>
 
     <el-row>
@@ -35,6 +39,12 @@
                               @keyup.enter.native="search(0)"></el-input>
                     <el-input placeholder="过滤内容（仅支持英文，可以留空）" v-model="form.negative" class="input-with-select"
                               @keyup.enter.native="search(0)"></el-input>
+                    <el-form-item label="正向提示分数阈值（高于该分数才显示）">
+                        <el-slider style="width:200px" v-model="form.positive_threshold"></el-slider>
+                    </el-form-item>
+                    <el-form-item label="反向提示分数阈值（低于该分数才显示）">
+                        <el-slider style="width:200px" v-model="form.negative_threshold"></el-slider>
+                    </el-form-item>
                     <el-select v-model="form.top_n" placeholder="查看前n个结果" style="width:100px">
                         <el-option label="Top 6" value="6"></el-option>
                         <el-option label="Top 12" value="12"></el-option>
@@ -50,7 +60,10 @@
                     <i class="el-icon-upload"></i>
                     <div class="el-upload__text">将文件拖到此处，或<em>点击上传</em></div>
                 </el-upload>
-                <el-row style="margin-top:10px;">
+                <el-form ref="form" :model="form" :inline="true" style="margin-top:10px;">
+                    <el-form-item label="匹配分数阈值（高于该分数才显示）">
+                        <el-slider style="width:200px" v-model="form.positive_threshold"></el-slider>
+                    </el-form-item>
                     <el-select v-model="form.top_n" placeholder="查看前n个结果" style="width:100px">
                         <el-option label="Top 6" value="6"></el-option>
                         <el-option label="Top 12" value="12"></el-option>
@@ -58,7 +71,7 @@
                         <el-option label="Top 150" value="150"></el-option>
                     </el-select>
                     <el-button type="success" icon="el-icon-search" @click="search(1)">搜索</el-button>
-                </el-row>
+                </el-form>
             </el-tab-pane>
 
             <el-tab-pane label="文字搜视频">
@@ -67,6 +80,12 @@
                               @keyup.enter.native="search(2)"></el-input>
                     <el-input placeholder="过滤内容（仅支持英文，可以留空）" v-model="form.negative" class="input-with-select"
                               @keyup.enter.native="search(2)"></el-input>
+                    <el-form-item label="正向提示分数阈值（高于此分数才显示）">
+                        <el-slider style="width:200px" v-model="form.positive_threshold"></el-slider>
+                    </el-form-item>
+                    <el-form-item label="反向提示分数阈值（低于此分数才显示）">
+                        <el-slider style="width:200px" v-model="form.negative_threshold"></el-slider>
+                    </el-form-item>
                     <el-select v-model="form.top_n" placeholder="查看前n个结果" style="width:100px">
                         <el-option label="Top 6" value="6"></el-option>
                         <el-option label="Top 12" value="12"></el-option>
@@ -82,15 +101,18 @@
                     <i class="el-icon-upload"></i>
                     <div class="el-upload__text">将文件拖到此处，或<em>点击上传</em></div>
                 </el-upload>
-                <el-row style="margin-top:10px;">
+                <el-form ref="form" :model="form" :inline="true" style="margin-top:10px;">
+                    <el-form-item label="匹配分数阈值（高于此分数才显示）">
+                        <el-slider style="width:200px" v-model="form.positive_threshold"></el-slider>
+                    </el-form-item>
                     <el-select v-model="form.top_n" placeholder="查看前n个结果" style="width:100px">
                         <el-option label="Top 6" value="6"></el-option>
                         <el-option label="Top 12" value="12"></el-option>
                         <el-option label="Top 30" value="30"></el-option>
                         <el-option label="Top 150" value="150"></el-option>
                     </el-select>
-                    <el-button type="success" icon="el-icon-search" @click="search(3)">搜索</el-button>
-                </el-row>
+                    <el-button type="success" icon="el-icon-search" @click="search(1)">搜索</el-button>
+                </el-form>
             </el-tab-pane>
 
             <el-tab-pane label="图文相似度匹配">
@@ -146,12 +168,14 @@ new Vue({
 	data: {
 		loading: false,
 		isScanning: false,
-		scanStatus: null,
+		status: null,
 		form: {
 			positive: '',
 			negative: '',
 			top_n: '6',
 			search_type: 0,
+			positive_threshold: 27,
+			negative_threshold: 27,
 		},
 		files: [],
 		timer: null,
@@ -171,10 +195,10 @@ new Vue({
 	methods: {
 		loadData: function() {
 			var that = this;
-			axios.get('api/scan_status')
+			axios.get('api/status')
             .then(function(response) {
                 console.log(response);
-                that.scanStatus = response["data"];
+                that.status = response["data"];
                 that.isScanning = response["data"]["status"];
             })
             .catch (function(error) {
@@ -242,14 +266,23 @@ new Vue({
 			this.$refs.upload.handleStart(files[0]);
 			this.$refs.upload.submit();
 		},
+		cleanCache() {
+		    var that = this;
+			axios.get('api/clean_cache')
+            .then(function(response) {
+                that.$message.info(response.data);
+            })
+            .catch (function(error) {
+				console.log(error);
+				that.$message.error(error.response.data);
+			})
+		}
 	}
 })
-
 </script>
 <style scoped>
 .el-upload, .el-upload-dragger{
     width: 100% !important;
 }
-
 </style>
 </html>

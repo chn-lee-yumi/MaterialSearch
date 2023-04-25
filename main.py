@@ -14,7 +14,7 @@ import numpy as np
 
 MAX_RESULT_NUM = 150  # 最大搜索出来的结果数量
 AUTO_SCAN = False  # 是否在启动时进行一次扫描
-ENABLE_CACHE = False  # 是否启用缓存
+ENABLE_CACHE = True  # 是否启用缓存
 ASSETS_PATH = ("/Users/liyumin/test",
                "/srv/dev-disk-by-uuid-5b249b15-24f2-4796-a353-5ba789dc1e45/",
                )  # 素材所在根目录
@@ -23,6 +23,8 @@ SKIP_PATH = ('/Users/liyumin/PycharmProjects/home_cam', '/Users/liyumin/Files/po
              '/srv/dev-disk-by-uuid-5b249b15-24f2-4796-a353-5ba789dc1e45/lym/学习和工作/人工智能/faceswap',
              '/srv/dev-disk-by-uuid-5b249b15-24f2-4796-a353-5ba789dc1e45/lym/.recycle'
              )  # 跳过扫描的目录
+POSITIVE_THRESHOLD = 27  # 正向搜索词搜出来的素材，高于这个分数才展示
+NEGATIVE_THRESHOLD = 27  # 反向搜索词搜出来的素材，低于这个分数才展示
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///assets.db'
@@ -184,12 +186,14 @@ def scan():
     is_scanning = False
 
 
-def search_image(positive_prompt="", negative_prompt="", img_path=""):
+def search_image(positive_prompt="", negative_prompt="", img_path="", positive_threshold=POSITIVE_THRESHOLD, negative_threshold=NEGATIVE_THRESHOLD):
     """
     搜图
     :param positive_prompt: 正向提示词
     :param negative_prompt: 反向提示词
     :param img_path: 图片路径，如果存在，说明是用图搜索，此时忽略提示词
+    :param positive_threshold: 正向提示分数阈值，高于此分数才显示
+    :param negative_threshold: 反向提示分数阈值，低于此分数才显示
     :return:
     """
     if img_path:
@@ -211,7 +215,7 @@ def search_image(positive_prompt="", negative_prompt="", img_path=""):
                 continue
             file_list.append(file)
             image_features.append(features)
-        scores = match_batch(positive_feature, negative_feature, image_features)
+        scores = match_batch(positive_feature, negative_feature, image_features, positive_threshold, negative_threshold)
         for i in range(len(file_list)):
             if not scores[i]:
                 continue
@@ -221,12 +225,14 @@ def search_image(positive_prompt="", negative_prompt="", img_path=""):
     return sorted_list
 
 
-def search_video(positive_prompt="", negative_prompt="", img_path=""):
+def search_video(positive_prompt="", negative_prompt="", img_path="", positive_threshold=POSITIVE_THRESHOLD, negative_threshold=NEGATIVE_THRESHOLD):
     """
     搜视频
     :param positive_prompt: 正向提示词
     :param negative_prompt: 反向提示词
     :param img_path: 图片路径，如果存在，说明是用图搜索，此时忽略提示词
+    :param positive_threshold: 正向提示分数阈值，高于此分数才显示
+    :param negative_threshold: 反向提示分数阈值，低于此分数才显示
     :return:
     """
     if img_path:
@@ -242,7 +248,7 @@ def search_video(positive_prompt="", negative_prompt="", img_path=""):
             path = path[0]
             frames = db.session.query(Video).filter_by(path=path).order_by(Video.frame_time).all()
             image_features = list(map(lambda x: pickle.loads(x.features), frames))
-            scores = match_batch(positive_feature, negative_feature, image_features)
+            scores = match_batch(positive_feature, negative_feature, image_features, positive_threshold, negative_threshold)
             index_pairs = get_index_pairs(scores)
             for index_pair in index_pairs:
                 # 间隔小于等于2倍FRAME_INTERVAL的算为同一个素材，同时开始时间和结束时间各延长0.5个FRAME_INTERVAL
@@ -255,7 +261,6 @@ def search_video(positive_prompt="", negative_prompt="", img_path=""):
                     end_time = int((frames[index_pair[1]].frame_time + frames[index_pair[1] + 1].frame_time) / 2 + 0.5)
                 else:
                     end_time = frames[index_pair[1]].frame_time
-                print(index_pair, len(scores))
                 scores_list.append(
                     {"url": "api/get_video/%s" % urllib.parse.quote(base64.b64encode(path.encode())) + "#t=%.1f,%.1f" % (start_time, end_time),
                      "path": path, "score": score, "start_time": start_time, "end_time": end_time})
@@ -301,9 +306,9 @@ def api_scan():
     return jsonify({"status": "already scanning"})
 
 
-@app.route("/api/scan_status", methods=["GET"])
-def api_scan_status():
-    """扫描状态"""
+@app.route("/api/status", methods=["GET"])
+def api_status():
+    """状态"""
     global is_scanning, remain_files, scanned_files, scan_start_time, total_images, total_video_frames
     if scanned_files:
         remain_time = (time.time() - scan_start_time) / scanned_files * remain_files
@@ -314,7 +319,13 @@ def api_scan_status():
     else:
         progress = 0
     return jsonify({"status": is_scanning, "total_images": total_images, "total_video_frames": total_video_frames, "remain_files": remain_files,
-                    "progress": progress, "remain_time": int(remain_time)})
+                    "progress": progress, "remain_time": int(remain_time), "enable_cache": ENABLE_CACHE})
+
+
+@app.route("/api/clean_cache", methods=["GET", "POST"])
+def api_clean_cache():
+    clean_cache()
+    return "OK"
 
 
 @app.route("/api/match", methods=["POST"])
@@ -326,16 +337,20 @@ def api_match():
     data = request.get_json()
     top_n = int(data['top_n'])
     search_type = data['search_type']
+    positive_threshold = data['positive_threshold']
+    negative_threshold = data['negative_threshold']
     print(data)
     # 计算hash
     if search_type == 0:  # 以文搜图
-        _hash = get_string_hash("以文搜图\npositive: %r\nnegative: %r" % (data['positive'], data['negative']))
+        _hash = get_string_hash(
+            "以文搜图%d,%d\npositive: %r\nnegative: %r" % (positive_threshold, negative_threshold, data['positive'], data['negative']))
     elif search_type == 1:  # 以图搜图
-        _hash = get_string_hash("以图搜图\n" + get_file_hash("upload.tmp"))
+        _hash = get_string_hash("以图搜图%d,%s" % (positive_threshold, get_file_hash("upload.tmp")))
     elif search_type == 2:  # 以文搜视频
-        _hash = get_string_hash("以文搜视频\npositive: %r\nnegative: %r" % (data['positive'], data['negative']))
+        _hash = get_string_hash(
+            "以文搜视频%d,%d\npositive: %r\nnegative: %r" % (positive_threshold, negative_threshold, data['positive'], data['negative']))
     elif search_type == 3:  # 以图搜视频
-        _hash = get_string_hash("以图搜视频\n" + get_file_hash("upload.tmp"))
+        _hash = get_string_hash("以图搜视频%d,%s" % (positive_threshold, get_file_hash("upload.tmp")))
     elif search_type == 4:  # 图文比对
         _hash1 = get_string_hash("text: %r" % data['text'])
         _hash2 = get_file_hash("upload.tmp")
@@ -366,13 +381,17 @@ def api_match():
                     return jsonify(new_sorted_list)
     # 如果没有cache，进行匹配并写入cache
     if search_type == 0:
-        sorted_list = search_image(positive_prompt=data['positive'], negative_prompt=data['negative'])[:MAX_RESULT_NUM]
+        sorted_list = search_image(positive_prompt=data['positive'], negative_prompt=data['negative'],
+                                   positive_threshold=positive_threshold, negative_threshold=positive_threshold)[:MAX_RESULT_NUM]
     elif search_type == 1:
-        sorted_list = search_image(img_path="upload.tmp")[:MAX_RESULT_NUM]
+        sorted_list = search_image(img_path="upload.tmp",
+                                   positive_threshold=positive_threshold, negative_threshold=positive_threshold)[:MAX_RESULT_NUM]
     elif search_type == 2:
-        sorted_list = search_video(positive_prompt=data['positive'], negative_prompt=data['negative'])[:MAX_RESULT_NUM]
+        sorted_list = search_video(positive_prompt=data['positive'], negative_prompt=data['negative'],
+                                   positive_threshold=positive_threshold, negative_threshold=positive_threshold)[:MAX_RESULT_NUM]
     elif search_type == 3:
-        sorted_list = search_video(img_path="upload.tmp")[:MAX_RESULT_NUM]
+        sorted_list = search_video(img_path="upload.tmp",
+                                   positive_threshold=positive_threshold, negative_threshold=positive_threshold)[:MAX_RESULT_NUM]
     elif search_type == 4:
         return jsonify({"score": "%.2f" % match_text_and_image(process_text(data['text']), process_image("upload.tmp"))})
     # 写入缓存

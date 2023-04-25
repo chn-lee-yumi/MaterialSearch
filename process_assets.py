@@ -1,7 +1,5 @@
 # 预处理图片和视频，建立索引，加快搜索速度
 import os
-import pickle
-import time
 import numpy as np
 
 from PIL import Image
@@ -13,8 +11,6 @@ IMAGE_EXTENSIONS = (".jpg", ".jpeg", ".png", ".gif")  # 支持的图片拓展名
 VIDEO_EXTENSIONS = (".mp4", ".flv", ".mov")  # 支持的视频拓展名
 IGNORE_STRINGS = ("thumb", "avatar", "thumb", "icon", "cache")  # 如果路径或文件名包含这些字符串，就跳过（先把字符串转小写再对比）
 FRAME_INTERVAL = 2  # 视频每隔多少秒取一帧，视频展示的时候，间隔小于等于2倍FRAME_INTERVAL的算为同一个素材，同时开始时间和结束时间各延长0.5个FRAME_INTERVAL
-POSITIVE_THRESHOLD = 27  # 正向搜索词搜出来的素材，高于这个分数才展示
-NEGATIVE_THRESHOLD = 27  # 反向搜索词搜出来的素材，低于这个分数才展示
 # 支持的模型：clip-vit-base-patch16 clip-vit-base-patch32 clip-vit-large-patch14 clip-vit-large-patch14-336
 # 推荐CPU或显存小于4G选clip-vit-base-patch32，显存大于等于4G选clip-vit-large-patch14
 MODEL_NAME = "openai/clip-vit-base-patch32"
@@ -157,12 +153,14 @@ def match_text_and_image(text_feature, image_feature):
     return score
 
 
-def match_batch(positive_feature, negative_feature, image_features):
+def match_batch(positive_feature, negative_feature, image_features, positive_threshold, negative_threshold):
     """
     匹配image_feature列表并返回分数
     :param positive_feature: <class 'numpy.ndarray'>
     :param negative_feature: <class 'numpy.ndarray'>
     :param image_features: [<class 'numpy.ndarray'>]
+    :param positive_threshold: 正向提示分数阈值，高于此分数才显示
+    :param negative_threshold: 反向提示分数阈值，低于此分数才显示
     :return: [float]
     """
     scores = []
@@ -180,11 +178,11 @@ def match_batch(positive_feature, negative_feature, image_features):
         negative_scores = (new_features @ new_text_negative_feature.T) * 100
     # 根据阈值进行过滤
     for i in range(len(positive_scores)):
-        if positive_scores[i] < POSITIVE_THRESHOLD:
+        if positive_scores[i] < positive_threshold:
             scores.append(0)
             continue
         if negative_feature is not None:
-            if negative_scores[i] > NEGATIVE_THRESHOLD:
+            if negative_scores[i] > negative_threshold:
                 scores.append(0)
                 continue
         scores.append(positive_scores[i])
