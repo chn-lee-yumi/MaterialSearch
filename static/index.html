@@ -35,9 +35,9 @@
         <el-tabs type="border-card" style="margin-top:5px;">
             <el-tab-pane label="文字搜图">
                 <el-form ref="form" :model="form" :inline="true">
-                    <el-input placeholder="搜索内容（仅支持英文，不能为空）" v-model="form.positive" class="input-with-select"
+                    <el-input placeholder="搜索内容（不能为空）" v-model="form.positive" class="input-with-select"
                               @keyup.enter.native="search(0)"></el-input>
-                    <el-input placeholder="过滤内容（仅支持英文，可以留空）" v-model="form.negative" class="input-with-select"
+                    <el-input placeholder="过滤内容（可以留空）" v-model="form.negative" class="input-with-select"
                               @keyup.enter.native="search(0)"></el-input>
                     <el-form-item label="正向提示分数阈值（高于该分数才显示）">
                         <el-slider style="width:200px" v-model="form.positive_threshold"></el-slider>
@@ -76,9 +76,9 @@
 
             <el-tab-pane label="文字搜视频">
                 <el-form ref="form" :model="form" :inline="true">
-                    <el-input placeholder="搜索内容（仅支持英文，不能为空）" v-model="form.positive" class="input-with-select"
+                    <el-input placeholder="搜索内容（不能为空）" v-model="form.positive" class="input-with-select"
                               @keyup.enter.native="search(2)"></el-input>
-                    <el-input placeholder="过滤内容（仅支持英文，可以留空）" v-model="form.negative" class="input-with-select"
+                    <el-input placeholder="过滤内容（可以留空）" v-model="form.negative" class="input-with-select"
                               @keyup.enter.native="search(2)"></el-input>
                     <el-form-item label="正向提示分数阈值（高于此分数才显示）">
                         <el-slider style="width:200px" v-model="form.positive_threshold"></el-slider>
@@ -116,7 +116,7 @@
             </el-tab-pane>
 
             <el-tab-pane label="图文相似度匹配">
-                <el-input placeholder="文字内容（仅支持英文，不能为空）" v-model="form.text" class="input-with-select"></el-input>
+                <el-input placeholder="文字内容（不能为空）" v-model="form.text" class="input-with-select"></el-input>
                 <el-upload ref="upload" drag action="api/upload" limit="1" multiple="false" :limit="1" :on-exceed="handleExceed">
                     <i class="el-icon-upload"></i>
                     <div class="el-upload__text">将文件拖到此处，或<em>点击上传</em></div>
