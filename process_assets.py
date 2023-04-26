@@ -3,7 +3,7 @@ import os
 import numpy as np
 
 from PIL import Image
-from transformers import CLIPProcessor, CLIPModel
+from transformers import CLIPProcessor, CLIPModel, BertTokenizer, BertForSequenceClassification
 import cv2
 import torch
 
@@ -11,14 +11,15 @@ IMAGE_EXTENSIONS = (".jpg", ".jpeg", ".png", ".gif")  # 支持的图片拓展名
 VIDEO_EXTENSIONS = (".mp4", ".flv", ".mov")  # 支持的视频拓展名
 IGNORE_STRINGS = ("thumb", "avatar", "thumb", "icon", "cache")  # 如果路径或文件名包含这些字符串，就跳过（先把字符串转小写再对比）
 FRAME_INTERVAL = 2  # 视频每隔多少秒取一帧，视频展示的时候，间隔小于等于2倍FRAME_INTERVAL的算为同一个素材，同时开始时间和结束时间各延长0.5个FRAME_INTERVAL
-# 支持的模型：clip-vit-base-patch16 clip-vit-base-patch32 clip-vit-large-patch14 clip-vit-large-patch14-336
-# 推荐CPU或显存小于4G选clip-vit-base-patch32，显存大于等于4G选clip-vit-large-patch14
-MODEL_NAME = "openai/clip-vit-base-patch32"
+MODEL_NAME = "openai/clip-vit-base-patch32"  # 显存大于等于4G可用 openai/clip-vit-large-patch14
+TEXT_MODEL_NAME = "IDEA-CCNL/Taiyi-CLIP-Roberta-102M-Chinese"  # 显存大于等于4G可用 IDEA-CCNL/Taiyi-CLIP-Roberta-large-326M-Chinese 注意这两个模型是配套使用的
 DEVICE = "cpu"  # 推理设备，cpu/cuda/mps，建议先跑benchmark.py看看cpu还是显卡速度更快，因为数据搬运也需要时间
 
 print("Loading model...")
 model = CLIPModel.from_pretrained(MODEL_NAME).to(torch.device(DEVICE))
 processor = CLIPProcessor.from_pretrained(MODEL_NAME)
+text_tokenizer = BertTokenizer.from_pretrained(TEXT_MODEL_NAME)
+text_encoder = BertForSequenceClassification.from_pretrained(TEXT_MODEL_NAME).to(torch.device(DEVICE)).eval()
 print("Model loaded.")
 
 
@@ -136,8 +137,9 @@ def process_text(input_text):
     """
     if not input_text:
         return None
-    inputs = processor(text=input_text, return_tensors="pt", padding=True).to(torch.device(DEVICE))
-    return model.get_text_features(**inputs).cpu().detach().numpy()
+    text = text_tokenizer(input_text, return_tensors='pt', padding=True)['input_ids']
+    text_features = text_encoder(text).logits.cpu().detach().numpy()
+    return text_features
 
 
 def match_text_and_image(text_feature, image_feature):

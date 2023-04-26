@@ -23,8 +23,8 @@ SKIP_PATH = ('/Users/liyumin/PycharmProjects/home_cam', '/Users/liyumin/Files/po
              '/srv/dev-disk-by-uuid-5b249b15-24f2-4796-a353-5ba789dc1e45/lym/学习和工作/人工智能/faceswap',
              '/srv/dev-disk-by-uuid-5b249b15-24f2-4796-a353-5ba789dc1e45/lym/.recycle'
              )  # 跳过扫描的目录
-POSITIVE_THRESHOLD = 27  # 正向搜索词搜出来的素材，高于这个分数才展示
-NEGATIVE_THRESHOLD = 27  # 反向搜索词搜出来的素材，低于这个分数才展示
+POSITIVE_THRESHOLD = 10  # 正向搜索词搜出来的素材，高于这个分数才展示
+NEGATIVE_THRESHOLD = 10  # 反向搜索词搜出来的素材，低于这个分数才展示
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///assets.db'
