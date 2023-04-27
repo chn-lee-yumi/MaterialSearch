@@ -8,7 +8,7 @@ import cv2
 import torch
 
 IMAGE_EXTENSIONS = (".jpg", ".jpeg", ".png", ".gif")  # 支持的图片拓展名
-VIDEO_EXTENSIONS = (".mp4", ".flv", ".mov")  # 支持的视频拓展名
+VIDEO_EXTENSIONS = (".mp4", ".flv", ".mov", ".mkv")  # 支持的视频拓展名
 IGNORE_STRINGS = ("thumb", "avatar", "thumb", "icon", "cache")  # 如果路径或文件名包含这些字符串，就跳过（先把字符串转小写再对比）
 FRAME_INTERVAL = 2  # 视频每隔多少秒取一帧，视频展示的时候，间隔小于等于2倍FRAME_INTERVAL的算为同一个素材，同时开始时间和结束时间各延长0.5个FRAME_INTERVAL
 MODEL_NAME = "openai/clip-vit-base-patch32"  # 显存大于等于4G可用 openai/clip-vit-large-patch14
@@ -151,7 +151,7 @@ def match_text_and_image(text_feature, image_feature):
     """
     new_image_feature = image_feature / np.linalg.norm(image_feature)
     new_text_feature = text_feature / np.linalg.norm(text_feature)
-    score = (new_image_feature @ new_text_feature.T) * 100
+    score = (new_image_feature @ new_text_feature.T)
     return score
 
 
@@ -174,17 +174,17 @@ def match_batch(positive_feature, negative_feature, image_features, positive_thr
         new_features = image_features / np.linalg.norm(image_features, axis=1, keepdims=True)
     # 计算匹配度
     new_text_positive_feature = positive_feature / np.linalg.norm(positive_feature)
-    positive_scores = (new_features @ new_text_positive_feature.T) * 100
+    positive_scores = (new_features @ new_text_positive_feature.T)
     if negative_feature is not None:
         new_text_negative_feature = negative_feature / np.linalg.norm(negative_feature)
-        negative_scores = (new_features @ new_text_negative_feature.T) * 100
+        negative_scores = (new_features @ new_text_negative_feature.T)
     # 根据阈值进行过滤
     for i in range(len(positive_scores)):
-        if positive_scores[i] < positive_threshold:
+        if positive_scores[i] < positive_threshold / 100:
             scores.append(0)
             continue
         if negative_feature is not None:
-            if negative_scores[i] > negative_threshold:
+            if negative_scores[i] > negative_threshold / 100:
                 scores.append(0)
                 continue
         scores.append(positive_scores[i])
