@@ -7,25 +7,11 @@ import urllib
 from datetime import datetime
 from flask import Flask, jsonify, request, send_file, abort
 from database import db, Image, Video, Cache
-from process_assets import scan_dir, process_image, process_video, process_text, match_text_and_image, match_batch, \
-    IMAGE_EXTENSIONS, VIDEO_EXTENSIONS
+from process_assets import scan_dir, process_image, process_video, process_text, match_text_and_image, match_batch
 import pickle
 import numpy as np
 
-MAX_RESULT_NUM = 150  # 最大搜索出来的结果数量
-AUTO_SCAN = False  # 是否在启动时进行一次扫描
-ENABLE_CACHE = True  # 是否启用缓存
-ASSETS_PATH = ("/Users/liyumin/test",
-               "/srv/dev-disk-by-uuid-5b249b15-24f2-4796-a353-5ba789dc1e45/",
-               )  # 素材所在根目录
-SKIP_PATH = ('/Users/liyumin/PycharmProjects/home_cam', '/Users/liyumin/Files/popo_mac.app',
-             '/srv/dev-disk-by-uuid-5b249b15-24f2-4796-a353-5ba789dc1e45/lym/备份/较新U盘备份/gan',
-             '/srv/dev-disk-by-uuid-5b249b15-24f2-4796-a353-5ba789dc1e45/lym/学习和工作/人工智能/faceswap',
-             '/srv/dev-disk-by-uuid-5b249b15-24f2-4796-a353-5ba789dc1e45/lym/.recycle'
-             )  # 跳过扫描的目录
-POSITIVE_THRESHOLD = 10  # 正向搜索词搜出来的素材，高于这个分数才展示
-NEGATIVE_THRESHOLD = 10  # 反向搜索词搜出来的素材，低于这个分数才展示
-IMAGE_THRESHOLD = 85  # 图片搜出来的素材，高于这个分数才展示
+from config import *
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///assets.db'
