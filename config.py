@@ -1,10 +1,10 @@
 # *****扫描配置*****
 AUTO_SCAN = False  # 是否在启动时进行一次扫描
 ASSETS_PATH = (
-    "/",
-)  # 素材所在根目录，绝对路径
+    r"/",
+)  # 素材所在的目录，绝对路径
 SKIP_PATH = (
-    '/tmp'
+    r'/tmp'
 )  # 跳过扫描的目录，绝对路径
 IMAGE_EXTENSIONS = (".jpg", ".jpeg", ".png", ".gif")  # 支持的图片拓展名
 VIDEO_EXTENSIONS = (".mp4", ".flv", ".mov", ".mkv")  # 支持的视频拓展名
@@ -18,7 +18,7 @@ DEVICE = "cpu"  # 推理设备，cpu/cuda/mps，建议先跑benchmark.py看看cp
 
 # *****搜索配置*****
 ENABLE_CACHE = True  # 是否启用搜索缓存（重新扫描会清空缓存，或前端点击清空缓存）
-MAX_RESULT_NUM = 150  # 最大搜索出来的结果数量
-POSITIVE_THRESHOLD = 10  # 正向搜索词搜出来的素材，高于这个分数才展示
-NEGATIVE_THRESHOLD = 10  # 反向搜索词搜出来的素材，低于这个分数才展示
-IMAGE_THRESHOLD = 85  # 图片搜出来的素材，高于这个分数才展示
+MAX_RESULT_NUM = 150  # 最大搜索出来的结果数量，如果需要改大这个值，目前还需要手动修改前端代码（前端代码写死最大150）
+POSITIVE_THRESHOLD = 10  # 正向搜索词搜出来的素材，高于这个分数才展示。这个是默认值，用的时候可以在前端修改。（前端代码也写死了这个默认值）
+NEGATIVE_THRESHOLD = 10  # 反向搜索词搜出来的素材，低于这个分数才展示。这个是默认值，用的时候可以在前端修改。（前端代码也写死了这个默认值）
+IMAGE_THRESHOLD = 85  # 图片搜出来的素材，高于这个分数才展示。这个是默认值，用的时候可以在前端修改。（前端代码也写死了这个默认值）

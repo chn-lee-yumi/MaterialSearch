@@ -325,7 +325,7 @@ def api_clean_cache():
 def api_match():
     """
     匹配文字对应的素材
-    curl -X POST -H "Content-Type: application/json" -d '{"text":"red","top_n":10}' http://localhost:8080/api/match
+    curl -X POST -H "Content-Type: application/json" -d '{"text":"red","top_n":10}' http://localhost:8085/api/match
     """
     data = request.get_json()
     top_n = int(data['top_n'])
