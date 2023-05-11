@@ -12,7 +12,7 @@ IGNORE_STRINGS = ("thumb", "avatar", "thumb", "icon", "cache")  # 如果路径�
 FRAME_INTERVAL = 2  # 视频每隔多少秒取一帧，视频展示的时候，间隔小于等于2倍FRAME_INTERVAL的算为同一个素材，同时开始时间和结束时间各延长0.5个FRAME_INTERVAL
 
 # *****模型配置*****
-MODEL_NAME = "openai/clip-vit-base-patch32"  # 显存大于等于4G可用 openai/clip-vit-large-patch14
+MODEL_NAME = "openai/clip-vit-base-patch32"  # 显存大于等于4G可用 openai/clip-vit-large-patch14 注意更换模型后需要删库重扫，否则搜索出错
 TEXT_MODEL_NAME = "IDEA-CCNL/Taiyi-CLIP-Roberta-102M-Chinese"  # 显存大于等于4G可用 IDEA-CCNL/Taiyi-CLIP-Roberta-large-326M-Chinese 注意这两个模型是配套使用的
 DEVICE = "cpu"  # 推理设备，cpu/cuda/mps，建议先跑benchmark.py看看cpu还是显卡速度更快，因为数据搬运也需要时间
 
