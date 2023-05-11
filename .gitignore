@@ -133,3 +133,4 @@ dmypy.json
 # ignore local config
 config.py
 config.local.py
+log.txt
