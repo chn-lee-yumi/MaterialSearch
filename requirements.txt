@@ -1,0 +1,8 @@
+Flask==2.3.2
+numpy==1.23.3
+opencv_python==4.6.0.66
+opencv_python_headless==4.6.0.66
+Pillow==9.2.0
+SQLAlchemy==2.0.12
+torch==1.12.1+cu113
+transformers==4.25.1
