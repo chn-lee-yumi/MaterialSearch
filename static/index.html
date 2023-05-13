@@ -18,7 +18,7 @@
         <el-tag :key="status.file" type="success" effect="dark">视频帧总数：{{ status.total_video_frames }}</el-tag>
         <el-tag v-if="isScanning" :key="status.remain_files" type="info" effect="dark">本次扫描文件数：{{ status.scanning_files }}</el-tag>
         <el-tag v-if="isScanning" :key="status.remain_files" type="info" effect="dark">待扫描文件数：{{ status.remain_files }}</el-tag>
-        <el-tag v-if="isScanning" :key="status.remain_time" type="info" effect="dark">预估剩余时间：{{ status.remain_time }} 秒</el-tag>
+        <el-tag v-if="isScanning" :key="status.remain_time" type="info" effect="dark">预估剩余时间：{{ status.remain_time }}</el-tag>
         <el-tag v-if="isScanning" :key="status.progress" type="danger" effect="dark">
             扫描进度：{{ Math.trunc(status.progress*100) }}% （扫描完成前请勿搜索）
         </el-tag>
@@ -164,6 +164,26 @@
 <script src="static/axios.min.js"></script>
 
 <script>
+function formatTime(seconds) {
+	// 计算天、小时、分钟和秒数
+	const days = Math.floor(seconds / (3600 * 24));
+	seconds -= days * 3600 * 24;
+	const hours = Math.floor(seconds / 3600);
+	seconds -= hours * 3600;
+	const minutes = Math.floor(seconds / 60);
+	seconds -= minutes * 60;
+
+	// 格式化时间部分
+	const formattedDays = days > 0 ? days + '天' : '';
+	const formattedHours = hours.toString().padStart(2, '0') + '时';
+	const formattedMinutes = minutes.toString().padStart(2, '0') + '分';
+	const formattedSeconds = seconds.toString().padStart(2, '0') + '秒';
+
+	// 拼接结果字符串
+	let result = formattedDays + formattedHours + formattedMinutes + formattedSeconds;
+	return result;
+}
+
 new Vue({
 	el: '#app',
 	data: {
@@ -201,6 +221,7 @@ new Vue({
             .then(function(response) {
                 console.log(response);
                 that.status = response["data"];
+                that.status.remain_time = formatTime(that.status.remain_time);
                 that.isScanning = response["data"]["status"];
             })
             .catch (function(error) {
