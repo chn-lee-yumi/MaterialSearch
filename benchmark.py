@@ -29,7 +29,7 @@ recommend_device = ''
 for device in device_list:
     try:
         clip_model = clip_model.to(torch.device(device))
-    except AssertionError:  # AssertionError: Torch not compiled with CUDA enabled
+    except (AssertionError, RuntimeError):
         print(f"该平台不支持{device}，已跳过。")
         continue
     t0 = time.time()
@@ -54,7 +54,7 @@ for device in device_list:
             text_encoder = text_encoder.to(torch.device(device))
         else:
             clip_model = clip_model.to(torch.device(device))
-    except AssertionError:
+    except  (AssertionError, RuntimeError):
         print(f"该平台不支持{device}，已跳过。")
         continue
     t0 = time.time()
