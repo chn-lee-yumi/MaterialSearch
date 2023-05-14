@@ -1,17 +1,18 @@
 import base64
 import hashlib
 import os
+import pickle
 import threading
 import time
 import urllib
 from datetime import datetime
-from flask import Flask, jsonify, request, send_file, abort
-from database import db, Image, Video, Cache
-from process_assets import scan_dir, process_image, process_video, process_text, match_text_and_image, match_batch
-import pickle
+
 import numpy as np
+from flask import Flask, jsonify, request, send_file, abort
 
 from config import *
+from database import db, Image, Video, Cache
+from process_assets import scan_dir, process_image, process_video, process_text, match_text_and_image, match_batch
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///assets.db'
@@ -125,6 +126,9 @@ def scan():
             if scanned_files % 100 == 0:  # 每扫描100次重新save一下
                 with open("assets.pickle", "wb") as f:
                     pickle.dump(assets, f)
+            # 如果文件不存在，则忽略（扫描时文件被移动或删除则会触发这种情况）
+            if not os.path.isfile(asset):
+                continue
             # 如果数据库里有这个文件，并且修改时间一致，则跳过，否则进行预处理并入库
             if asset.lower().endswith(IMAGE_EXTENSIONS):  # 图片
                 db_record = db.session.query(Image).filter_by(path=asset).first()
