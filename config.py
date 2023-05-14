@@ -22,10 +22,11 @@ IMAGE_MIN_HEIGHT = 64  # 图片最小高度，低于此宽度则不进行计算
 LANGUAGE = "Chinese"  # 模型搜索时用的语言，可选：Chinese/English
 MODEL_NAME = "openai/clip-vit-base-patch32"  # CLIP模型
 TEXT_MODEL_NAME = "IDEA-CCNL/Taiyi-CLIP-Roberta-102M-Chinese"  # 中文模型，需要和CLIP模型配套使用，如果LANGUAGE为English则忽略此项
-DEVICE = "cpu"  # 推理设备，cpu/cuda/mps，建议先跑benchmark.py看看cpu还是显卡速度更快，因为数据搬运也需要时间
-DEVICE_TEXT = "cpu"  # text_encoder使用的设备，如果使用英文模型，则忽略该项设置。英文模型的图像和文字处理都用DEVICE。
+DEVICE = "cpu"  # 推理设备，cpu/cuda/mps，建议先跑benchmark.py看看cpu还是显卡速度更快。因为数据搬运也需要时间，所以不一定是GPU更快。
+DEVICE_TEXT = "cpu"  # text_encoder使用的设备，如果LANGUAGE为English则忽略此项。
 
 # *****搜索配置*****
+# 不知道为什么中文模型搜索出来的分数比较低，如果使用英文模型，则POSITIVE_THRESHOLD和NEGATIVE_THRESHOLD可以上调到30。
 ENABLE_CACHE = True  # 是否启用搜索缓存（重新扫描会清空缓存，或前端点击清空缓存）
 MAX_RESULT_NUM = 150  # 最大搜索出来的结果数量，如果需要改大这个值，目前还需要手动修改前端代码（前端代码写死最大150）
 POSITIVE_THRESHOLD = 10  # 正向搜索词搜出来的素材，高于这个分数才展示。这个是默认值，用的时候可以在前端修改。（前端代码也写死了这个默认值）
