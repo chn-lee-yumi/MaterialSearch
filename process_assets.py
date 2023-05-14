@@ -1,19 +1,20 @@
 # 预处理图片和视频，建立索引，加快搜索速度
 import os
-import numpy as np
 
+import cv2
+import numpy as np
+import torch
 from PIL import Image
 from transformers import CLIPProcessor, CLIPModel, BertTokenizer, BertForSequenceClassification
-import cv2
-import torch
 
 from config import *
 
 print("Loading model...")
 model = CLIPModel.from_pretrained(MODEL_NAME).to(torch.device(DEVICE))
 processor = CLIPProcessor.from_pretrained(MODEL_NAME)
-text_tokenizer = BertTokenizer.from_pretrained(TEXT_MODEL_NAME)
-text_encoder = BertForSequenceClassification.from_pretrained(TEXT_MODEL_NAME).to(torch.device(DEVICE)).eval()
+if LANGUAGE == "Chinese":
+    text_tokenizer = BertTokenizer.from_pretrained(TEXT_MODEL_NAME)
+    text_encoder = BertForSequenceClassification.from_pretrained(TEXT_MODEL_NAME).eval().to(torch.device(DEVICE_TEXT))
 print("Model loaded.")
 
 
@@ -67,27 +68,29 @@ def scan_dir(paths, skip_paths, extensions):
     return assets
 
 
-def process_image(path):
+def process_image(path, ignore_small_images=True):
     """
     处理图片并返回处理完成的数据
     :param path: string, 图片路径
+    :param ignore_small_images: bool, 是否忽略尺寸过小的图片
     :return: <class 'numpy.nparray'>
     """
     try:
         image = Image.open(path)
         # 忽略小图片
-        width, height = image.size
-        if width < 64 or height < 64:
-            return None
+        if ignore_small_images:
+            width, height = image.size
+            if width < IMAGE_MIN_WIDTH or height < IMAGE_MIN_HEIGHT:
+                return None
     except Exception as e:
         print("处理图片报错：", path, repr(e))
         return None
     try:
-        inputs = processor(images=image, return_tensors="pt", padding=True).to(torch.device(DEVICE))
+        inputs = processor(images=image, return_tensors="pt", padding=True)['pixel_values'].to(torch.device(DEVICE))
     except Exception as e:
         print("处理图片报错：", path, repr(e))
         return None
-    feature = model.get_image_features(**inputs).cpu().detach().numpy()
+    feature = model.get_image_features(inputs).detach().cpu().numpy()
     return feature
 
 
@@ -111,8 +114,8 @@ def process_video(path):
             if not ret:
                 return
             if current_frame % (FRAME_INTERVAL * frame_rate) == 0:
-                inputs = processor(images=frame, return_tensors="pt", padding=True).to(torch.device(DEVICE))
-                feature = model.get_image_features(**inputs).cpu().detach().numpy()
+                inputs = processor(images=frame, return_tensors="pt", padding=True)['pixel_values'].to(torch.device(DEVICE))
+                feature = model.get_image_features(inputs).detach().cpu().numpy()
                 if feature is None:
                     print("feature is None")
                     continue
@@ -125,14 +128,18 @@ def process_video(path):
 
 def process_text(input_text):
     """
-    预处理文字列表
+    预处理文字
     :param input_text: string
     :return: <class 'numpy.nparray'>
     """
     if not input_text:
         return None
-    text = text_tokenizer(input_text, return_tensors='pt', padding=True)['input_ids']
-    text_features = text_encoder(text).logits.cpu().detach().numpy()
+    if LANGUAGE == "Chinese":
+        text = text_tokenizer(input_text, return_tensors='pt', padding=True)['input_ids'].to(torch.device(DEVICE_TEXT))
+        text_features = text_encoder(text).logits.detach().cpu().numpy()
+    else:
+        text = processor(text=input_text, return_tensors="pt", padding=True)['input_ids'].to(torch.device(DEVICE))
+        text_features = model.get_text_features(text).detach().cpu().numpy()
     return text_features
 
 
