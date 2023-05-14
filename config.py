@@ -14,9 +14,14 @@ IMAGE_MIN_WIDTH = 64  # 图片最小宽度，低于此宽度则不进行计算
 IMAGE_MIN_HEIGHT = 64  # 图片最小高度，低于此宽度则不进行计算
 
 # *****模型配置*****
+# 目前支持中文或英文搜索，只能二选一。英文搜索速度会更快。中文搜索需要额外下载模型，而且搜索英文或NSFW内容的效果不好。
+# 更换模型需要删库重新扫描，否则搜索会报错。数据库名字为assets.db。切换语言或设备不需要删库，重启程序即可。
+# TEXT_MODEL_NAME 仅在中文搜索时需要，模型需要和 MODEL_NAME 配套。
+# 显存小于4G使用： "openai/clip-vit-base-patch32" 和 "IDEA-CCNL/Taiyi-CLIP-Roberta-102M-Chinese"
+# 显存大于等于4G使用："openai/clip-vit-large-patch14" 和 "IDEA-CCNL/Taiyi-CLIP-Roberta-large-326M-Chinese"
 LANGUAGE = "Chinese"  # 模型搜索时用的语言，可选：Chinese/English
-MODEL_NAME = "openai/clip-vit-base-patch32"  # 显存大于等于4G可用 openai/clip-vit-large-patch14 注意更换模型后需要删库重扫，否则搜索出错
-TEXT_MODEL_NAME = "IDEA-CCNL/Taiyi-CLIP-Roberta-102M-Chinese"  # 显存大于等于4G可用 IDEA-CCNL/Taiyi-CLIP-Roberta-large-326M-Chinese 注意这两个模型是配套使用的，如果不需要英文
+MODEL_NAME = "openai/clip-vit-base-patch32"  # CLIP模型
+TEXT_MODEL_NAME = "IDEA-CCNL/Taiyi-CLIP-Roberta-102M-Chinese"  # 中文模型，需要和CLIP模型配套使用，如果LANGUAGE为English则忽略此项
 DEVICE = "cpu"  # 推理设备，cpu/cuda/mps，建议先跑benchmark.py看看cpu还是显卡速度更快，因为数据搬运也需要时间
 DEVICE_TEXT = "cpu"  # text_encoder使用的设备，如果使用英文模型，则忽略该项设置。英文模型的图像和文字处理都用DEVICE。
 
