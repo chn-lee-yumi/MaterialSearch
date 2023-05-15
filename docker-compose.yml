@@ -1,0 +1,21 @@
+version: "3"
+
+services:
+  MaterialSearch:
+    # image: registry.cn-hongkong.aliyuncs.com/chn-lee-yumi/materialsearch:latest # 通过 GitHub Action 构建
+    image: registry.cn-guangzhou.aliyuncs.com/chn-lee-yumi/materialsearch:latest # 通过阿里云容器镜像服务构建
+    restart: always # 容器重启规则设为always
+    ports:
+      - "8080:8085" # 映射容器的 8085 端口到宿主的 8080 端口
+    volumes:
+      - /srv/MaterialSearch/config.py:/materialsearch/config.py # 挂载宿主/srv/MaterialSearch/config.py到容器的/materialsearch/config.py
+      - /srv/MaterialSearch/db:/materialsearch/instance/ # 挂载宿主/srv/MaterialSearch/db到容器的/materialsearch/instance/
+      - /home:/data/ # 挂载宿主/home到容器的/data
+    # 如果使用GPU，就取消注释下面的内容
+    #deploy:
+    #  resources:
+    #    reservations:
+    #      devices:
+    #        - driver: nvidia
+    #          count: all
+    #          capabilities: [ gpu ]

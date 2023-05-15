@@ -4,4 +4,4 @@ Flask-SQLAlchemy>=3.0.2
 torch>=1.13.1
 Pillow>=8.1.0
 transformers>=4.28.1
-opencv-python>=4.5.5.64
+opencv-python-headless>=4.5.5.64

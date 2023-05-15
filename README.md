@@ -14,12 +14,30 @@
 
 ## 使用说明
 
+### 通过源码部署
+
 注意，首次运行会自动下载模型。下载速度可能比较慢，请耐心等待。如果网络不好，模型可能会下载失败，这个时候重新执行程序即可。
 
 1. 首次使用前需要安装依赖：`pip install -r requirements.txt`，Windows系统可以双击`install.bat`。如果你用Windows且打算使用GPU加速，请根据[官方文档](https://pytorch.org/get-started/locally/)手动安装torch。`install.bat`只会安装仅支持CPU的torch。
 2. 如果你打算使用GPU加速，则执行基准测试判断是CPU快还是GPU快：`python benchmark.py`，Windows系统可以双击`benchmark.bat`。GPU不一定比CPU快，在我的Mac上CPU更快。
 3. 如果不是CPU最快，则修改`config.py`中的`DEVICE`和`DEVICE_TEXT`，改为对应设备，如`DEVICE = "cuda"`。
 4. 启动程序：`python main.py`，Windows系统可以双击`run.bat`。
+
+### 通过Docker部署
+
+目前只有一个docker镜像，打包了默认模型（`openai/clip-vit-base-patch32`和`IDEA-CCNL/Taiyi-CLIP-Roberta-102M-Chinese`）并且支持GPU。
+
+启动镜像前，你需要准备：
+
+1. 数据库的保存路径
+2. 你的扫描路径以及打算挂载到容器内的哪个路径
+3. 根据你的路径信息，准备一个`config.py`
+4. 根据你的路径信息，修改`docker-compose.yml`里面的`volume`路径
+5. 如果打算使用GPU，则需要取消注释`docker-compose.yml`里面的对应部分
+
+具体请参考`docker-compose.yml`，已经写了详细注释。
+
+最后执行`docker-compose up -d`启动容器即可。
 
 ## 配置说明
 
