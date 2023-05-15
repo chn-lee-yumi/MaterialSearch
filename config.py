@@ -1,7 +1,8 @@
 # *****扫描配置*****
 AUTO_SCAN = False  # 是否在启动时进行一次扫描
 ASSETS_PATH = (
-    r"/",
+    r"/home",
+    # r"D:/照片",  # Windows系统用这种写法
 )  # 素材所在的目录，绝对路径
 SKIP_PATH = (
     r'/tmp'
@@ -10,8 +11,8 @@ IMAGE_EXTENSIONS = (".jpg", ".jpeg", ".png", ".gif")  # 支持的图片拓展名
 VIDEO_EXTENSIONS = (".mp4", ".flv", ".mov", ".mkv")  # 支持的视频拓展名
 IGNORE_STRINGS = ("thumb", "avatar", "thumb", "icon", "cache")  # 如果路径或文件名包含这些字符串，就跳过（先把字符串转小写再对比）
 FRAME_INTERVAL = 2  # 视频每隔多少秒取一帧，视频展示的时候，间隔小于等于2倍FRAME_INTERVAL的算为同一个素材，同时开始时间和结束时间各延长0.5个FRAME_INTERVAL
-IMAGE_MIN_WIDTH = 64  # 图片最小宽度，低于此宽度则不进行计算
-IMAGE_MIN_HEIGHT = 64  # 图片最小高度，低于此宽度则不进行计算
+IMAGE_MIN_WIDTH = 64  # 图片最小宽度，小于此宽度则忽略。不需要可以改成0。
+IMAGE_MIN_HEIGHT = 64  # 图片最小高度，小于此高度则忽略。不需要可以改成0。
 
 # *****模型配置*****
 # 目前支持中文或英文搜索，只能二选一。英文搜索速度会更快。中文搜索需要额外下载模型，而且搜索英文或NSFW内容的效果不好。
