@@ -4,7 +4,7 @@ import os
 import pickle
 import threading
 import time
-import urllib
+import urllib.parse
 from datetime import datetime
 
 import numpy as np
@@ -258,7 +258,8 @@ def search_video(positive_prompt="", negative_prompt="", img_path="",
                 else:
                     end_time = frames[index_pair[1]].frame_time
                 scores_list.append(
-                    {"url": "api/get_video/%s" % urllib.parse.quote(base64.b64encode(path.encode())) + "#t=%.1f,%.1f" % (start_time, end_time),
+                    {"url": "api/get_video/%s" % urllib.parse.quote(base64.b64encode(path.encode()), safe='') + "#t=%.1f,%.1f" % (
+                        start_time, end_time),
                      "path": path, "score": score, "start_time": start_time, "end_time": end_time})
     print("查询使用时间：%.2f" % (time.time() - t0))
     sorted_list = sorted(scores_list, key=lambda x: x["score"], reverse=True)
@@ -428,8 +429,9 @@ def api_get_video(video_path):
     """
     通过video_path获取文件
     """
-    print(urllib.parse.unquote(base64.b64decode(video_path).decode()))
-    return send_file(urllib.parse.unquote(base64.b64decode(video_path).decode()))
+    path = base64.b64decode(urllib.parse.unquote(video_path)).decode()
+    print(path)
+    return send_file(path)
 
 
 @app.route('/api/upload', methods=['POST'])
