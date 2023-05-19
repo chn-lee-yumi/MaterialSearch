@@ -23,9 +23,11 @@
 3. 如果不是CPU最快，则修改`config.py`中的`DEVICE`和`DEVICE_TEXT`，改为对应设备，如`DEVICE = "cuda"`。
 4. 启动程序：`python main.py`，Windows系统可以双击`run.bat`。
 
+如遇到`requirements.txt`版本依赖问题（比如某个库版本过新会导致运行报错），请提issue反馈，我会添加版本范围限制。
+
 ### 通过Docker部署
 
-目前只有一个docker镜像，打包了默认模型（`openai/clip-vit-base-patch32`和`IDEA-CCNL/Taiyi-CLIP-Roberta-102M-Chinese`）并且支持GPU。
+目前只有一个Docker镜像，支持`amd64`和`arm64`，打包了默认模型（`openai/clip-vit-base-patch32`和`IDEA-CCNL/Taiyi-CLIP-Roberta-102M-Chinese`）并且支持GPU（仅`amd64`架构的镜像支持）。 如有更多需求欢迎提issue。
 
 启动镜像前，你需要准备：
 
