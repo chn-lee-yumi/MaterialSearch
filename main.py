@@ -170,6 +170,7 @@ def scan():
             db.session.commit()
             assets.remove(asset)
     scanning_files = 0
+    scanned_files = 0
     os.remove("assets.pickle")
     print("扫描完成，用时%d秒" % int(time.time() - start_time))
     clean_cache()  # 清空搜索缓存
