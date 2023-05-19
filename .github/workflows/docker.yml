@@ -1,0 +1,53 @@
+name: Docker Image CI
+
+on:
+  push:
+    branches: [ "main" ]
+
+jobs:
+
+  build:
+    runs-on: ubuntu-latest
+    steps:
+
+    - name: Checkout
+      uses: actions/checkout@v3
+    
+    - name: Set up QEMU
+      uses: docker/setup-qemu-action@v3
+      
+    # https://dev.to/cloudx/multi-arch-docker-images-the-easy-way-with-github-actions-4k54
+    - name: Set up Docker Buildx
+      id: buildx
+      uses: docker/setup-buildx-action@v4
+    
+    - name: Docker meta
+      id: meta
+      uses: docker/metadata-action@v4
+      with:
+        # list of Docker images to use as base name for tags
+        images: |
+          registry.cn-hongkong.aliyuncs.com/chn-lee-yumi/materialsearch
+        # Docker tags based on the following events/attributes
+        tags: |
+          type=raw,value=latest
+          
+    - name: Login to Aliyun
+      #if: github.event_name != 'pull_request'
+      uses: docker/login-action@v2
+      with:
+        registry: registry.cn-hongkong.aliyuncs.com
+        username: ${{ secrets.DOCKER_USERNAME }}
+        password: ${{ secrets.DOCKER_PASSWORD }}
+      
+    - name: Build and push
+      uses: docker/build-push-action@v4
+      with:
+        context: .
+        platforms: linux/amd64,linux/arm64
+        push: ${{ github.event_name != 'pull_request' }}
+        tags: ${{ steps.meta.outputs.tags }}
+        labels: ${{ steps.meta.outputs.labels }}
+
+    #- name: enable debug interface
+    #  uses: chn-lee-yumi/debugger-action@master
