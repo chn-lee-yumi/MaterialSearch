@@ -258,7 +258,7 @@ def search_video(positive_prompt="", negative_prompt="", img_path="",
                 else:
                     end_time = frames[index_pair[1]].frame_time
                 scores_list.append(
-                    {"url": "api/get_video/%s" % base64.urlsafe_b64encode(path.encode()) + "#t=%.1f,%.1f" % (
+                    {"url": "api/get_video/%s" % base64.urlsafe_b64encode(path.encode()).decode() + "#t=%.1f,%.1f" % (
                         start_time, end_time),
                      "path": path, "score": score, "start_time": start_time, "end_time": end_time})
     print("查询使用时间：%.2f" % (time.time() - t0))
