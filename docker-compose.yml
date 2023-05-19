@@ -2,8 +2,8 @@ version: "3"
 
 services:
   MaterialSearch:
-    # image: registry.cn-hongkong.aliyuncs.com/chn-lee-yumi/materialsearch:latest # 通过 GitHub Action 构建
-    image: registry.cn-guangzhou.aliyuncs.com/chn-lee-yumi/materialsearch:latest # 通过阿里云容器镜像服务构建
+    # image: registry.cn-hongkong.aliyuncs.com/chn-lee-yumi/materialsearch:latest # 通过 GitHub Action 构建，支持amd64和arm64
+    image: registry.cn-guangzhou.aliyuncs.com/chn-lee-yumi/materialsearch:latest # 通过阿里云容器镜像服务构建，仅支持amd64，如果你需要运行在arm64主机上，请使用上面的镜像
     restart: always # 容器重启规则设为always
     ports:
       - "8080:8085" # 映射容器的 8085 端口到宿主的 8080 端口
