@@ -41,6 +41,8 @@
 
 最后执行`docker-compose up -d`启动容器即可。
 
+注意：不推荐对容器设置内存限制，否则可能会出现奇怪的问题。比如[这个issue](https://github.com/chn-lee-yumi/MaterialSearch/issues/6)。
+
 ## 配置说明
 
 所有配置都在`config.py`文件中，里面已经写了详细的注释。
