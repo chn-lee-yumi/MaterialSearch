@@ -437,6 +437,10 @@ def api_get_video(video_path):
     """
     path = base64.urlsafe_b64decode(video_path).decode()
     logger.debug(path)
+    with app.app_context():
+        video = db.session.query(Video).filter_by(path=path).first()
+        if not video:  # 如果路径不在数据库中，则返回404，防止任意文件读取攻击
+            abort(404)
     return send_file(path)
 
 
