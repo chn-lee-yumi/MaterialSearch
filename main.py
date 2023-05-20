@@ -13,6 +13,8 @@ from config import *
 from database import db, Image, Video, Cache
 from process_assets import scan_dir, process_image, process_video, process_text, match_text_and_image, match_batch
 
+UPLOAD_TMP_FILE = "upload.tmp"
+
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///assets.db'
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = True
@@ -344,15 +346,15 @@ def api_match():
         _hash = get_string_hash(
             "以文搜图%d,%d\npositive: %r\nnegative: %r" % (positive_threshold, negative_threshold, data['positive'], data['negative']))
     elif search_type == 1:  # 以图搜图
-        _hash = get_string_hash("以图搜图%d,%s" % (image_threshold, get_file_hash("upload.tmp")))
+        _hash = get_string_hash("以图搜图%d,%s" % (image_threshold, get_file_hash(UPLOAD_TMP_FILE)))
     elif search_type == 2:  # 以文搜视频
         _hash = get_string_hash(
             "以文搜视频%d,%d\npositive: %r\nnegative: %r" % (positive_threshold, negative_threshold, data['positive'], data['negative']))
     elif search_type == 3:  # 以图搜视频
-        _hash = get_string_hash("以图搜视频%d,%s" % (image_threshold, get_file_hash("upload.tmp")))
+        _hash = get_string_hash("以图搜视频%d,%s" % (image_threshold, get_file_hash(UPLOAD_TMP_FILE)))
     elif search_type == 4:  # 图文比对
         _hash1 = get_string_hash("text: %r" % data['text'])
-        _hash2 = get_file_hash("upload.tmp")
+        _hash2 = get_file_hash(UPLOAD_TMP_FILE)
         _hash = get_string_hash("图文比对\nhash1: %r\nhash2: %r" % (_hash1, _hash2))
     else:
         print("search_type不正确：", search_type)
@@ -384,14 +386,14 @@ def api_match():
         sorted_list = search_image(positive_prompt=data['positive'], negative_prompt=data['negative'],
                                    positive_threshold=positive_threshold, negative_threshold=positive_threshold)[:MAX_RESULT_NUM]
     elif search_type == 1:
-        sorted_list = search_image(img_path="upload.tmp", image_threshold=image_threshold)[:MAX_RESULT_NUM]
+        sorted_list = search_image(img_path=UPLOAD_TMP_FILE, image_threshold=image_threshold)[:MAX_RESULT_NUM]
     elif search_type == 2:
         sorted_list = search_video(positive_prompt=data['positive'], negative_prompt=data['negative'],
                                    positive_threshold=positive_threshold, negative_threshold=positive_threshold)[:MAX_RESULT_NUM]
     elif search_type == 3:
-        sorted_list = search_video(img_path="upload.tmp", image_threshold=image_threshold)[:MAX_RESULT_NUM]
+        sorted_list = search_video(img_path=UPLOAD_TMP_FILE, image_threshold=image_threshold)[:MAX_RESULT_NUM]
     elif search_type == 4:
-        return jsonify({"score": "%.2f" % (match_text_and_image(process_text(data['text']), process_image("upload.tmp")) * 100)})
+        return jsonify({"score": "%.2f" % (match_text_and_image(process_text(data['text']), process_image(UPLOAD_TMP_FILE)) * 100)})
     # 写入缓存
     if ENABLE_CACHE:
         with app.app_context():
@@ -438,7 +440,7 @@ def api_get_video(video_path):
 def api_upload():
     print(request.files)
     f = request.files['file']
-    f.save("upload.tmp")
+    f.save(UPLOAD_TMP_FILE)
     return 'file uploaded successfully'
 
 
