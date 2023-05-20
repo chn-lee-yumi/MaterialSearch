@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <title>本地素材搜索器</title>
-    <!--<link rel="stylesheet" href="https://cdnjs.loli.net/ajax/libs/element-ui/2.11.1/theme-chalk/index.css">-->
+    <!--<link rel="stylesheet" href="https://cdnjs.loli.net/ajax/libs/element-ui/2.15.3/theme-chalk/index.css">-->
     <link rel="stylesheet" href="static/index.css">
 </head>
 <body>
@@ -133,7 +133,7 @@
         <el-col :span="8" v-for="file in files">
             <el-card style="margin-top: 5px;">
                 <el-image v-if="form.search_type === 0 || form.search_type === 1" style="width: 100%; height: 240px;" fit="contain" :src="file.url"
-                          :preview-src-list="[file.url]"></el-image>
+                          :preview-src-list="image_url_list"></el-image>
                 <video v-if="form.search_type === 2 || form.search_type === 3" style="width: 100%; height: 240px;" :src="file.url" controls></video>
                 <div>
                     <el-tooltip content="素材的匹配概率和得分" placement="bottom">
@@ -156,7 +156,7 @@
 
 <!--<script src="https://cdnjs.loli.net/ajax/libs/vue/2.6.10/vue.min.js"></script>-->
 <!--<script src="https://cdn.jsdelivr.net/npm/clipboard@2.0.6/dist/clipboard.min.js"></script>-->
-<!--<script src="https://cdnjs.loli.net/ajax/libs/element-ui/2.11.1/index.js"></script>-->
+<!--<script src="https://cdnjs.loli.net/ajax/libs/element-ui/2.15.3/index.js"></script>-->
 <!--<script src="https://cdnjs.loli.net/ajax/libs/axios/0.19.0-beta.1/axios.min.js"></script>-->
 <script src="static/vue.min.js"></script><!-- import Vue before Element -->
 <script src="static/clipboard.min.js"></script>
@@ -200,6 +200,7 @@ new Vue({
 			image_threshold: 85,
 		},
 		files: [],
+		image_url_list: [],
 		timer: null,
 	},
 	mounted: function() {
@@ -262,6 +263,10 @@ new Vue({
                 that.loading = false;
                 if (search_type === 0 || search_type === 1) {
                     that.files = response["data"];
+                    that.image_url_list=[];
+                    that.files.forEach(function(element) {
+                        that.image_url_list.push(element.url);
+                    });
                     that.$message.info("共搜索出来" + that.files.length + "张图片");
                     return;
                 }
