@@ -1,4 +1,5 @@
 # 预处理图片和视频，建立索引，加快搜索速度
+import logging
 import os
 
 import cv2
@@ -9,13 +10,16 @@ from transformers import CLIPProcessor, CLIPModel, BertTokenizer, BertForSequenc
 
 from config import *
 
-print("Loading model...")
+logging.basicConfig(level=LOG_LEVEL, format='%(asctime)s %(name)s %(levelname)s %(message)s')
+logger = logging.getLogger(__name__)
+
+logger.info("Loading model...")
 model = CLIPModel.from_pretrained(MODEL_NAME).to(torch.device(DEVICE))
 processor = CLIPProcessor.from_pretrained(MODEL_NAME)
 if LANGUAGE == "Chinese":
     text_tokenizer = BertTokenizer.from_pretrained(TEXT_MODEL_NAME)
     text_encoder = BertForSequenceClassification.from_pretrained(TEXT_MODEL_NAME).eval().to(torch.device(DEVICE_TEXT))
-print("Model loaded.")
+logger.info("Model loaded.")
 
 
 def contain_strings(text, sub_set):
@@ -54,7 +58,7 @@ def scan_dir(paths, skip_paths, extensions):
     for path in paths:
         for dir_path, dir_names, filenames in os.walk(path):
             if dir_path.startswith(skip_paths) or contain_strings(dir_path.lower(), IGNORE_STRINGS):
-                # print("跳过目录/缩略图：", dir_path)
+                logger.debug(f"跳过目录/缩略图：{dir_path}")
                 continue
             for filename in filenames:
                 if contain_strings(filename.lower(), IGNORE_STRINGS):
@@ -83,12 +87,12 @@ def process_image(path, ignore_small_images=True):
             if width < IMAGE_MIN_WIDTH or height < IMAGE_MIN_HEIGHT:
                 return None
     except Exception as e:
-        print("处理图片报错：", path, repr(e))
+        logger.warning(f"处理图片报错：{path} {repr(e)}")
         return None
     try:
         inputs = processor(images=image, return_tensors="pt", padding=True)['pixel_values'].to(torch.device(DEVICE))
     except Exception as e:
-        print("处理图片报错：", path, repr(e))
+        logger.warning(f"处理图片报错：{path} {repr(e)}")
         return None
     feature = model.get_image_features(inputs).detach().cpu().numpy()
     return feature
@@ -101,12 +105,12 @@ def process_video(path):
     :param path: string, 视频路径
     :return: [int, <class 'numpy.nparray'>]
     """
-    print("处理视频中：", path)
+    logger.info(f"处理视频中：{path}")
     try:
         video = cv2.VideoCapture(path)
         frame_rate = round(video.get(cv2.CAP_PROP_FPS))
         total_frames = video.get(cv2.CAP_PROP_FRAME_COUNT)
-        print("fps:", frame_rate, "total:", total_frames)
+        logger.debug(f"fps: {frame_rate} total: {total_frames}")
         current_frame = 0
         while True:
             print("\r进度：%d/%d  " % (current_frame, total_frames), end='')
@@ -117,12 +121,12 @@ def process_video(path):
                 inputs = processor(images=frame, return_tensors="pt", padding=True)['pixel_values'].to(torch.device(DEVICE))
                 feature = model.get_image_features(inputs).detach().cpu().numpy()
                 if feature is None:
-                    print("feature is None")
+                    logger.warning("feature is None")
                     continue
                 yield current_frame / frame_rate, feature
             current_frame += 1
     except Exception as e:
-        print("处理视频出错：", repr(e))
+        logger.warning(f"处理视频出错：{path} {repr(e)}")
         return
 
 

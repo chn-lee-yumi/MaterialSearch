@@ -1,5 +1,6 @@
 import base64
 import hashlib
+import logging
 import os
 import pickle
 import threading
@@ -14,6 +15,9 @@ from database import db, Image, Video, Cache
 from process_assets import scan_dir, process_image, process_video, process_text, match_text_and_image, match_batch
 
 UPLOAD_TMP_FILE = "upload.tmp"
+
+logging.basicConfig(level=LOG_LEVEL, format='%(asctime)s %(name)s %(levelname)s %(message)s')
+logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///assets.db'
@@ -69,7 +73,7 @@ def get_file_hash(path):
                     break
                 _hash.update(data)
     except Exception as e:
-        print("计算hash出错：", repr(e))
+        logger.error(f"计算hash出错：{path} {repr(e)}")
         return None
     return _hash.hexdigest()
 
@@ -92,11 +96,11 @@ def softmax(scores):
 
 def scan():
     global is_scanning, total_images, total_video_frames, scanning_files, scanned_files, scan_start_time, is_continue_scan
-    print("开始扫描")
+    logger.info("开始扫描")
     scan_start_time = time.time()
     start_time = time.time()
     if os.path.isfile("assets.pickle"):
-        print("读取上次的目录缓存")
+        logger.info("读取上次的目录缓存")
         is_continue_scan = True
         with open("assets.pickle", "rb") as f:
             assets = pickle.load(f)
@@ -113,12 +117,12 @@ def scan():
         # 删除不存在的文件记录
         for file in db.session.query(Image):
             if not is_continue_scan and (file.path not in assets or file.path.startswith(SKIP_PATH)):
-                print("文件已删除：", file.path)
+                logger.info(f"文件已删除：{file.path}")
                 db.session.delete(file)
         for path in db.session.query(Video.path).distinct():
             path = path[0]
             if not is_continue_scan and (path not in assets or path.startswith(SKIP_PATH)):
-                print("文件已删除：", path)
+                logger.info(f"文件已删除：{path}")
                 db.session.query(Video).filter_by(path=path).delete()
         db.session.commit()
         # 扫描文件
@@ -135,7 +139,7 @@ def scan():
                 db_record = db.session.query(Image).filter_by(path=asset).first()
                 modify_time = datetime.fromtimestamp(os.path.getmtime(asset))
                 if db_record and db_record.modify_time == modify_time:
-                    # print("文件无变更，跳过：", asset)
+                    logger.debug(f"文件无变更，跳过：{asset}")
                     assets.remove(asset)
                     continue
                 features = process_image(asset)
@@ -145,26 +149,26 @@ def scan():
                 # 写入数据库
                 features = pickle.dumps(features)
                 if db_record:
-                    print("文件有更新：", asset)
+                    logger.info(f"文件有更新：{asset}")
                     db_record.modify_time = modify_time
                     db_record.features = features
                 else:
-                    print("新增文件：", asset)
+                    logger.info(f"新增文件：{asset}")
                     db.session.add(Image(path=asset, modify_time=modify_time, features=features))
                     total_images = db.session.query(Image).count()  # 获取文件总数
             else:  # 视频
                 db_record = db.session.query(Video).filter_by(path=asset).first()
                 modify_time = datetime.fromtimestamp(os.path.getmtime(asset))
                 if db_record and db_record.modify_time == modify_time:
-                    # print("文件无变更，跳过：", asset)
+                    logger.debug(f"文件无变更，跳过：{asset}")
                     assets.remove(asset)
                     continue
                 # 写入数据库
                 if db_record:
-                    print("文件有更新：", asset)
+                    logger.info(f"文件有更新：{asset}")
                     db.session.query(Video).filter_by(path=asset).delete()  # 视频文件直接删了重新写数据，而不是直接替换，因为视频长短可能有变化，不方便处理
                 else:
-                    print("新增文件：", asset)
+                    logger.info(f"新增文件：{asset}")
                 for frame_time, features in process_video(asset):
                     db.session.add(Video(path=asset, frame_time=frame_time, modify_time=modify_time, features=pickle.dumps(features)))
                     total_video_frames = db.session.query(Video).count()  # 获取文件总数
@@ -173,7 +177,7 @@ def scan():
     scanning_files = 0
     scanned_files = 0
     os.remove("assets.pickle")
-    print("扫描完成，用时%d秒" % int(time.time() - start_time))
+    logger.info("扫描完成，用时%d秒" % int(time.time() - start_time))
     clean_cache()  # 清空搜索缓存
     is_scanning = False
 
@@ -215,7 +219,7 @@ def search_image(positive_prompt="", negative_prompt="", img_path="",
             if not scores[i]:
                 continue
             scores_list.append({"url": "api/get_image/%d" % file_list[i].id, "path": file_list[i].path, "score": float(scores[i])})
-    print("查询使用时间：%.2f" % (time.time() - t0))
+    logger.info("查询使用时间：%.2f" % (time.time() - t0))
     sorted_list = sorted(scores_list, key=lambda x: x["score"], reverse=True)
     return sorted_list
 
@@ -263,7 +267,7 @@ def search_video(positive_prompt="", negative_prompt="", img_path="",
                     {"url": "api/get_video/%s" % base64.urlsafe_b64encode(path.encode()).decode() + "#t=%.1f,%.1f" % (
                         start_time, end_time),
                      "path": path, "score": score, "start_time": start_time, "end_time": end_time})
-    print("查询使用时间：%.2f" % (time.time() - t0))
+    logger.info("查询使用时间：%.2f" % (time.time() - t0))
     sorted_list = sorted(scores_list, key=lambda x: x["score"], reverse=True)
     return sorted_list
 
@@ -340,7 +344,7 @@ def api_match():
     positive_threshold = data['positive_threshold']
     negative_threshold = data['negative_threshold']
     image_threshold = data['image_threshold']
-    print(data)
+    logger.debug(data)
     # 计算hash
     if search_type == 0:  # 以文搜图
         _hash = get_string_hash(
@@ -357,7 +361,7 @@ def api_match():
         _hash2 = get_file_hash(UPLOAD_TMP_FILE)
         _hash = get_string_hash("图文比对\nhash1: %r\nhash2: %r" % (_hash1, _hash2))
     else:
-        print("search_type不正确：", search_type)
+        logger.warning(f"search_type不正确：{search_type}")
         abort(500)
     # 查找cache
     if ENABLE_CACHE:
@@ -366,7 +370,7 @@ def api_match():
                 sorted_list = db.session.query(Cache).filter_by(id=_hash).first()
                 if sorted_list:
                     sorted_list = pickle.loads(sorted_list.result)
-                    print("命中缓存：", _hash)
+                    logger.debug(f"命中缓存：{_hash}")
                     sorted_list = sorted_list[:top_n]
                     scores = [item["score"] for item in sorted_list]
                     softmax_scores = softmax(scores)
@@ -422,7 +426,7 @@ def api_get_image(image_id):
     """
     with app.app_context():
         file = db.session.query(Image).filter_by(id=image_id).first()
-        print(file.path)
+        logger.debug(file.path)
     return send_file(file.path)
 
 
@@ -432,13 +436,13 @@ def api_get_video(video_path):
     通过video_path获取文件
     """
     path = base64.urlsafe_b64decode(video_path).decode()
-    print(path)
+    logger.debug(path)
     return send_file(path)
 
 
 @app.route('/api/upload', methods=['POST'])
 def api_upload():
-    print(request.files)
+    logger.debug(request.files)
     f = request.files['file']
     f.save(UPLOAD_TMP_FILE)
     return 'file uploaded successfully'
