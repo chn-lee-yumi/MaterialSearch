@@ -65,9 +65,7 @@ def test_api_status():
 
 
 def test_api_upload():
-    files = [
-        ('files[]', ('test.png', open(upload_file, 'rb'), 'image/png')),
-    ]
+    files = {'file': ('test.png', open(upload_file, 'rb'), 'image/png')}
     response = requests.post('http://127.0.0.1:8085/api/upload', files=files)
     assert response.status_code == 200
     hash_origin = get_file_hash(upload_file)
