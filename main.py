@@ -1,5 +1,4 @@
 import base64
-import hashlib
 import logging
 import os
 import pickle
@@ -7,14 +6,12 @@ import threading
 import time
 from datetime import datetime
 
-import numpy as np
 from flask import Flask, jsonify, request, send_file, abort
 
 from config import *
 from database import db, Image, Video, Cache
 from process_assets import scan_dir, process_image, process_video, process_text, match_text_and_image, match_batch
-
-UPLOAD_TMP_FILE = "upload.tmp"
+from utils import get_file_hash, get_string_hash, softmax
 
 logging.basicConfig(level=LOG_LEVEL, format='%(asctime)s %(name)s %(levelname)s %(message)s')
 logger = logging.getLogger(__name__)
@@ -56,42 +53,6 @@ def clean_cache():
     with app.app_context():
         db.session.query(Cache).delete()
         db.session.commit()
-
-
-def get_file_hash(path):
-    """
-    计算文件hash
-    :param path: 文件路径
-    :return: 十六进制字符串
-    """
-    _hash = hashlib.sha1()
-    try:
-        with open(path, "rb") as f:
-            while True:
-                data = f.read(1048576)
-                if not data:
-                    break
-                _hash.update(data)
-    except Exception as e:
-        logger.error(f"计算hash出错：{path} {repr(e)}")
-        return None
-    return _hash.hexdigest()
-
-
-def get_string_hash(string):
-    """
-    计算字符串hash
-    :param string: 字符串
-    :return: 十六进制字符串
-    """
-    _hash = hashlib.sha1()
-    _hash.update(string.encode("utf8"))
-    return _hash.hexdigest()
-
-
-def softmax(scores):
-    exp_scores = np.exp(scores)
-    return exp_scores / np.sum(exp_scores)
 
 
 def scan():
@@ -336,7 +297,7 @@ def api_clean_cache():
 def api_match():
     """
     匹配文字对应的素材
-    curl -X POST -H "Content-Type: application/json" -d '{"text":"red","top_n":10}' http://localhost:8085/api/match
+    curl -X POST -H "Content-Type: application/json" -d '{"positive": "openai","negative": "","top_n": "6","search_type": 0,"positive_threshold": 10,"negative_threshold": 10,"image_threshold": 85}' http://localhost:8085/api/match
     """
     data = request.get_json()
     top_n = int(data['top_n'])

@@ -36,3 +36,6 @@ IMAGE_THRESHOLD = 85  # 图片搜出来的素材，高于这个分数才展示�
 
 # *****日志配置*****
 LOG_LEVEL = "INFO"  # 日志等级：NOTSET/DEBUG/INFO/WARNING/ERROR/CRITICAL
+
+# *****其它配置*****
+UPLOAD_TMP_FILE = "upload.tmp"  # 上传图片的保存路径
