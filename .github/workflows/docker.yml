@@ -5,9 +5,12 @@ on:
     branches: [ "main" ]
 
 jobs:
+  integration-test:
+    uses: .github/workflows/integration-test.yml@main
 
   build:
     runs-on: ubuntu-latest
+    needs: [integration-test]
     steps:
 
     - name: Checkout

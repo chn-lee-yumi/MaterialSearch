@@ -1,0 +1,26 @@
+name: Integration Test
+
+on:
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+
+  build:
+    runs-on: ubuntu-latest
+    steps:
+
+    - name: Checkout
+      uses: actions/checkout@v3
+
+    - name: Install requirements
+      run: pip install -r requirements.txt && pip install pytest
+
+    - name: Run main.py
+      run: nohup python main.py &
+
+    - name: Test API
+      run: pytest
+
+    #- name: enable debug interface
+    #  uses: chn-lee-yumi/debugger-action@master
