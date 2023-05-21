@@ -18,10 +18,14 @@ def wait_server_ready():
     for i in range(100):
         try:
             requests.get('http://127.0.0.1:8085/', timeout=1)
-        except (requests.exceptions.ConnectionError, requests.exceptions.ConnectTimeout):
-            time.sleep(3)
+        except:
+            time.sleep(5)
             continue
         break
+
+
+def setup_function():
+    wait_server_ready()
 
 
 def test_index():
@@ -118,5 +122,4 @@ def test_api_match():
 
 # 运行测试
 if __name__ == '__main__':
-    wait_server_ready()
     pytest.main()

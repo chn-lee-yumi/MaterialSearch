@@ -2,7 +2,10 @@ name: Integration Test
 
 on:
   pull_request:
-    branches: [ "main" ]
+    branches: [ "main" , "dev" ]
+  push:
+    branches: [ "testing" ]
+  workflow_call:
 
 jobs:
 
