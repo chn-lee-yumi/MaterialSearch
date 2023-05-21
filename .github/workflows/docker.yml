@@ -6,7 +6,7 @@ on:
 
 jobs:
   integration-test:
-    uses: ./.github/workflows/integration-test.yml@main
+    uses: ./.github/workflows/integration-test.yml
 
   build:
     runs-on: ubuntu-latest
