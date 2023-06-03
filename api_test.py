@@ -75,9 +75,9 @@ def test_api_upload():
 
 def test_api_clean_cache():
     response = requests.get('http://127.0.0.1:8085/api/clean_cache')
-    assert response.status_code == 200
+    assert response.status_code == 204
     response = requests.post('http://127.0.0.1:8085/api/clean_cache')
-    assert response.status_code == 200
+    assert response.status_code == 204
 
 
 def test_api_match():
