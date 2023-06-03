@@ -159,7 +159,6 @@ def match_text_and_image(text_feature, image_feature):
     # new_image_feature = image_feature / np.linalg.norm(image_feature)
     # new_text_feature = text_feature / np.linalg.norm(text_feature)
     # score = (new_image_feature @ new_text_feature.T)
-    print(score.shape)
     return score
 
 
@@ -173,29 +172,16 @@ def match_batch(positive_feature, negative_feature, image_features, positive_thr
     :param negative_threshold: int/float, 反向提示分数阈值，低于此分数才显示
     :return: [<class 'numpy.nparray'>], 提示词和每个图片余弦相似度列表，里面每个元素的shape=(1, 1)，如果小于正向提示分数阈值或大于反向提示分数阈值则会置0
     """
-    scores = []
     image_features = np.vstack(image_features)
     # 计算余弦相似度
-    if image_features.shape[0] == 1:
-        new_features = image_features / np.linalg.norm(image_features)
-    else:
-        new_features = image_features / np.linalg.norm(image_features, axis=1, keepdims=True)
+    new_features = image_features / np.linalg.norm(image_features, axis=1, keepdims=True)
     new_text_positive_feature = positive_feature / np.linalg.norm(positive_feature)
     positive_scores = (new_features @ new_text_positive_feature.T)
     if negative_feature is not None:
         new_text_negative_feature = negative_feature / np.linalg.norm(negative_feature)
         negative_scores = (new_features @ new_text_negative_feature.T)
-    # 上面的计算等价于：
-    # positive_scores = np.dot(positive_feature, image_features.T) / (np.linalg.norm(positive_feature) * np.linalg.norm(image_features, axis=1))
-    # positive_scores = positive_scores.squeeze(0)
     # 根据阈值进行过滤
-    for i in range(len(positive_scores)):
-        if positive_scores[i] < positive_threshold / 100:
-            scores.append(0)
-            continue
-        if negative_feature is not None:
-            if negative_scores[i] > negative_threshold / 100:
-                scores.append(0)
-                continue
-        scores.append(positive_scores[i])
+    scores = np.where(positive_scores < positive_threshold / 100, 0, positive_scores)
+    if negative_feature is not None:
+        scores = np.where(negative_scores > negative_threshold / 100, 0, scores)
     return scores
