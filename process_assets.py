@@ -1,6 +1,7 @@
 # 预处理图片和视频，建立索引，加快搜索速度
 import logging
 import os
+import time
 
 import cv2
 import numpy as np
@@ -172,7 +173,7 @@ def match_batch(positive_feature, negative_feature, image_features, positive_thr
     :param negative_threshold: int/float, 反向提示分数阈值，低于此分数才显示
     :return: [<class 'numpy.nparray'>], 提示词和每个图片余弦相似度列表，里面每个元素的shape=(1, 1)，如果小于正向提示分数阈值或大于反向提示分数阈值则会置0
     """
-    image_features = np.vstack(image_features)
+    image_features = np.concatenate(image_features, axis=0)
     # 计算余弦相似度
     new_features = image_features / np.linalg.norm(image_features, axis=1, keepdims=True)
     new_text_positive_feature = positive_feature / np.linalg.norm(positive_feature)
