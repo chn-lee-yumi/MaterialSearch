@@ -436,4 +436,4 @@ def api_upload():
 
 if __name__ == '__main__':
     init()
-    app.run(port=8085, host="0.0.0.0")
+    app.run(port=PORT, host=HOST)
