@@ -3,7 +3,6 @@ HOST = "0.0.0.0"  # 监听IP，如果只想本地访问，把这个改成127.0.0
 PORT = 8085  # 监听端口
 
 # *****扫描配置*****
-AUTO_SCAN = False  # 是否在启动时进行一次扫描
 ASSETS_PATH = (
     r"/home",
     # r"D:/照片",  # Windows系统用这种写法
@@ -13,10 +12,13 @@ SKIP_PATH = (
 )  # 跳过扫描的目录，绝对路径
 IMAGE_EXTENSIONS = (".jpg", ".jpeg", ".png", ".gif")  # 支持的图片拓展名
 VIDEO_EXTENSIONS = (".mp4", ".flv", ".mov", ".mkv")  # 支持的视频拓展名
-IGNORE_STRINGS = ("thumb", "avatar", "__MACOSX", "icon", "cache")  # 如果路径或文件名包含这些字符串，就跳过（不区分大小写）
+IGNORE_STRINGS = ("thumb", "avatar", "__MACOSX", "icons", "cache")  # 如果路径或文件名包含这些字符串，就跳过（不区分大小写）
 FRAME_INTERVAL = 2  # 视频每隔多少秒取一帧，视频展示的时候，间隔小于等于2倍FRAME_INTERVAL的算为同一个素材，同时开始时间和结束时间各延长0.5个FRAME_INTERVAL
 IMAGE_MIN_WIDTH = 64  # 图片最小宽度，小于此宽度则忽略。不需要可以改成0。
 IMAGE_MIN_HEIGHT = 64  # 图片最小高度，小于此高度则忽略。不需要可以改成0。
+AUTO_SCAN = False  # 是否自动扫描，如果开启，则会在指定时间内进行扫描
+AUTO_SCAN_START_TIME = (22, 30)  # 自动扫描开始时间(时, 分)
+AUTO_SCAN_END_TIME = (8, 0)  # 自动扫描结束时间(时, 分)
 
 # *****模型配置*****
 # 目前支持中文或英文搜索，只能二选一。英文搜索速度会更快。中文搜索需要额外下载模型，而且搜索英文或NSFW内容的效果不好。
