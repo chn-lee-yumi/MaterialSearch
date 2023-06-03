@@ -74,10 +74,10 @@ def scan_dir(paths, skip_paths, extensions):
 
 def process_image(path, ignore_small_images=True):
     """
-    处理图片并返回处理完成的数据
+    处理图片，返回图片特征
     :param path: string, 图片路径
     :param ignore_small_images: bool, 是否忽略尺寸过小的图片
-    :return: <class 'numpy.nparray'>
+    :return: <class 'numpy.nparray'>, 图片特征
     """
     try:
         image = Image.open(path)
@@ -103,7 +103,7 @@ def process_video(path):
     处理视频并返回处理完成的数据
     返回一个生成器，每调用一次则返回视频下一个帧的数据
     :param path: string, 视频路径
-    :return: [int, <class 'numpy.nparray'>]
+    :return: [int, <class 'numpy.nparray'>], [当前是第几帧（被采集的才算），图片特征]
     """
     logger.info(f"处理视频中：{path}")
     try:
@@ -132,9 +132,9 @@ def process_video(path):
 
 def process_text(input_text):
     """
-    预处理文字
-    :param input_text: string
-    :return: <class 'numpy.nparray'>
+    预处理文字，返回文字特征
+    :param input_text: string, 被处理的字符串
+    :return: <class 'numpy.nparray'>,  文字特征
     """
     if not input_text:
         return None
@@ -149,40 +149,45 @@ def process_text(input_text):
 
 def match_text_and_image(text_feature, image_feature):
     """
-    匹配文字和图片
-    :param text_feature: <class 'numpy.nparray'>
-    :param image_feature: <class 'numpy.nparray'>
-    :return: <class 'numpy.nparray'>
+    匹配文字和图片，返回余弦相似度
+    :param text_feature: <class 'numpy.nparray'>, 文字特征
+    :param image_feature: <class 'numpy.nparray'>, 图片特征
+    :return: <class 'numpy.nparray'>, 文字和图片的余弦相似度，shape=(1, 1)
     """
-    new_image_feature = image_feature / np.linalg.norm(image_feature)
-    new_text_feature = text_feature / np.linalg.norm(text_feature)
-    score = (new_image_feature @ new_text_feature.T)
+    score = (image_feature @ text_feature.T) / (np.linalg.norm(image_feature) * np.linalg.norm(text_feature))
+    # 上面的计算等价于下面三步：
+    # new_image_feature = image_feature / np.linalg.norm(image_feature)
+    # new_text_feature = text_feature / np.linalg.norm(text_feature)
+    # score = (new_image_feature @ new_text_feature.T)
+    print(score.shape)
     return score
 
 
 def match_batch(positive_feature, negative_feature, image_features, positive_threshold, negative_threshold):
     """
-    匹配image_feature列表并返回分数
-    :param positive_feature: <class 'numpy.ndarray'>
-    :param negative_feature: <class 'numpy.ndarray'>
-    :param image_features: [<class 'numpy.ndarray'>]
-    :param positive_threshold: 正向提示分数阈值，高于此分数才显示
-    :param negative_threshold: 反向提示分数阈值，低于此分数才显示
-    :return: [float]
+    匹配image_feature列表并返回余弦相似度
+    :param positive_feature: <class 'numpy.ndarray'>, 正向提示词特征
+    :param negative_feature: <class 'numpy.ndarray'>, 反向提示词特征
+    :param image_features: [<class 'numpy.ndarray'>], 图片特征列表
+    :param positive_threshold: int/float, 正向提示分数阈值，高于此分数才显示
+    :param negative_threshold: int/float, 反向提示分数阈值，低于此分数才显示
+    :return: [<class 'numpy.nparray'>], 提示词和每个图片余弦相似度列表，里面每个元素的shape=(1, 1)，如果小于正向提示分数阈值或大于反向提示分数阈值则会置0
     """
     scores = []
     image_features = np.vstack(image_features)
-    # 归一化
+    # 计算余弦相似度
     if image_features.shape[0] == 1:
         new_features = image_features / np.linalg.norm(image_features)
     else:
         new_features = image_features / np.linalg.norm(image_features, axis=1, keepdims=True)
-    # 计算匹配度
     new_text_positive_feature = positive_feature / np.linalg.norm(positive_feature)
     positive_scores = (new_features @ new_text_positive_feature.T)
     if negative_feature is not None:
         new_text_negative_feature = negative_feature / np.linalg.norm(negative_feature)
         negative_scores = (new_features @ new_text_negative_feature.T)
+    # 上面的计算等价于：
+    # positive_scores = np.dot(positive_feature, image_features.T) / (np.linalg.norm(positive_feature) * np.linalg.norm(image_features, axis=1))
+    # positive_scores = positive_scores.squeeze(0)
     # 根据阈值进行过滤
     for i in range(len(positive_scores)):
         if positive_scores[i] < positive_threshold / 100:

@@ -32,7 +32,10 @@ is_continue_scan = False
 
 
 def init():
-    """初始化"""
+    """
+    初始化数据库，清缓存，根据AUTO_SCAN决定是否开始扫描
+    :return: None
+    """
     global total_images, total_video_frames, is_scanning, scan_thread
     with app.app_context():
         db.create_all()  # 初始化数据库
@@ -48,7 +51,7 @@ def init():
 def clean_cache():
     """
     清空搜索缓存
-    :return:
+    :return: None
     """
     with app.app_context():
         db.session.query(Cache).delete()
@@ -56,6 +59,11 @@ def clean_cache():
 
 
 def scan():
+    """
+    扫描资源。如果存在assets.pickle，则直接读取并开始扫描。如果不存在，则先读取所有文件路径，并写入assets.pickle，然后开始扫描。
+    每100个文件重新保存一次assets.pickle，如果程序被中断，下次可以从断点处继续扫描。扫描完成后删除assets.pickle并清缓存。
+    :return: None
+    """
     global is_scanning, total_images, total_video_frames, scanning_files, scanned_files, scan_start_time, is_continue_scan
     logger.info("开始扫描")
     scan_start_time = time.time()
@@ -147,12 +155,12 @@ def search_image(positive_prompt="", negative_prompt="", img_path="",
                  positive_threshold=POSITIVE_THRESHOLD, negative_threshold=NEGATIVE_THRESHOLD, image_threshold=IMAGE_THRESHOLD):
     """
     搜图
-    :param positive_prompt: 正向提示词
-    :param negative_prompt: 反向提示词
-    :param img_path: 图片路径，如果存在，说明是用图搜索，此时忽略提示词
-    :param positive_threshold: 文字搜索阈值，高于此分数才显示
-    :param negative_threshold: 文字过滤阈值，低于此分数才显示
-    :param image_threshold: 以图搜素材匹配阈值，高于这个分数才展示
+    :param positive_prompt: string, 正向提示词
+    :param negative_prompt: string, 反向提示词
+    :param img_path: string, 图片路径，如果存在，说明是用图搜索，此时忽略提示词
+    :param positive_threshold: int/float, 文字搜索阈值，高于此分数才显示
+    :param negative_threshold: int/float, 文字过滤阈值，低于此分数才显示
+    :param image_threshold: int/float, 以图搜素材匹配阈值，高于这个分数才展示
     :return:
     """
     if img_path:
@@ -189,12 +197,12 @@ def search_video(positive_prompt="", negative_prompt="", img_path="",
                  positive_threshold=POSITIVE_THRESHOLD, negative_threshold=NEGATIVE_THRESHOLD, image_threshold=IMAGE_THRESHOLD):
     """
     搜视频
-    :param positive_prompt: 正向提示词
-    :param negative_prompt: 反向提示词
-    :param img_path: 图片路径，如果存在，说明是用图搜索，此时忽略提示词
-    :param positive_threshold: 文字搜索阈值，高于此分数才显示
-    :param negative_threshold: 文字过滤阈值，低于此分数才显示
-    :param image_threshold: 以图搜素材匹配阈值，高于这个分数才展示
+    :param positive_prompt: string, 正向提示词
+    :param negative_prompt: string, 反向提示词
+    :param img_path: string, 图片路径，如果存在，说明是用图搜索，此时忽略提示词
+    :param positive_threshold: int/float, 文字搜索阈值，高于此分数才显示
+    :param negative_threshold: int/float, 文字过滤阈值，低于此分数才显示
+    :param image_threshold: int/float, 以图搜素材匹配阈值，高于这个分数才展示
     :return:
     """
     if img_path:
@@ -234,7 +242,11 @@ def search_video(positive_prompt="", negative_prompt="", img_path="",
 
 
 def get_index_pairs(scores):
-    """返回连续的帧序号，如第2-5帧、第11-13帧都符合搜索内容，则返回[(2,5),(11,13)]"""
+    """
+    根据每一帧的余弦相似度计算素材片段
+    :param scores: [<class 'numpy.nparray'>], 余弦相似度列表，里面每个元素的shape=(1, 1)
+    :return: 返回连续的帧序号列表，如第2-5帧、第11-13帧都符合搜索内容，则返回[(2,5),(11,13)]
+    """
     indexes = []
     for i in range(len(scores)):
         if scores[i]:
@@ -289,15 +301,19 @@ def api_status():
 
 @app.route("/api/clean_cache", methods=["GET", "POST"])
 def api_clean_cache():
+    """
+    清缓存
+    :return: 204 No Content
+    """
     clean_cache()
-    return "OK"
+    return "", 204
 
 
 @app.route("/api/match", methods=["POST"])
 def api_match():
     """
     匹配文字对应的素材
-    curl -X POST -H "Content-Type: application/json" -d '{"positive": "openai","negative": "","top_n": "6","search_type": 0,"positive_threshold": 10,"negative_threshold": 10,"image_threshold": 85}' http://localhost:8085/api/match
+    :return:
     """
     data = request.get_json()
     top_n = int(data['top_n'])
@@ -383,7 +399,9 @@ def api_match():
 @app.route('/api/get_image/<int:image_id>', methods=['GET'])
 def api_get_image(image_id):
     """
-    通过image_id获取文件
+    读取图片
+    :param image_id: int, 图片在数据库中的id
+    :return: 图片文件
     """
     with app.app_context():
         file = db.session.query(Image).filter_by(id=image_id).first()
@@ -394,7 +412,9 @@ def api_get_image(image_id):
 @app.route('/api/get_video/<video_path>', methods=['GET'])
 def api_get_video(video_path):
     """
-    通过video_path获取文件
+    读取视频
+    :param video_path: string, 经过base64.urlsafe_b64encode的字符串，解码后可以得到视频在服务器上的绝对路径
+    :return: 视频文件
     """
     path = base64.urlsafe_b64decode(video_path).decode()
     logger.debug(path)
@@ -407,6 +427,7 @@ def api_get_video(video_path):
 
 @app.route('/api/upload', methods=['POST'])
 def api_upload():
+    """上传文件，保存到UPLOAD_TMP_FILE"""
     logger.debug(request.files)
     f = request.files['file']
     f.save(UPLOAD_TMP_FILE)

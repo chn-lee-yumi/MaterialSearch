@@ -136,7 +136,7 @@
                           :preview-src-list="image_url_list"></el-image>
                 <video v-if="form.search_type === 2 || form.search_type === 3" style="width: 100%; height: 240px;" :src="file.url" controls></video>
                 <div>
-                    <el-tooltip content="素材的匹配概率和得分" placement="bottom">
+                    <el-tooltip content="素材的匹配概率和相似度" placement="bottom">
                         <el-tag size="mini" effect="dark">{{file.softmax_score}} | {{file.score}}</el-tag>
                     </el-tooltip>
                     <el-tooltip :content="file.path" placement="bottom">
