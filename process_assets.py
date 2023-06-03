@@ -1,4 +1,5 @@
 # 预处理图片和视频，建立索引，加快搜索速度
+import concurrent.futures
 import logging
 import os
 import time
@@ -163,6 +164,32 @@ def match_text_and_image(text_feature, image_feature):
     return score
 
 
+def normalize_features(features):
+    """
+    归一化
+    :param features: [<class 'numpy.nparray'>], 特征
+    :return: <class 'numpy.nparray'>, 归一化后的特征
+    """
+    return features / np.linalg.norm(features, axis=1, keepdims=True)
+
+
+def multithread_normalize(features):
+    """
+    多线程执行归一化，只有对大矩阵效果才好
+    :param features:  [<class 'numpy.nparray'>], 特征
+    :return: <class 'numpy.nparray'>, 归一化后的特征
+    """
+    num_threads = os.cpu_count()
+    with concurrent.futures.ThreadPoolExecutor(max_workers=num_threads) as executor:
+        # 将图像特征分成等分，每个线程处理一部分
+        chunk_size = len(features) // num_threads
+        chunks = [features[i:i + chunk_size] for i in range(0, len(features), chunk_size)]
+        # 并发执行特征归一化
+        normalized_chunks = executor.map(normalize_features, chunks)
+    # 将处理后的特征重新合并
+    return np.concatenate(list(normalized_chunks))
+
+
 def match_batch(positive_feature, negative_feature, image_features, positive_threshold, negative_threshold):
     """
     匹配image_feature列表并返回余弦相似度
@@ -175,7 +202,7 @@ def match_batch(positive_feature, negative_feature, image_features, positive_thr
     """
     image_features = np.concatenate(image_features, axis=0)
     # 计算余弦相似度
-    new_features = image_features / np.linalg.norm(image_features, axis=1, keepdims=True)
+    new_features = multithread_normalize(image_features)
     new_text_positive_feature = positive_feature / np.linalg.norm(positive_feature)
     positive_scores = (new_features @ new_text_positive_feature.T)
     if negative_feature is not None:
