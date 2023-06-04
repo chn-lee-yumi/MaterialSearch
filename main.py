@@ -6,6 +6,7 @@ import pickle
 import threading
 import time
 
+import numpy as np
 from flask import Flask, jsonify, request, send_file, abort
 
 from config import *
@@ -30,6 +31,54 @@ scanned_files = 0
 is_continue_scan = False
 
 
+def optimize_db():
+    """
+    更新数据库的feature列，从pickle保存改成numpy保存
+    本功能为临时功能，几个月后会移除（默认大家后面都已经全部迁移好了）
+    :return: None
+    """
+    with app.app_context():
+        total_images = db.session.query(Image).count()
+        total_videos = db.session.query(Video.path).distinct().count()
+        image = db.session.query(Image).first()
+        try:
+            pickle.loads(image.features)
+        except Exception as e:
+            logger.debug(f"optimize_db pickle.loads: {repr(e)}")
+            logger.info("数据库已经优化过")
+            return
+        else:
+            logger.info("开始优化数据库，切勿中断，否则要删库重扫！如果你文件数量多，可能比较久。")
+            logger.info("参考速度：5万图片+200个视频（100万视频帧），在J3455上大约需要15分钟。")
+            i = 0
+            for file in db.session.query(Image):
+                features = pickle.loads(file.features)
+                if features is None:
+                    db.session.delete(file)
+                else:
+                    file.features = features.tobytes()
+                i += 1
+                print(f"\rprocessing images: {i}/{total_images}", end='')
+                if i % 1000 == 0:
+                    db.session.commit()
+            db.session.commit()
+            print()
+            i = 0
+            for path in db.session.query(Video.path).distinct():
+                path = path[0]
+                for file in db.session.query(Video).filter_by(path=path):
+                    features = pickle.loads(file.features)
+                    if features is None:
+                        db.session.delete(file)
+                    else:
+                        file.features = features.tobytes()
+                i += 1
+                print(f"\rprocessing videos: {i}/{total_videos}", end='')
+                db.session.commit()
+            db.session.commit()
+            logger.info(f"数据库优化完成")
+
+
 def init():
     """
     初始化数据库，清缓存，根据AUTO_SCAN决定是否开启自动扫描线程
@@ -38,9 +87,10 @@ def init():
     global total_images, total_video_frames, is_scanning
     with app.app_context():
         db.create_all()  # 初始化数据库
-        total_images = db.session.query(Image).count()  # 获取文件总数
-        total_video_frames = db.session.query(Video).count()  # 获取文件总数
+        total_images = db.session.query(Image).count()  # 获取图片总数
+        total_video_frames = db.session.query(Video).count()  # 获取视频帧总数
     clean_cache()  # 清空搜索缓存
+    optimize_db()  # 数据库优化（临时功能）
     if AUTO_SCAN:
         auto_scan_thread = threading.Thread(target=auto_scan, args=())
         auto_scan_thread.start()
@@ -146,7 +196,7 @@ def scan(auto=False):
                     assets.remove(asset)
                     continue
                 # 写入数据库
-                features = pickle.dumps(features)
+                features = features.tobytes()
                 if db_record:
                     logger.info(f"文件有更新：{asset}")
                     db_record.modify_time = modify_time
@@ -169,7 +219,7 @@ def scan(auto=False):
                 else:
                     logger.info(f"新增文件：{asset}")
                 for frame_time, features in process_video(asset):
-                    db.session.add(Video(path=asset, frame_time=frame_time, modify_time=modify_time, features=pickle.dumps(features)))
+                    db.session.add(Video(path=asset, frame_time=frame_time, modify_time=modify_time, features=features.tobytes()))
                     total_video_frames = db.session.query(Video).count()  # 获取视频帧总数
             db.session.commit()
             assets.remove(asset)
@@ -206,7 +256,7 @@ def search_image(positive_prompt="", negative_prompt="", img_path="",
         image_features = []
         file_list = []
         for file in db.session.query(Image):
-            features = pickle.loads(file.features)
+            features = np.frombuffer(file.features, dtype=np.float32).reshape(1, -1)
             if features is None:  # 内容损坏，删除该条记录
                 db.session.delete(file)
                 db.session.commit()
@@ -248,7 +298,7 @@ def search_video(positive_prompt="", negative_prompt="", img_path="",
         for path in db.session.query(Video.path).distinct():  # 逐个视频比对
             path = path[0]
             frames = db.session.query(Video).filter_by(path=path).order_by(Video.frame_time).all()
-            image_features = list(map(lambda x: pickle.loads(x.features), frames))
+            image_features = list(map(lambda x: np.frombuffer(x.features, dtype=np.float32).reshape(1, -1), frames))
             scores = match_batch(positive_feature, negative_feature, image_features, positive_threshold, negative_threshold)
             index_pairs = get_index_pairs(scores)
             for index_pair in index_pairs:
@@ -410,7 +460,6 @@ def api_match():
         with app.app_context():
             db.session.add(Cache(id=_hash, result=pickle.dumps(sorted_list)))
             db.session.commit()
-
     sorted_list = sorted_list[:top_n]
     scores = [item["score"] for item in sorted_list]
     softmax_scores = softmax(scores)
