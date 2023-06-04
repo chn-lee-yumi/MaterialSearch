@@ -2,7 +2,6 @@
 import concurrent.futures
 import logging
 import os
-import time
 
 import cv2
 import numpy as np
@@ -202,7 +201,10 @@ def match_batch(positive_feature, negative_feature, image_features, positive_thr
     """
     image_features = np.concatenate(image_features, axis=0)
     # 计算余弦相似度
-    new_features = multithread_normalize(image_features)
+    if len(image_features) > 1024:  # 多线程只对大矩阵效果好，1024是随便写的
+        new_features = multithread_normalize(image_features)
+    else:
+        new_features = normalize_features(image_features)
     new_text_positive_feature = positive_feature / np.linalg.norm(positive_feature)
     positive_scores = (new_features @ new_text_positive_feature.T)
     if negative_feature is not None:
