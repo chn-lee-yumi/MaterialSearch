@@ -457,9 +457,12 @@ def api_match():
         return jsonify({"score": "%.2f" % (match_text_and_image(process_text(data['text']), process_image(UPLOAD_TMP_FILE)) * 100)})
     # 写入缓存
     if ENABLE_CACHE:
-        with app.app_context():
-            db.session.add(Cache(id=_hash, result=pickle.dumps(sorted_list)))
-            db.session.commit()
+        try:
+            with app.app_context():
+                db.session.add(Cache(id=_hash, result=pickle.dumps(sorted_list)))
+                db.session.commit()
+        except Exception as e:
+            logger.warning(f"写入缓存失败：{repr(e)}")
     sorted_list = sorted_list[:top_n]
     scores = [item["score"] for item in sorted_list]
     softmax_scores = softmax(scores)
