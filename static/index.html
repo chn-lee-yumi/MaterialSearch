@@ -61,7 +61,7 @@
                     <i class="el-icon-upload"></i>
                     <div class="el-upload__text">将文件拖到此处，或<em>点击上传</em></div>
                 </el-upload>
-                <el-form ref="form" :model="form" :inline="true" style="margin-top:10px;">
+                <el-form ref="form" :model="form" :inline="true" style="margin-top:5px;">
                     <el-form-item label="匹配阈值（高于该分数才显示）" style="margin-bottom: 0px;">
                         <el-slider style="width:200px" v-model="form.image_threshold"></el-slider>
                     </el-form-item>
@@ -129,12 +129,14 @@
         </el-tabs>
     </el-row>
 
-    <el-row :gutter="5" v-if="form.search_type === 0 || form.search_type === 1 || form.search_type === 2 || form.search_type === 3">
+    <el-row :gutter="5"
+            v-if="form.search_type === 0 || form.search_type === 1 || form.search_type === 2 || form.search_type === 3 || form.search_type === 5 || form.search_type === 6">
         <el-col :span="8" v-for="file in files">
             <el-card style="margin-top: 5px;">
-                <el-image v-if="form.search_type === 0 || form.search_type === 1" style="width: 100%; height: 240px;" fit="contain" :src="file.url"
-                          :preview-src-list="image_url_list"></el-image>
-                <video v-if="form.search_type === 2 || form.search_type === 3" style="width: 100%; height: 240px;" :src="file.url" controls></video>
+                <el-image v-if="form.search_type === 0 || form.search_type === 1 || form.search_type === 5" style="width: 100%; height: 240px;"
+                          fit="contain" :src="file.url" :preview-src-list="image_url_list"></el-image>
+                <video v-if="form.search_type === 2 || form.search_type === 3 || form.search_type === 6" style="width: 100%; height: 240px;"
+                       :src="file.url" controls></video>
                 <div>
                     <el-tooltip content="素材的匹配概率和相似度" placement="bottom">
                         <el-tag size="mini" effect="dark">{{file.softmax_score}} | {{file.score}}</el-tag>
@@ -146,6 +148,12 @@
                     <el-tooltip v-if="file.end_time" content="匹配的时间段范围" placement="bottom">
                         <el-tag size="mini" type="warning" effect="dark">{{file.start_time}} ~ {{file.end_time}} 秒</el-tag>
                     </el-tooltip>
+                    <el-button size="mini" round type="success" v-if="form.search_type === 0 || form.search_type === 1 || form.search_type === 5"
+                               @click="searchFromImage(5,file.url)">以图搜图
+                    </el-button>
+                    <el-button size="mini" round type="success" v-if="form.search_type === 0 || form.search_type === 1 || form.search_type === 5"
+                               @click="searchFromImage(6,file.url)">以图搜视频
+                    </el-button>
                 </div>
             </el-card>
         </el-col>
@@ -201,6 +209,7 @@ new Vue({
             positive_threshold: 10,
             negative_threshold: 10,
             image_threshold: 85,
+            img_id: -1,
         },
         files: [],
         image_url_list: [],
@@ -264,7 +273,7 @@ new Vue({
                 .then(function(response) {
                     console.log(response);
                     that.loading = false;
-                    if (search_type === 0 || search_type === 1) {
+                    if (search_type === 0 || search_type === 1 || search_type === 5) {
                         that.files = response["data"];
                         that.image_url_list = [];
                         that.files.forEach(function(element) {
@@ -273,7 +282,7 @@ new Vue({
                         that.$message.info("共搜索出来" + that.files.length + "张图片");
                         return;
                     }
-                    if (search_type === 2 || search_type === 3) {
+                    if (search_type === 2 || search_type === 3 || search_type === 6) {
                         that.files = response["data"];
                         that.$message.info("共搜索出来" + that.files.length + "条视频");
                         return;
@@ -288,6 +297,19 @@ new Vue({
                     that.loading = false;
                     that.$message.error(error.response.data);
                 })
+        },
+        searchFromImage: function(search_type, img_url) {
+            this.form.search_type = search_type;
+            this.form.positive = '';
+            this.form.negative = '';
+            var id_str = img_url.match(/(\d+)$/);
+            if (id_str) {
+                var id_num = parseInt(id_str[1], 10);
+                this.form.img_id = id_num;
+                this.search(search_type);
+            } else {
+                this.$message.error("无法从img_url取得图片id，这个情况不应该出现");
+            }
         },
         handleExceed(files, fileList) {
             // 覆盖上传，参考：https://blog.csdn.net/lcy460692978/article/details/103072246
@@ -314,6 +336,18 @@ new Vue({
 <style scoped>
 .el-upload, .el-upload-dragger{
     width: 100% !important;
+}
+.el-button--mini, .el-button--mini.is-round {
+    padding: 3px 6px;
+}
+.el-button+.el-button {
+    margin-left: 0px;
+}
+.el-upload-list__item:first-child {
+    margin-top: 0px;
+}
+.el-tabs--border-card>.el-tabs__content {
+    padding: 10px 15px;
 }
 </style>
 </html>

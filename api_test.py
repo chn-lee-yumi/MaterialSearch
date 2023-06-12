@@ -109,6 +109,7 @@ def test_api_match():
     hash_origin = get_file_hash(upload_file)
     hash_download = get_file_hash("test.tmp")
     assert hash_origin == hash_download
+    # TODO：以数据库的图搜图和视频
     # TODO：文字搜视频
     # TODO：以图搜视频
     # TODO：get_video

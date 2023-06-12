@@ -91,7 +91,7 @@ def init():
     with app.app_context():
         db.create_all()  # 初始化数据库
         total_images = db.session.query(Image).count()  # 获取图片总数
-        total_videos = db.session.query(Video.path).distinct().count()
+        total_videos = db.session.query(Video.path).distinct().count()  # 获取视频总数
         total_video_frames = db.session.query(Video).count()  # 获取视频帧总数
     if not os.path.exists(TEMP_PATH):  # 如果临时文件夹不存在，则创建
         os.mkdir(TEMP_PATH)
@@ -229,6 +229,10 @@ def scan(auto=False):
                 total_videos = db.session.query(Video.path).distinct().count()
             db.session.commit()  # 处理完一张图片或一个完整视频再commit，避免扫描视频到一半时程序中断，下次扫描会跳过这个视频的问题
             assets.remove(asset)
+        # 最后重新统计一下数量
+        total_images = db.session.query(Image).count()  # 获取图片总数
+        total_videos = db.session.query(Video.path).distinct().count()  # 获取视频总数
+        total_video_frames = db.session.query(Video).count()  # 获取视频帧总数
     scanning_files = 0
     scanned_files = 0
     os.remove(temp_file)
@@ -238,19 +242,29 @@ def scan(auto=False):
 
 
 @lru_cache(maxsize=CACHE_SIZE)
-def search_image(positive_prompt="", negative_prompt="", img_path="",
+def search_image(positive_prompt="", negative_prompt="", img_path="", img_id=-1,
                  positive_threshold=POSITIVE_THRESHOLD, negative_threshold=NEGATIVE_THRESHOLD, image_threshold=IMAGE_THRESHOLD):
     """
     搜图
     :param positive_prompt: string, 正向提示词
     :param negative_prompt: string, 反向提示词
     :param img_path: string, 图片路径，如果存在，说明是用图搜索，此时忽略提示词
+    :param img_id: int, 图片在数据库中的id，如果大于等于0，说明是用数据库的图来进行搜索，此时忽略提示词和img_path
     :param positive_threshold: int/float, 文字搜索阈值，高于此分数才显示
     :param negative_threshold: int/float, 文字过滤阈值，低于此分数才显示
     :param image_threshold: int/float, 以图搜素材匹配阈值，高于这个分数才展示
     :return:
     """
-    if img_path:
+    if img_id >= 0:
+        with app.app_context():
+            image = db.session.query(Image).filter_by(id=img_id).first()
+            if not image:
+                logger.warning("用数据库的图来进行搜索，但id在数据库中不存在")
+                return []
+            positive_feature = np.frombuffer(image.features, dtype=np.float32).reshape(1, -1)
+        positive_threshold = image_threshold
+        negative_feature = None
+    elif img_path:
         positive_feature = process_image(img_path)
         positive_threshold = image_threshold
         negative_feature = None
@@ -281,19 +295,29 @@ def search_image(positive_prompt="", negative_prompt="", img_path="",
 
 
 @lru_cache(maxsize=CACHE_SIZE)
-def search_video(positive_prompt="", negative_prompt="", img_path="",
+def search_video(positive_prompt="", negative_prompt="", img_path="", img_id=-1,
                  positive_threshold=POSITIVE_THRESHOLD, negative_threshold=NEGATIVE_THRESHOLD, image_threshold=IMAGE_THRESHOLD):
     """
     搜视频
     :param positive_prompt: string, 正向提示词
     :param negative_prompt: string, 反向提示词
     :param img_path: string, 图片路径，如果存在，说明是用图搜索，此时忽略提示词
+    :param img_id: int, 图片在数据库中的id，如果大于等于0，说明是用数据库的图来进行搜索，此时忽略提示词和img_path
     :param positive_threshold: int/float, 文字搜索阈值，高于此分数才显示
     :param negative_threshold: int/float, 文字过滤阈值，低于此分数才显示
     :param image_threshold: int/float, 以图搜素材匹配阈值，高于这个分数才展示
     :return:
     """
-    if img_path:
+    if img_id >= 0:
+        with app.app_context():
+            image = db.session.query(Image).filter_by(id=img_id).first()
+            if not image:
+                logger.warning("用数据库的图来进行搜索，但id在数据库中不存在")
+                return []
+            positive_feature = np.frombuffer(image.features, dtype=np.float32).reshape(1, -1)
+        positive_threshold = image_threshold
+        negative_feature = None
+    elif img_path:
         positive_feature = process_image(img_path)
         positive_threshold = image_threshold
         negative_feature = None
@@ -410,31 +434,36 @@ def api_match():
     positive_threshold = data['positive_threshold']
     negative_threshold = data['negative_threshold']
     image_threshold = data['image_threshold']
+    img_id = data['img_id']
     logger.debug(data)
-    if search_type not in [0, 1, 2, 3, 4]:
+    if search_type not in (0, 1, 2, 3, 4, 5, 6):
         logger.warning(f"search_type不正确：{search_type}")
         abort(500)
     # 进行匹配
-    if search_type == 4:
-        return jsonify({"score": "%.2f" % (match_text_and_image(process_text(data['text']), process_image(upload_file_path)) * 100)})
-    if search_type == 0:
+    if search_type == 0:  # 文字搜图
         sorted_list = search_image(positive_prompt=data['positive'], negative_prompt=data['negative'],
                                    positive_threshold=positive_threshold, negative_threshold=negative_threshold)[:MAX_RESULT_NUM]
-    elif search_type == 1:
+    elif search_type == 1:  # 以图搜图
         sorted_list = search_image(img_path=upload_file_path, image_threshold=image_threshold)[:MAX_RESULT_NUM]
-    elif search_type == 2:
+    elif search_type == 2:  # 文字搜视频
         sorted_list = search_video(positive_prompt=data['positive'], negative_prompt=data['negative'],
                                    positive_threshold=positive_threshold, negative_threshold=negative_threshold)[:MAX_RESULT_NUM]
-    else:  # search_type == 3
+    elif search_type == 3:  # 以图搜视频
         sorted_list = search_video(img_path=upload_file_path, image_threshold=image_threshold)[:MAX_RESULT_NUM]
+    elif search_type == 4:  # 图文相似度匹配
+        return jsonify({"score": "%.2f" % (match_text_and_image(process_text(data['text']), process_image(upload_file_path)) * 100)})
+    elif search_type == 5:  # 以图搜图(图片是数据库中的)
+        sorted_list = search_image(img_id=img_id, image_threshold=image_threshold)[:MAX_RESULT_NUM]
+    else:  # search_type == 6 以图搜视频(图片是数据库中的)
+        sorted_list = search_video(img_id=img_id, image_threshold=image_threshold)[:MAX_RESULT_NUM]
     sorted_list = sorted_list[:top_n]
     scores = [item["score"] for item in sorted_list]
     softmax_scores = softmax(scores)
-    if search_type == 0 or search_type == 1:
+    if search_type in (0, 1, 5):
         new_sorted_list = [{
             "url": item["url"], "path": item["path"], "score": "%.2f" % (item["score"] * 100), "softmax_score": "%.2f%%" % (score * 100)
         } for item, score in zip(sorted_list, softmax_scores)]
-    else:  # search_type == 2 or search_type == 3
+    else:  # search_type in (2, 3, 6)
         new_sorted_list = [{
             "url": item["url"], "path": item["path"], "score": "%.2f" % (item["score"] * 100), "softmax_score": "%.2f%%" % (score * 100),
             "start_time": item["start_time"], "end_time": item["end_time"]
