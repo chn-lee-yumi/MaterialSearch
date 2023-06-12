@@ -3,7 +3,6 @@ import time
 import pytest
 import requests
 
-from config import UPLOAD_TMP_FILE
 from utils import get_file_hash
 
 upload_file = 'test.png'
@@ -68,9 +67,6 @@ def test_api_upload():
     files = {'file': ('test.png', open(upload_file, 'rb'), 'image/png')}
     response = requests.post('http://127.0.0.1:8085/api/upload', files=files)
     assert response.status_code == 200
-    hash_origin = get_file_hash(upload_file)
-    hash_upload = get_file_hash(UPLOAD_TMP_FILE)
-    assert hash_origin == hash_upload
 
 
 def test_api_clean_cache():

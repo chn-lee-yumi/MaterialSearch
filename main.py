@@ -5,14 +5,15 @@ import os
 import pickle
 import threading
 import time
+from functools import lru_cache
 
 import numpy as np
 from flask import Flask, jsonify, request, send_file, abort
 
 from config import *
-from database import db, Image, Video, Cache
+from database import db, Image, Video
 from process_assets import scan_dir, process_image, process_video, process_text, match_text_and_image, match_batch
-from utils import get_file_hash, get_string_hash, softmax
+from utils import softmax, get_file_hash
 
 logging.basicConfig(level=LOG_LEVEL, format='%(asctime)s %(name)s %(levelname)s %(message)s')
 logger = logging.getLogger(__name__)
@@ -26,9 +27,11 @@ is_scanning = False
 scan_start_time = 0
 scanning_files = 0
 total_images = 0
+total_videos = 0
 total_video_frames = 0
 scanned_files = 0
 is_continue_scan = False
+upload_file_path = ""
 
 
 def optimize_db():
@@ -81,15 +84,17 @@ def optimize_db():
 
 def init():
     """
-    初始化数据库，清缓存，根据AUTO_SCAN决定是否开启自动扫描线程
+    初始化数据库，创建临时文件夹，根据AUTO_SCAN决定是否开启自动扫描线程
     :return: None
     """
-    global total_images, total_video_frames, is_scanning
+    global total_images, total_videos, total_video_frames, is_scanning
     with app.app_context():
         db.create_all()  # 初始化数据库
         total_images = db.session.query(Image).count()  # 获取图片总数
+        total_videos = db.session.query(Video.path).distinct().count()
         total_video_frames = db.session.query(Video).count()  # 获取视频帧总数
-    clean_cache()  # 清空搜索缓存
+    if not os.path.exists(TEMP_PATH):  # 如果临时文件夹不存在，则创建
+        os.mkdir(TEMP_PATH)
     optimize_db()  # 数据库优化（临时功能）
     if AUTO_SCAN:
         auto_scan_thread = threading.Thread(target=auto_scan, args=())
@@ -101,9 +106,8 @@ def clean_cache():
     清空搜索缓存
     :return: None
     """
-    with app.app_context():
-        db.session.query(Cache).delete()
-        db.session.commit()
+    search_image.cache_clear()
+    search_video.cache_clear()
 
 
 def auto_scan():
@@ -134,14 +138,15 @@ def scan(auto=False):
     :param auto: 是否由AUTO_SCAN触发的
     :return: None
     """
-    global is_scanning, total_images, total_video_frames, scanning_files, scanned_files, scan_start_time, is_continue_scan
+    global is_scanning, total_images, total_videos, total_video_frames, scanning_files, scanned_files, scan_start_time, is_continue_scan
     logger.info("开始扫描")
+    temp_file = f"{TEMP_PATH}/assets.pickle"
     scan_start_time = time.time()
     start_time = time.time()
-    if os.path.isfile("assets.pickle"):
+    if os.path.isfile(temp_file):
         logger.info("读取上次的目录缓存")
         is_continue_scan = True
-        with open("assets.pickle", "rb") as f:
+        with open(temp_file, "rb") as f:
             assets = pickle.load(f)
         for asset in assets.copy():
             if asset.startswith(SKIP_PATH):
@@ -149,7 +154,7 @@ def scan(auto=False):
     else:
         is_continue_scan = False
         assets = scan_dir(ASSETS_PATH, SKIP_PATH, IMAGE_EXTENSIONS + VIDEO_EXTENSIONS)
-        with open("assets.pickle", "wb") as f:
+        with open(f"{TEMP_PATH}/assets.pickle", "wb") as f:
             pickle.dump(assets, f)
     scanning_files = len(assets)
     with app.app_context():
@@ -221,16 +226,18 @@ def scan(auto=False):
                 for frame_time, features in process_video(asset):
                     db.session.add(Video(path=asset, frame_time=frame_time, modify_time=modify_time, features=features.tobytes()))
                     total_video_frames = db.session.query(Video).count()  # 获取视频帧总数
-            db.session.commit()
+                total_videos = db.session.query(Video.path).distinct().count()
+            db.session.commit()  # 处理完一张图片或一个完整视频再commit，避免扫描视频到一半时程序中断，下次扫描会跳过这个视频的问题
             assets.remove(asset)
     scanning_files = 0
     scanned_files = 0
-    os.remove("assets.pickle")
+    os.remove(temp_file)
     logger.info("扫描完成，用时%d秒" % int(time.time() - start_time))
     clean_cache()  # 清空搜索缓存
     is_scanning = False
 
 
+@lru_cache(maxsize=CACHE_SIZE)
 def search_image(positive_prompt="", negative_prompt="", img_path="",
                  positive_threshold=POSITIVE_THRESHOLD, negative_threshold=NEGATIVE_THRESHOLD, image_threshold=IMAGE_THRESHOLD):
     """
@@ -273,6 +280,7 @@ def search_image(positive_prompt="", negative_prompt="", img_path="",
     return sorted_list
 
 
+@lru_cache(maxsize=CACHE_SIZE)
 def search_video(positive_prompt="", negative_prompt="", img_path="",
                  positive_threshold=POSITIVE_THRESHOLD, negative_threshold=NEGATIVE_THRESHOLD, image_threshold=IMAGE_THRESHOLD):
     """
@@ -374,9 +382,9 @@ def api_status():
         progress = scanned_files / scanning_files
     else:
         progress = 0
-    return jsonify({"status": is_scanning, "total_images": total_images, "total_video_frames": total_video_frames, "scanning_files": scanning_files,
-                    "remain_files": scanning_files - scanned_files, "progress": progress, "remain_time": int(remain_time),
-                    "enable_cache": ENABLE_CACHE})
+    return jsonify({"status": is_scanning, "total_images": total_images, "total_videos": total_videos, "total_video_frames": total_video_frames,
+                    "scanning_files": scanning_files, "remain_files": scanning_files - scanned_files, "progress": progress,
+                    "remain_time": int(remain_time)})
 
 
 @app.route("/api/clean_cache", methods=["GET", "POST"])
@@ -393,8 +401,9 @@ def api_clean_cache():
 def api_match():
     """
     匹配文字对应的素材
-    :return:
+    :return: json格式的素材信息列表
     """
+    global upload_file_path
     data = request.get_json()
     top_n = int(data['top_n'])
     search_type = data['search_type']
@@ -402,67 +411,22 @@ def api_match():
     negative_threshold = data['negative_threshold']
     image_threshold = data['image_threshold']
     logger.debug(data)
-    # 计算hash
-    if search_type == 0:  # 以文搜图
-        _hash = get_string_hash(
-            "以文搜图%d,%d\npositive: %r\nnegative: %r" % (positive_threshold, negative_threshold, data['positive'], data['negative']))
-    elif search_type == 1:  # 以图搜图
-        _hash = get_string_hash("以图搜图%d,%s" % (image_threshold, get_file_hash(UPLOAD_TMP_FILE)))
-    elif search_type == 2:  # 以文搜视频
-        _hash = get_string_hash(
-            "以文搜视频%d,%d\npositive: %r\nnegative: %r" % (positive_threshold, negative_threshold, data['positive'], data['negative']))
-    elif search_type == 3:  # 以图搜视频
-        _hash = get_string_hash("以图搜视频%d,%s" % (image_threshold, get_file_hash(UPLOAD_TMP_FILE)))
-    elif search_type == 4:  # 图文比对
-        _hash1 = get_string_hash("text: %r" % data['text'])
-        _hash2 = get_file_hash(UPLOAD_TMP_FILE)
-        _hash = get_string_hash("图文比对\nhash1: %r\nhash2: %r" % (_hash1, _hash2))
-    else:
+    if search_type not in [0, 1, 2, 3, 4]:
         logger.warning(f"search_type不正确：{search_type}")
         abort(500)
-    # 查找cache
-    if ENABLE_CACHE:
-        if search_type == 0 or search_type == 1 or search_type == 2 or search_type == 3:
-            with app.app_context():
-                sorted_list = db.session.query(Cache).filter_by(id=_hash).first()
-                if sorted_list:
-                    sorted_list = pickle.loads(sorted_list.result)
-                    logger.debug(f"命中缓存：{_hash}")
-                    sorted_list = sorted_list[:top_n]
-                    scores = [item["score"] for item in sorted_list]
-                    softmax_scores = softmax(scores)
-                    if search_type == 0 or search_type == 1:
-                        new_sorted_list = [{
-                            "url": item["url"], "path": item["path"], "score": "%.2f" % (item["score"] * 100),
-                            "softmax_score": "%.2f%%" % (score * 100)
-                        } for item, score in zip(sorted_list, softmax_scores)]
-                    elif search_type == 2 or search_type == 3:
-                        new_sorted_list = [{
-                            "url": item["url"], "path": item["path"], "score": "%.2f" % (item["score"] * 100),
-                            "softmax_score": "%.2f%%" % (score * 100), "start_time": item["start_time"], "end_time": item["end_time"]
-                        } for item, score in zip(sorted_list, softmax_scores)]
-                    return jsonify(new_sorted_list)
-    # 如果没有cache，进行匹配并写入cache
+    # 进行匹配
+    if search_type == 4:
+        return jsonify({"score": "%.2f" % (match_text_and_image(process_text(data['text']), process_image(upload_file_path)) * 100)})
     if search_type == 0:
         sorted_list = search_image(positive_prompt=data['positive'], negative_prompt=data['negative'],
-                                   positive_threshold=positive_threshold, negative_threshold=positive_threshold)[:MAX_RESULT_NUM]
+                                   positive_threshold=positive_threshold, negative_threshold=negative_threshold)[:MAX_RESULT_NUM]
     elif search_type == 1:
-        sorted_list = search_image(img_path=UPLOAD_TMP_FILE, image_threshold=image_threshold)[:MAX_RESULT_NUM]
+        sorted_list = search_image(img_path=upload_file_path, image_threshold=image_threshold)[:MAX_RESULT_NUM]
     elif search_type == 2:
         sorted_list = search_video(positive_prompt=data['positive'], negative_prompt=data['negative'],
-                                   positive_threshold=positive_threshold, negative_threshold=positive_threshold)[:MAX_RESULT_NUM]
-    elif search_type == 3:
-        sorted_list = search_video(img_path=UPLOAD_TMP_FILE, image_threshold=image_threshold)[:MAX_RESULT_NUM]
-    elif search_type == 4:
-        return jsonify({"score": "%.2f" % (match_text_and_image(process_text(data['text']), process_image(UPLOAD_TMP_FILE)) * 100)})
-    # 写入缓存
-    if ENABLE_CACHE:
-        try:
-            with app.app_context():
-                db.session.add(Cache(id=_hash, result=pickle.dumps(sorted_list)))
-                db.session.commit()
-        except Exception as e:
-            logger.warning(f"写入缓存失败：{repr(e)}")
+                                   positive_threshold=positive_threshold, negative_threshold=negative_threshold)[:MAX_RESULT_NUM]
+    else:  # search_type == 3
+        sorted_list = search_video(img_path=upload_file_path, image_threshold=image_threshold)[:MAX_RESULT_NUM]
     sorted_list = sorted_list[:top_n]
     scores = [item["score"] for item in sorted_list]
     softmax_scores = softmax(scores)
@@ -470,7 +434,7 @@ def api_match():
         new_sorted_list = [{
             "url": item["url"], "path": item["path"], "score": "%.2f" % (item["score"] * 100), "softmax_score": "%.2f%%" % (score * 100)
         } for item, score in zip(sorted_list, softmax_scores)]
-    elif search_type == 2 or search_type == 3:
+    else:  # search_type == 2 or search_type == 3
         new_sorted_list = [{
             "url": item["url"], "path": item["path"], "score": "%.2f" % (item["score"] * 100), "softmax_score": "%.2f%%" % (score * 100),
             "start_time": item["start_time"], "end_time": item["end_time"]
@@ -509,10 +473,23 @@ def api_get_video(video_path):
 
 @app.route('/api/upload', methods=['POST'])
 def api_upload():
-    """上传文件，保存到UPLOAD_TMP_FILE"""
+    """
+    上传文件。首先删除旧的文件，保存新文件，计算hash，重命名文件。
+    :return: 200
+    """
+    global upload_file_path
     logger.debug(request.files)
+    # 删除旧文件
+    if os.path.exists(upload_file_path):
+        os.remove(upload_file_path)
+    # 保存文件
+    temp_path = f"{TEMP_PATH}/upload.tmp"
     f = request.files['file']
-    f.save(UPLOAD_TMP_FILE)
+    f.save(temp_path)
+    # 计算hash并重命名文件
+    new_filename = get_file_hash(temp_path)
+    upload_file_path = f"{TEMP_PATH}/{new_filename}"
+    os.rename(temp_path, upload_file_path)
     return 'file uploaded successfully'
 
 

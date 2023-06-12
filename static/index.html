@@ -15,6 +15,7 @@
     <el-row>
         <el-tag :key="isScanning" effect="dark">扫描状态：{{ isScanning ? "扫描中" : "扫描完成" }}</el-tag>
         <el-tag :key="status.file" type="success" effect="dark">图片总数：{{ status.total_images }}</el-tag>
+        <el-tag :key="status.file" type="success" effect="dark">视频总数：{{ status.total_videos }}</el-tag>
         <el-tag :key="status.file" type="success" effect="dark">视频帧总数：{{ status.total_video_frames }}</el-tag>
         <el-tag v-if="isScanning" :key="status.remain_files" type="info" effect="dark">本次扫描文件数：{{ status.scanning_files }}</el-tag>
         <el-tag v-if="isScanning" :key="status.remain_files" type="info" effect="dark">待扫描文件数：{{ status.remain_files }}</el-tag>
@@ -22,11 +23,10 @@
         <el-tag v-if="isScanning" :key="status.progress" type="danger" effect="dark">
             扫描进度：{{ Math.trunc(status.progress*100) }}% （扫描完成前请勿搜索）
         </el-tag>
-        <!--<el-tag v-if="status.enable_cache" effect="dark">已开启搜索缓存</el-tag>-->
         <el-button-group v-if="!isScanning">
             <el-button round :loading="isScanning" type="primary" size="medium" @click="scan">扫描</el-button>
         </el-button-group>
-        <!--<el-button-group v-if="status.enable_cache">-->
+        <!--<el-button-group>-->
         <!--    <el-button round type="warning" size="small" @click="cleanCache">清除缓存</el-button>-->
         <!--</el-button-group>-->
         <el-progress v-if="status.progress" :percentage="Math.trunc(status.progress*100)" :stroke-width="10"></el-progress>
