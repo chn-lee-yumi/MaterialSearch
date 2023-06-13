@@ -29,6 +29,11 @@
         <!--<el-button-group>-->
         <!--    <el-button round type="warning" size="small" @click="cleanCache">清除缓存</el-button>-->
         <!--</el-button-group>-->
+        <el-button-group v-if="enableLogin">
+            <a href="/logout">
+                <el-button round type="danger" size="medium">注销</el-button>
+            </a>
+        </el-button-group>
         <el-progress v-if="status.progress" :percentage="Math.trunc(status.progress*100)" :stroke-width="10"></el-progress>
     </el-row>
 
@@ -201,6 +206,7 @@ new Vue({
         loading: false,
         isScanning: false,
         status: null,
+        enableLogin: null,
         form: {
             positive: '',
             negative: '',
@@ -236,6 +242,7 @@ new Vue({
                     that.status = response["data"];
                     that.status.remain_time = formatTime(that.status.remain_time);
                     that.isScanning = response["data"]["status"];
+                    that.enableLogin = response["data"]["enable_login"];
                 })
                 .catch(function(error) {
                     console.log(error);

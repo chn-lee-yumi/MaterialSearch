@@ -45,3 +45,6 @@ LOG_LEVEL = "INFO"  # 日志等级：NOTSET/DEBUG/INFO/WARNING/ERROR/CRITICAL
 
 # *****其它配置*****
 TEMP_PATH = "./tmp"  # 临时目录路径
+ENABLE_LOGIN = False  # 是否启用登录
+USERNAME = "admin"  # 登录用户名
+PASSWORD = "MaterialSearch"  # 登录密码

@@ -5,10 +5,10 @@ import os
 import pickle
 import threading
 import time
-from functools import lru_cache
+from functools import lru_cache, wraps
 
 import numpy as np
-from flask import Flask, jsonify, request, send_file, abort
+from flask import Flask, jsonify, request, send_file, abort, session, redirect, url_for
 
 from config import *
 from database import db, Image, Video
@@ -21,6 +21,7 @@ logger = logging.getLogger(__name__)
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///assets.db'
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = True
+app.secret_key = 'https://github.com/chn-lee-yumi/MaterialSearch'
 db.init_app(app)
 
 is_scanning = False
@@ -376,13 +377,62 @@ def get_index_pairs(scores):
     return result
 
 
+def login_required(view_func):
+    """
+    装饰器函数，用于控制需要登录认证的视图
+    """
+
+    @wraps(view_func)
+    def wrapper(*args, **kwargs):
+        # 检查登录开关状态
+        if ENABLE_LOGIN:
+            # 如果开关已启用，则进行登录认证检查
+            if 'username' not in session:
+                # 如果用户未登录，则重定向到登录页面
+                return redirect(url_for('login'))
+        # 调用原始的视图函数
+        return view_func(*args, **kwargs)
+
+    return wrapper
+
+
 @app.route("/", methods=["GET"])
+@login_required
 def index_page():
     """主页"""
     return app.send_static_file("index.html")
 
 
+@app.route("/login", methods=["GET", "POST"])
+def login():
+    """简单的登录功能"""
+    if request.method == 'POST':
+        # 获取用户IP地址
+        ip_addr = request.environ.get('HTTP_X_FORWARDED_FOR', request.remote_addr)
+        # 获取表单数据
+        username = request.form['username']
+        password = request.form['password']
+        # 简单的验证逻辑
+        if username == USERNAME and password == PASSWORD:
+            # 登录成功，将用户名保存到会话中
+            logger.info(f"用户登录成功 {ip_addr}")
+            session['username'] = username
+            return redirect(url_for('index_page'))
+        # 登录失败，重定向到登录页面
+        logger.info(f"用户登录失败 {ip_addr}")
+        return redirect(url_for('login'))
+    return app.send_static_file("login.html")
+
+
+@app.route('/logout', methods=["GET", "POST"])
+def logout():
+    # 清除会话数据
+    session.clear()
+    return redirect(url_for('index_page'))
+
+
 @app.route("/api/scan", methods=["GET"])
+@login_required
 def api_scan():
     """开始扫描"""
     global is_scanning
@@ -395,6 +445,7 @@ def api_scan():
 
 
 @app.route("/api/status", methods=["GET"])
+@login_required
 def api_status():
     """状态"""
     global is_scanning, scanning_files, scanned_files, scan_start_time, total_images, total_video_frames
@@ -408,10 +459,11 @@ def api_status():
         progress = 0
     return jsonify({"status": is_scanning, "total_images": total_images, "total_videos": total_videos, "total_video_frames": total_video_frames,
                     "scanning_files": scanning_files, "remain_files": scanning_files - scanned_files, "progress": progress,
-                    "remain_time": int(remain_time)})
+                    "remain_time": int(remain_time), "enable_login": ENABLE_LOGIN})
 
 
 @app.route("/api/clean_cache", methods=["GET", "POST"])
+@login_required
 def api_clean_cache():
     """
     清缓存
@@ -422,6 +474,7 @@ def api_clean_cache():
 
 
 @app.route("/api/match", methods=["POST"])
+@login_required
 def api_match():
     """
     匹配文字对应的素材
@@ -472,6 +525,7 @@ def api_match():
 
 
 @app.route('/api/get_image/<int:image_id>', methods=['GET'])
+@login_required
 def api_get_image(image_id):
     """
     读取图片
@@ -485,6 +539,7 @@ def api_get_image(image_id):
 
 
 @app.route('/api/get_video/<video_path>', methods=['GET'])
+@login_required
 def api_get_video(video_path):
     """
     读取视频
@@ -501,6 +556,7 @@ def api_get_video(video_path):
 
 
 @app.route('/api/upload', methods=['POST'])
+@login_required
 def api_upload():
     """
     上传文件。首先删除旧的文件，保存新文件，计算hash，重命名文件。
