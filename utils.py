@@ -1,5 +1,6 @@
 import hashlib
 import logging
+import platform
 import subprocess
 
 import numpy as np
@@ -72,8 +73,11 @@ def crop_video(input_file, output_file, start_time, end_time):
     :param end_time: int, 结束时间，单位为秒
     :return: None
     """
+    cmd = 'ffmpeg'
+    if platform.system() == 'Windows':
+        cmd += ".exe"
     command = [
-        'ffmpeg',
+        cmd,
         '-i', input_file,
         '-ss', format_seconds(start_time),
         '-to', format_seconds(end_time),
