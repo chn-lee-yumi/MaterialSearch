@@ -141,6 +141,7 @@ def scan(auto=False):
     """
     global is_scanning, total_images, total_videos, total_video_frames, scanning_files, scanned_files, scan_start_time, is_continue_scan
     logger.info("开始扫描")
+    is_scanning = True
     temp_file = f"{TEMP_PATH}/assets.pickle"
     scan_start_time = time.time()
     start_time = time.time()
@@ -439,7 +440,6 @@ def api_scan():
     """开始扫描"""
     global is_scanning
     if not is_scanning:
-        is_scanning = True
         scan_thread = threading.Thread(target=scan, args=(False,))
         scan_thread.start()
         return jsonify({"status": "start scanning"})
