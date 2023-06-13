@@ -285,6 +285,8 @@ def search_image(positive_prompt="", negative_prompt="", img_path="", img_id=-1,
                 continue
             file_list.append(file)
             image_features.append(features)
+        if len(image_features) == 0:  # 没有素材，直接返回空
+            return []
         scores = match_batch(positive_feature, negative_feature, image_features, positive_threshold, negative_threshold)
         for i in range(len(file_list)):
             if not scores[i]:
