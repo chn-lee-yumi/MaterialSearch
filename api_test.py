@@ -84,7 +84,8 @@ def test_api_match():
         "search_type": 0,
         "positive_threshold": 10,
         "negative_threshold": 10,
-        "image_threshold": 85
+        "image_threshold": 85,
+        "img_id": -1,
     }
     # 文字搜图
     response = requests.post('http://127.0.0.1:8085/api/match', json=payload)
