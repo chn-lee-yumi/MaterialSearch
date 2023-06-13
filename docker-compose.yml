@@ -10,7 +10,7 @@ services:
     volumes:
       - /srv/MaterialSearch/config.py:/materialsearch/config.py # 挂载宿主/srv/MaterialSearch/config.py到容器的/materialsearch/config.py
       - /srv/MaterialSearch/db:/materialsearch/instance/ # 挂载宿主/srv/MaterialSearch/db到容器的/materialsearch/instance/
-      - /home:/data/ # 挂载宿主/home到容器的/data
+      - /home:/home # 挂载宿主/home到容器的/home
     # 如果使用GPU，就取消注释下面的内容
     #deploy:
     #  resources:
