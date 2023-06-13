@@ -13,7 +13,7 @@ from flask import Flask, jsonify, request, send_file, abort, session, redirect, 
 from config import *
 from database import db, Image, Video
 from process_assets import scan_dir, process_image, process_video, process_text, match_text_and_image, match_batch
-from utils import softmax, get_file_hash
+from utils import softmax, get_file_hash, crop_video
 
 logging.basicConfig(level=LOG_LEVEL, format='%(asctime)s %(name)s %(levelname)s %(message)s')
 logger = logging.getLogger(__name__)
@@ -555,6 +555,30 @@ def api_get_video(video_path):
         if not video:  # 如果路径不在数据库中，则返回404，防止任意文件读取攻击
             abort(404)
     return send_file(path)
+
+
+@app.route('/api/download_video_clip/<video_path>/<int:start_time>/<int:end_time>', methods=['GET'])
+@login_required
+def api_download_video_clip(video_path, start_time, end_time):
+    """
+    下载视频片段
+    TODO: 自动清理剪出来的视频片段，避免占用临时目录太多空间
+    :param video_path: string, 经过base64.urlsafe_b64encode的字符串，解码后可以得到视频在服务器上的绝对路径
+    :param start_time: int, 视频开始秒数
+    :param end_time: int, 视频结束秒数
+    :return: 视频文件
+    """
+    path = base64.urlsafe_b64decode(video_path).decode()
+    logger.debug(path)
+    with app.app_context():
+        video = db.session.query(Video).filter_by(path=path).first()
+        if not video:  # 如果路径不在数据库中，则返回404，防止任意文件读取攻击
+            abort(404)
+    # 调用ffmpeg截取视频片段
+    output_path = f"{TEMP_PATH}/{start_time}_{end_time}_" + os.path.basename(path)
+    if not os.path.exists(output_path):  # 如果存在说明已经剪过，直接返回，如果不存在则剪
+        crop_video(path, output_path, start_time, end_time)
+    return send_file(output_path)
 
 
 @app.route('/api/upload', methods=['POST'])

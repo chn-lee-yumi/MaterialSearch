@@ -159,6 +159,9 @@
                     <el-button size="mini" round type="success" v-if="form.search_type === 0 || form.search_type === 1 || form.search_type === 5"
                                @click="searchFromImage(6,file.url)">以图搜视频
                     </el-button>
+                    <el-button size="mini" round type="success" v-if="form.search_type === 2 || form.search_type === 3 || form.search_type === 6"
+                               @click="downloadVideoClip(file.url,file.start_time,file.end_time)">下载视频片段
+                    </el-button>
                 </div>
             </el-card>
         </el-col>
@@ -336,7 +339,13 @@ new Vue({
                     console.log(error);
                     that.$message.error(error.response.data);
                 })
-        }
+        },
+        downloadVideoClip(url, start_time, end_time) {
+            var parts = url.split('/'); // 使用 '/' 进行拆分，返回一个数组
+            var lastPart = parts[parts.length - 1]; // 取数组中的最后一项
+            var hashPart = lastPart.split('#')[0]; // 使用 '#' 进行拆分，取第一项
+            window.open(`/api/download_video_clip/${hashPart}/${start_time}/${end_time}`, "_blank");
+        },
     }
 })
 </script>

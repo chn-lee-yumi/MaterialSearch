@@ -27,6 +27,8 @@
 
 如遇到`requirements.txt`版本依赖问题（比如某个库版本过新会导致运行报错），请提issue反馈，我会添加版本范围限制。
 
+如果想使用"下载视频片段"的功能，需要安装ffmpeg。
+
 ### 通过Docker部署
 
 目前只有一个Docker镜像，支持`amd64`和`arm64`，打包了默认模型（`openai/clip-vit-base-patch32`和`IDEA-CCNL/Taiyi-CLIP-Roberta-102M-Chinese`）并且支持GPU（仅`amd64`架构的镜像支持）。 如有更多需求欢迎提issue。

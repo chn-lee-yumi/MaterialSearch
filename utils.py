@@ -1,5 +1,6 @@
 import hashlib
 import logging
+import subprocess
 
 import numpy as np
 
@@ -49,3 +50,35 @@ def softmax(x):
     """
     exp_scores = np.exp(x)
     return exp_scores / np.sum(exp_scores)
+
+
+def format_seconds(seconds):
+    """
+    将秒数转成时分秒格式
+    :param seconds: int, 秒数
+    :return: "时:分:秒"
+    """
+    minutes, seconds = divmod(seconds, 60)
+    hours, minutes = divmod(minutes, 60)
+    return f"{hours:02d}:{minutes:02d}:{seconds:02d}"
+
+
+def crop_video(input_file, output_file, start_time, end_time):
+    """
+    调用ffmpeg截取视频片段
+    :param input_file: 要截取的文件路径
+    :param output_file: 保存文件路径
+    :param start_time: int, 开始时间，单位为秒
+    :param end_time: int, 结束时间，单位为秒
+    :return: None
+    """
+    command = [
+        'ffmpeg',
+        '-i', input_file,
+        '-ss', format_seconds(start_time),
+        '-to', format_seconds(end_time),
+        '-c:v', 'copy',
+        '-c:a', 'copy',
+        output_file
+    ]
+    subprocess.run(command)
