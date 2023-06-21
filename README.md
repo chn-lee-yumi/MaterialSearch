@@ -59,6 +59,14 @@
 
 小图片没被扫描到的话，可以调低`IMAGE_MIN_WIDTH`和`IMAGE_MIN_HEIGHT`重试。
 
+为方便配置，推荐在项目根目录新增`.env`文件设置配置，如：
+
+```
+ASSETS_PATH=C:/Users/Administrator/Documents,C:/Users/Administrator/Pictures,C:/Users/Administrator/video/
+DEVICE=cuda
+DEVICE_TEXT=cuda
+```
+
 ## 问题解答
 
 如遇问题，请先仔细阅读本文档。如果找不到答案，请在issue中搜索是否有类似问题。如果没有，可以新开一个issue，**详细说明你遇到的问题，加上你做过的尝试和思考，附上报错内容和截图，并说明你使用的系统（Windows/Linux/MacOS）和`config.py`的配置**。
