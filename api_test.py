@@ -3,7 +3,6 @@ import time
 import pytest
 import requests
 
-from config import UPLOAD_TMP_FILE
 from utils import get_file_hash
 
 upload_file = 'test.png'
@@ -65,21 +64,16 @@ def test_api_status():
 
 
 def test_api_upload():
-    files = [
-        ('files[]', ('test.png', open(upload_file, 'rb'), 'image/png')),
-    ]
+    files = {'file': ('test.png', open(upload_file, 'rb'), 'image/png')}
     response = requests.post('http://127.0.0.1:8085/api/upload', files=files)
     assert response.status_code == 200
-    hash_origin = get_file_hash(upload_file)
-    hash_upload = get_file_hash(UPLOAD_TMP_FILE)
-    assert hash_origin == hash_upload
 
 
 def test_api_clean_cache():
     response = requests.get('http://127.0.0.1:8085/api/clean_cache')
-    assert response.status_code == 200
+    assert response.status_code == 204
     response = requests.post('http://127.0.0.1:8085/api/clean_cache')
-    assert response.status_code == 200
+    assert response.status_code == 204
 
 
 def test_api_match():
@@ -90,7 +84,8 @@ def test_api_match():
         "search_type": 0,
         "positive_threshold": 10,
         "negative_threshold": 10,
-        "image_threshold": 85
+        "image_threshold": 85,
+        "img_id": -1,
     }
     # 文字搜图
     response = requests.post('http://127.0.0.1:8085/api/match', json=payload)
@@ -115,6 +110,7 @@ def test_api_match():
     hash_origin = get_file_hash(upload_file)
     hash_download = get_file_hash("test.tmp")
     assert hash_origin == hash_download
+    # TODO：以数据库的图搜图和视频
     # TODO：文字搜视频
     # TODO：以图搜视频
     # TODO：get_video

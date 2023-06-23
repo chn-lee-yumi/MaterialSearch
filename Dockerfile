@@ -4,6 +4,7 @@
 # TEXT_MODEL_NAME = "IDEA-CCNL/Taiyi-CLIP-Roberta-102M-Chinese"
 FROM python:bullseye
 WORKDIR /materialsearch/
+RUN apt update && apt install -y ffmpeg && apt clean
 COPY requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt
 RUN python -c 'from transformers import CLIPProcessor, CLIPModel, BertTokenizer, BertForSequenceClassification; CLIPModel.from_pretrained("openai/clip-vit-base-patch32"); CLIPProcessor.from_pretrained("openai/clip-vit-base-patch32"); BertTokenizer.from_pretrained("IDEA-CCNL/Taiyi-CLIP-Roberta-102M-Chinese"); BertForSequenceClassification.from_pretrained("IDEA-CCNL/Taiyi-CLIP-Roberta-102M-Chinese")'
