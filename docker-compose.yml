@@ -6,13 +6,14 @@ services:
     image: registry.cn-guangzhou.aliyuncs.com/chn-lee-yumi/materialsearch:latest # 通过阿里云容器镜像服务构建，仅支持amd64，如果你需要运行在arm64主机上，请使用上面的镜像
     restart: always # 容器重启规则设为always
     ports:
-      - "8080:8085" # 映射容器的 8085 端口到宿主的 8080 端口
+      - "8085:8085" # 映射容器的8085端口到宿主的8085端口（宿主端口:容器端口）
     environment: # 通过环境变量修改配置
-      - ASSETS_PATH=/home,/srv
+      - ASSETS_PATH=/home,/mnt
       - SKIP_PATH=/tmp
     volumes:
-      - /srv/MaterialSearch/db:/materialsearch/instance/ # 挂载宿主/srv/MaterialSearch/db到容器的/materialsearch/instance/
+      - /srv/MaterialSearch/db:/MaterialSearch/instance/ # 挂载宿主/srv/MaterialSearch/db到容器的/MaterialSearch/instance/
       - /home:/home # 挂载宿主/home到容器的/home
+      - /mnt:/mnt # 挂载宿主/mnt到容器的/mnt
     # 如果使用GPU，就取消注释下面的内容
     #deploy:
     #  resources:
