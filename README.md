@@ -22,7 +22,7 @@
 
 1. 首次使用前需要安装依赖：`pip install -U -r requirements.txt`，Windows系统可以双击`install.bat`（NVIDIA GPU加速）或`install_cpu.bat`（纯CPU）。
 2. 如果你打算使用GPU加速，则执行基准测试判断是CPU快还是GPU快：`python benchmark.py`，Windows系统可以双击`benchmark.bat`。GPU不一定比CPU快，在我的Mac上CPU更快。
-3. 如果不是CPU最快，则修改`config.py`中的`DEVICE`和`DEVICE_TEXT`，改为对应设备，如`DEVICE = "cuda"`。
+3. 如果不是CPU最快，则修改配置中的`DEVICE`和`DEVICE_TEXT`，改为对应设备（配置修改方法请参考后面的配置说明）。
 4. 启动程序：`python main.py`，Windows系统可以双击`run.bat`。
 
 如遇到`requirements.txt`版本依赖问题（比如某个库版本过新会导致运行报错），请提issue反馈，我会添加版本范围限制。

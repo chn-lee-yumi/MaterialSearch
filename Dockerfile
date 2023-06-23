@@ -2,8 +2,9 @@
 # LANGUAGE = "Chinese"
 # MODEL_NAME = "openai/clip-vit-base-patch32"
 # TEXT_MODEL_NAME = "IDEA-CCNL/Taiyi-CLIP-Roberta-102M-Chinese"
-FROM python:bullseye
-WORKDIR /materialsearch/
+FROM python:latest
+WORKDIR /MaterialSearch/
+ENV TRANSFORMERS_CACHE=/MaterialSearch/transformers/
 RUN apt update && apt install -y ffmpeg && apt clean
 COPY requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt
