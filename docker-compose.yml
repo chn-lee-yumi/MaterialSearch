@@ -7,8 +7,10 @@ services:
     restart: always # 容器重启规则设为always
     ports:
       - "8080:8085" # 映射容器的 8085 端口到宿主的 8080 端口
+    environment: # 通过环境变量修改配置
+      - ASSETS_PATH=/home,/srv
+      - SKIP_PATH=/tmp
     volumes:
-      - /srv/MaterialSearch/config.py:/materialsearch/config.py # 挂载宿主/srv/MaterialSearch/config.py到容器的/materialsearch/config.py
       - /srv/MaterialSearch/db:/materialsearch/instance/ # 挂载宿主/srv/MaterialSearch/db到容器的/materialsearch/instance/
       - /home:/home # 挂载宿主/home到容器的/home
     # 如果使用GPU，就取消注释下面的内容

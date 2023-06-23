@@ -53,6 +53,16 @@
 
 所有配置都在`config.py`文件中，里面已经写了详细的注释。
 
+建议通过环境变量或在项目根目录创建`.env`文件修改配置。如果没有配置对应的变量，则会使用`config.py`中的默认值。例如`os.getenv('HOST', '0.0.0.0')`，如果没有配置`HOST`变量，则`HOST`默认为`0.0.0.0`。
+
+`.env`文件配置示例：
+
+```
+ASSETS_PATH=C:/Users/Administrator/Documents,C:/Users/Administrator/Pictures
+DEVICE=cuda
+DEVICE_TEXT=cuda
+```
+
 目前功能仍在迭代中，配置会经常变化。如果更新版本后发现无法启动，需要参考最新的配置文件手动改一下配置。
 
 如果你发现某些格式的图片或视频没有被扫描到，可以尝试在`IMAGE_EXTENSIONS`和`VIDEO_EXTENSIONS`增加对应的后缀。如果你发现一些支持的后缀没有被添加到代码中，欢迎提issue或pr增加。

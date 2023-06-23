@@ -5,3 +5,4 @@ torch>=1.13.1
 Pillow>=8.1.0
 transformers>=4.28.1
 opencv-python-headless>=4.5.5.64
+python-dotenv>=0.19.2
