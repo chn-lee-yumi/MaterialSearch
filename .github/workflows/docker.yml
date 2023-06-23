@@ -2,7 +2,7 @@ name: Docker Image CI
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [ "main", "testing" ]
 
 jobs:
   integration-test:
@@ -42,7 +42,10 @@ jobs:
         registry: registry.cn-hongkong.aliyuncs.com
         username: ${{ secrets.DOCKER_USERNAME }}
         password: ${{ secrets.DOCKER_PASSWORD }}
-      
+
+    - name: Download models
+      run: pip install --no-cache-dir -r requirements.txt && TRANSFORMERS_CACHE=/home/runner/transformers python -c 'from transformers import CLIPProcessor, CLIPModel, BertTokenizer, BertForSequenceClassification; CLIPModel.from_pretrained("openai/clip-vit-base-patch32"); CLIPProcessor.from_pretrained("openai/clip-vit-base-patch32"); BertTokenizer.from_pretrained("IDEA-CCNL/Taiyi-CLIP-Roberta-102M-Chinese"); BertForSequenceClassification.from_pretrained("IDEA-CCNL/Taiyi-CLIP-Roberta-102M-Chinese")'
+
     - name: Build and push
       uses: docker/build-push-action@v4
       with:
