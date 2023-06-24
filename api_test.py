@@ -28,10 +28,17 @@ def setup_function():
 
 
 def test_index():
-    response = requests.get('http://127.0.0.1:8085/')
+    # 测试中文网页
+    response = requests.get('http://127.0.0.1:8085/', headers={"accept-language": "zh-CN"})
     assert response.status_code == 200
     text = response.text
     index_html = read_file("static/index.html")
+    assert text == index_html
+    # 测试英文网页
+    response = requests.get('http://127.0.0.1:8085/')
+    assert response.status_code == 200
+    text = response.text
+    index_html = read_file("static/index_en.html")
     assert text == index_html
 
 
@@ -119,3 +126,4 @@ def test_api_match():
 # 运行测试
 if __name__ == '__main__':
     pytest.main()
+    # TODO: 测试login和logout
