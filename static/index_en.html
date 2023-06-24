@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>MaterialSearch</title>
+    <!--<link rel="stylesheet" href="https://cdnjs.loli.net/ajax/libs/element-ui/2.15.3/theme-chalk/index.css">-->
+    <link rel="stylesheet" href="static/index.css">
+</head>
+<body>
+<el-main id="app" v-loading="loading" class="">
+    <el-row>
+        <h1 style="margin:0;">Local Material Finder</h1>
+    </el-row>
+
+    <el-row>
+        <el-tag :key="isScanning" effect="dark">Scan status: {{ isScanning ? "SCANNING" : "COMPLETE" }}</el-tag>
+        <el-tag :key="status.file" type="success" effect="dark">Total images: {{ status.total_images }}</el-tag>
+        <el-tag :key="status.file" type="success" effect="dark">Total videos: {{ status.total_videos }}</el-tag>
+        <el-tag :key="status.file" type="success" effect="dark">Total video frams: {{ status.total_video_frames }}</el-tag>
+        <el-tag v-if="isScanning" :key="status.remain_files" type="info" effect="dark">Files scanned this time: {{ status.scanning_files }}</el-tag>
+        <el-tag v-if="isScanning" :key="status.remain_files" type="info" effect="dark">Remain files: {{ status.remain_files }}</el-tag>
+        <el-tag v-if="isScanning" :key="status.remain_time" type="info" effect="dark">Remain time: {{ status.remain_time }}</el-tag>
+        <el-tag v-if="isScanning" :key="status.progress" type="danger" effect="dark">
+            Scanning rogress: {{ Math.trunc(status.progress*100) }}% (Please DO NOT search while scanning)
+        </el-tag>
+        <el-button-group v-if="!isScanning">
+            <el-button round :loading="isScanning" type="primary" size="medium" @click="scan">Scan</el-button>
+        </el-button-group>
+        <!--<el-button-group>-->
+        <!--    <el-button round type="warning" size="small" @click="cleanCache">Clean Cache</el-button>-->
+        <!--</el-button-group>-->
+        <el-button-group v-if="enableLogin">
+            <a href="/logout">
+                <el-button round type="danger" size="medium">Logout</el-button>
+            </a>
+        </el-button-group>
+        <el-progress v-if="status.progress" :percentage="Math.trunc(status.progress*100)" :stroke-width="10"></el-progress>
+    </el-row>
+
+    <el-row>
+        <el-tabs type="border-card" style="margin-top:5px;">
+            <el-tab-pane label="Text-based image search">
+                <el-form ref="form" :model="form" :inline="true">
+                    <el-input placeholder="Search Content (cannot be empty)" v-model="form.positive" class="input-with-select"
+                              @keyup.enter.native="search(0)"></el-input>
+                    <el-input placeholder="Filter Content (can be left blank)" v-model="form.negative" class="input-with-select"
+                              @keyup.enter.native="search(0)"></el-input>
+                    <el-form-item label="Search Threshold (higher than this score will show)" style="margin-bottom: 0px;">
+                        <el-slider style="width:200px" v-model="form.positive_threshold"></el-slider>
+                    </el-form-item>
+                    <el-form-item label="Filter Threshold (lower than this score will show)" style="margin-bottom: 0px;">
+                        <el-slider style="width:200px" v-model="form.negative_threshold"></el-slider>
+                    </el-form-item>
+                    <el-select v-model="form.top_n" placeholder="View top n results" style="width:100px">
+                        <el-option label="Top 6" value="6"></el-option>
+                        <el-option label="Top 12" value="12"></el-option>
+                        <el-option label="Top 30" value="30"></el-option>
+                        <el-option label="Top 150" value="150"></el-option>
+                    </el-select>
+                    <el-button type="success" icon="el-icon-search" @click="search(0)">Search</el-button>
+                </el-form>
+            </el-tab-pane>
+
+            <el-tab-pane label="Image-based image search">
+                <el-upload ref="upload" drag action="api/upload" limit="1" multiple="false" :limit="1" :on-exceed="handleExceed">
+                    <i class="el-icon-upload"></i>
+                    <div class="el-upload__text">Drag files here, or <em>click here to upload</em></div>
+                </el-upload>
+                <el-form ref="form" :model="form" :inline="true" style="margin-top:5px;">
+                    <el-form-item label="Match Threshold (higher than this score will show)" style="margin-bottom: 0px;">
+                        <el-slider style="width:200px" v-model="form.image_threshold"></el-slider>
+                    </el-form-item>
+                    <el-select v-model="form.top_n" placeholder="View top n results" style="width:100px">
+                        <el-option label="Top 6" value="6"></el-option>
+                        <el-option label="Top 12" value="12"></el-option>
+                        <el-option label="Top 30" value="30"></el-option>
+                        <el-option label="Top 150" value="150"></el-option>
+                    </el-select>
+                    <el-button type="success" icon="el-icon-search" @click="search(1)">Search</el-button>
+                </el-form>
+            </el-tab-pane>
+
+            <el-tab-pane label="Text-based video search">
+                <el-form ref="form" :model="form" :inline="true">
+                    <el-input placeholder="Search Content (cannot be empty)" v-model="form.positive" class="input-with-select"
+                              @keyup.enter.native="search(2)"></el-input>
+                    <el-input placeholder="Filter Content (can be left blank)" v-model="form.negative" class="input-with-select"
+                              @keyup.enter.native="search(2)"></el-input>
+                    <el-form-item label="Search Threshold (higher than this score will show)" style="margin-bottom: 0px;">
+                        <el-slider style="width:200px" v-model="form.positive_threshold"></el-slider>
+                    </el-form-item>
+                    <el-form-item label="Filter Threshold (lower than this score will show)" style="margin-bottom: 0px;">
+                        <el-slider style="width:200px" v-model="form.negative_threshold"></el-slider>
+                    </el-form-item>
+                    <el-select v-model="form.top_n" placeholder="View top n results" style="width:100px">
+                        <el-option label="Top 6" value="6"></el-option>
+                        <el-option label="Top 12" value="12"></el-option>
+                        <el-option label="Top 30" value="30"></el-option>
+                        <el-option label="Top 150" value="150"></el-option>
+                    </el-select>
+                    <el-button type="success" icon="el-icon-search" @click="search(2)">Search</el-button>
+                </el-form>
+            </el-tab-pane>
+
+            <el-tab-pane label="Image-based video search">
+                <el-upload ref="upload" drag action="api/upload" limit="1" multiple="false" :limit="1" :on-exceed="handleExceed">
+                    <i class="el-icon-upload"></i>
+                    <div class="el-upload__text">Drag files here, or <em>click here to upload</em></div>
+                </el-upload>
+                <el-form ref="form" :model="form" :inline="true" style="margin-top:10px;">
+                    <el-form-item label="Match Threshold (higher than this score will show)" style="margin-bottom: 0px;">
+                        <el-slider style="width:200px" v-model="form.image_threshold"></el-slider>
+                    </el-form-item>
+                    <el-select v-model="form.top_n" placeholder="View top n results" style="width:100px">
+                        <el-option label="Top 6" value="6"></el-option>
+                        <el-option label="Top 12" value="12"></el-option>
+                        <el-option label="Top 30" value="30"></el-option>
+                        <el-option label="Top 150" value="150"></el-option>
+                    </el-select>
+                    <el-button type="success" icon="el-icon-search" @click="search(3)">Search</el-button>
+                </el-form>
+            </el-tab-pane>
+
+            <el-tab-pane label="Calculation of image-text similarity">
+                <el-input placeholder="Text Content (cannot be empty)" v-model="form.text" class="input-with-select"></el-input>
+                <el-upload ref="upload" drag action="api/upload" limit="1" multiple="false" :limit="1" :on-exceed="handleExceed">
+                    <i class="el-icon-upload"></i>
+                    <div class="el-upload__text">Drag files here, or <em>click here to upload</em></div>
+                </el-upload>
+                <el-row style="margin-top:10px;">
+                    <el-button type="success" icon="el-icon-search" @click="search(4)">Calculate Similarity Score</el-button>
+                </el-row>
+            </el-tab-pane>
+        </el-tabs>
+    </el-row>
+
+    <el-row :gutter="5"
+            v-if="form.search_type === 0 || form.search_type === 1 || form.search_type === 2 || form.search_type === 3 || form.search_type === 5 || form.search_type === 6">
+        <el-col :span="8" v-for="file in files">
+            <el-card style="margin-top: 5px;">
+                <el-image v-if="form.search_type === 0 || form.search_type === 1 || form.search_type === 5" style="width: 100%; height: 240px;"
+                          fit="contain" :src="file.url" :preview-src-list="image_url_list"></el-image>
+                <video v-if="form.search_type === 2 || form.search_type === 3 || form.search_type === 6" style="width: 100%; height: 240px;"
+                       :src="file.url" controls></video>
+                <div>
+                    <el-tooltip content="Material's matching probability and similarity" placement="bottom">
+                        <el-tag size="mini" effect="dark">{{file.softmax_score}} | {{file.score}}</el-tag>
+                    </el-tooltip>
+                    <el-tooltip :content="file.path" placement="bottom">
+                        <el-tag size="mini" type="info" effect="dark" class="copy" :data-clipboard-text="file.path">{{file.path.split('/').pop()}}
+                        </el-tag>
+                    </el-tooltip>
+                    <el-tooltip v-if="file.end_time" content="The matching time period range" placement="bottom">
+                        <el-tag size="mini" type="warning" effect="dark">{{file.start_time}} ~ {{file.end_time}} seconds</el-tag>
+                    </el-tooltip>
+                    <el-button size="mini" round type="success" v-if="form.search_type === 0 || form.search_type === 1 || form.search_type === 5"
+                               @click="searchFromImage(5,file.url)">Search Images
+                    </el-button>
+                    <el-button size="mini" round type="success" v-if="form.search_type === 0 || form.search_type === 1 || form.search_type === 5"
+                               @click="searchFromImage(6,file.url)">Search Videos
+                    </el-button>
+                    <el-button size="mini" round type="success" v-if="form.search_type === 2 || form.search_type === 3 || form.search_type === 6"
+                               @click="downloadVideoClip(file.url,file.start_time,file.end_time)">Download Video Clip
+                    </el-button>
+                </div>
+            </el-card>
+        </el-col>
+    </el-row>
+
+</el-main>
+</body>
+
+<!--<script src="https://cdnjs.loli.net/ajax/libs/vue/2.6.10/vue.min.js"></script>-->
+<!--<script src="https://cdn.jsdelivr.net/npm/clipboard@2.0.6/dist/clipboard.min.js"></script>-->
+<!--<script src="https://cdnjs.loli.net/ajax/libs/element-ui/2.15.3/index.js"></script>-->
+<!--<script src="https://cdnjs.loli.net/ajax/libs/axios/0.19.0-beta.1/axios.min.js"></script>-->
+<script src="static/vue.min.js"></script><!-- import Vue before Element -->
+<script src="static/clipboard.min.js"></script>
+<script src="static/index.js"></script>
+<script src="static/axios.min.js"></script>
+
+<script>
+function formatTime(seconds) {
+    // 计算天、小时、分钟和秒数
+    const days = Math.floor(seconds / (3600 * 24));
+    seconds -= days * 3600 * 24;
+    const hours = Math.floor(seconds / 3600);
+    seconds -= hours * 3600;
+    const minutes = Math.floor(seconds / 60);
+    seconds -= minutes * 60;
+
+    // 格式化时间部分
+    const formattedDays = days > 0 ? days + 'Days' : '';
+    const formattedHours = hours.toString()
+        .padStart(2, '0') + 'Hours';
+    const formattedMinutes = minutes.toString()
+        .padStart(2, '0') + 'Minutes';
+    const formattedSeconds = seconds.toString()
+        .padStart(2, '0') + 'Seconds';
+
+    // 拼接结果字符串
+    let result = formattedDays + formattedHours + formattedMinutes + formattedSeconds;
+    return result;
+}
+
+new Vue({
+    el: '#app',
+    data: {
+        loading: false,
+        isScanning: false,
+        status: null,
+        enableLogin: null,
+        form: {
+            positive: '',
+            negative: '',
+            top_n: '6',
+            search_type: 0,
+            positive_threshold: 10,
+            negative_threshold: 10,
+            image_threshold: 85,
+            img_id: -1,
+        },
+        files: [],
+        image_url_list: [],
+        timer: null,
+    },
+    mounted: function() {
+        this.loadData();
+        this.timer = setInterval(this.loadData, 5000);
+    },
+    created() {
+        var that = this
+        let clipboard = new ClipboardJS(".copy");
+        clipboard.on("success", function(e) {
+            that.$message.success("Path copied to clipboard");
+            e.clearSelection();
+        })
+    },
+    methods: {
+        loadData: function() {
+            var that = this;
+            axios.get('api/status')
+                .then(function(response) {
+                    console.log(response);
+                    that.status = response["data"];
+                    that.status.remain_time = formatTime(that.status.remain_time);
+                    that.isScanning = response["data"]["status"];
+                    that.enableLogin = response["data"]["enable_login"];
+                })
+                .catch(function(error) {
+                    console.log(error);
+                    that.$message.error(error);
+                })
+        },
+        scan: function() {
+            var that = this;
+            axios.get('api/scan')
+                .then(function(response) {
+                    console.log(response);
+                    that.loadData();
+                })
+                .catch(function(error) {
+                    console.log(error);
+                    that.$message.error(error.response.data);
+                })
+        },
+        search: function(search_type) {
+            this.$refs.upload.submit();
+            var that = this;
+            that.loading = true;
+            that.form.search_type = search_type;
+            if ((search_type === 0 || search_type === 2) && that.form.positive == "") {
+                that.$message.error("Search content cannot be empty");
+                that.loading = false;
+                return;
+            }
+            if (search_type === 5 && that.form.text == "") {
+                that.$message.error("Text content cannot be empty");
+                that.loading = false;
+                return;
+            }
+            axios.post('/api/match', that.form)
+                .then(function(response) {
+                    console.log(response);
+                    that.loading = false;
+                    if (search_type === 0 || search_type === 1 || search_type === 5) {
+                        that.files = response["data"];
+                        that.image_url_list = [];
+                        that.files.forEach(function(element) {
+                            that.image_url_list.push(element.url);
+                        });
+                        that.$message.info("Found " + that.files.length + " images");
+                        return;
+                    }
+                    if (search_type === 2 || search_type === 3 || search_type === 6) {
+                        that.files = response["data"];
+                        that.$message.info("Found " + that.files.length + " videos");
+                        return;
+                    }
+                    if (search_type === 4) {
+                        that.$message.info("Similarity Score is " + response["data"]["score"]);
+                        return;
+                    }
+                })
+                .catch(function(error) {
+                    console.log(error);
+                    that.loading = false;
+                    that.$message.error(error.response.data);
+                })
+        },
+        searchFromImage: function(search_type, img_url) {
+            this.form.search_type = search_type;
+            this.form.positive = '';
+            this.form.negative = '';
+            var id_str = img_url.match(/(\d+)$/);
+            if (id_str) {
+                var id_num = parseInt(id_str[1], 10);
+                this.form.img_id = id_num;
+                this.search(search_type);
+            } else {
+                this.$message.error("Unable to get image id from img_url, this should not happen");
+            }
+        },
+        handleExceed(files, fileList) {
+            // 覆盖上传，参考：https://blog.csdn.net/lcy460692978/article/details/103072246
+            this.$set(fileList[0], 'raw', files[0]);
+            this.$set(fileList[0], 'name', files[0].name);
+            this.$refs.upload.clearFiles();
+            this.$refs.upload.handleStart(files[0]);
+            this.$refs.upload.submit();
+        },
+        cleanCache() {
+            var that = this;
+            axios.get('api/clean_cache')
+                .then(function(response) {
+                    that.$message.info(response.data);
+                })
+                .catch(function(error) {
+                    console.log(error);
+                    that.$message.error(error.response.data);
+                })
+        },
+        downloadVideoClip(url, start_time, end_time) {
+            var parts = url.split('/'); // 使用 '/' 进行拆分，返回一个数组
+            var lastPart = parts[parts.length - 1]; // 取数组中的最后一项
+            var hashPart = lastPart.split('#')[0]; // 使用 '#' 进行拆分，取第一项
+            window.open(`/api/download_video_clip/${hashPart}/${start_time}/${end_time}`, "_blank");
+        },
+    }
+})
+</script>
+<style scoped>
+.el-upload, .el-upload-dragger{
+    width: 100% !important;
+}
+.el-button--mini, .el-button--mini.is-round {
+    padding: 3px 6px;
+}
+.el-button+.el-button {
+    margin-left: 0px;
+}
+.el-upload-list__item:first-child {
+    margin-top: 0px;
+}
+.el-tabs--border-card>.el-tabs__content {
+    padding: 10px 15px;
+}
+</style>
+</html>

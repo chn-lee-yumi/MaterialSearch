@@ -53,9 +53,9 @@ USERNAME = os.getenv('USERNAME', 'admin')  # 登录用户名
 PASSWORD = os.getenv('PASSWORD', 'MaterialSearch')  # 登录密码
 
 # *****打印配置内容*****
-print("**********运行配置**********")
+print("********** 运行配置 / RUNNING CONFIGURATIONS **********")
 global_vars = globals().copy()
 for var_name, var_value in global_vars.items():
     if var_name[0].isupper():
         print(f"{var_name}: {var_value!r}")
-print("******************************")
+print("**************************************************")
