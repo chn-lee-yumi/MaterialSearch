@@ -12,11 +12,11 @@ image = Image.open("test.png")  # 测试图片。图片大小影响速度，一�
 input_text = "This is a test sentence."  # 测试文本
 test_times = 100  # 测试次数
 
-print(f"你使用的语言为{LANGUAGE}。")
+print(f"你使用的语言为{MODEL_LANGUAGE}。")
 print("Loading models...")
 clip_model = CLIPModel.from_pretrained(MODEL_NAME)
 clip_processor = CLIPProcessor.from_pretrained(MODEL_NAME)
-if LANGUAGE == "Chinese":
+if MODEL_LANGUAGE == "Chinese":
     text_tokenizer = BertTokenizer.from_pretrained(TEXT_MODEL_NAME)
     text_encoder = BertForSequenceClassification.from_pretrained(TEXT_MODEL_NAME).eval()
 print("Models loaded.")
@@ -50,7 +50,7 @@ min_time = float('inf')
 recommend_device = ''
 for device in device_list:
     try:
-        if LANGUAGE == "Chinese":
+        if MODEL_LANGUAGE == "Chinese":
             text_encoder = text_encoder.to(torch.device(device))
         else:
             clip_model = clip_model.to(torch.device(device))
@@ -59,7 +59,7 @@ for device in device_list:
         continue
     t0 = time.time()
     for i in range(test_times):
-        if LANGUAGE == "Chinese":
+        if MODEL_LANGUAGE == "Chinese":
             text = text_tokenizer(input_text, return_tensors='pt', padding=True)['input_ids'].to(torch.device(device))
             text_features = text_encoder(text).logits.detach().cpu().numpy()
         else:
