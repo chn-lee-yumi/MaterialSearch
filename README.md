@@ -58,7 +58,7 @@
 `.env`文件配置示例：
 
 ```
-ASSETS_PATH=C:/Users/Administrator/Documents,C:/Users/Administrator/Pictures
+ASSETS_PATH=C:/Users/Administrator/Pictures,C:/Users/Administrator/Videos
 DEVICE=cuda
 DEVICE_TEXT=cuda
 ```
