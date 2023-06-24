@@ -39,9 +39,8 @@ Before starting the image, you need to prepare:
 
 1. The path to save the database
 2. The scan paths on your local machine and the paths to be mounted inside the container
-3. Prepare a `config.py` file based on your path information
-4. Modify the `volume` paths in the `docker-compose.yml` file according to your path information
-5. If you plan to use GPU acceleration, uncomment the corresponding section in the `docker-compose.yml` file
+3. You can configure through modifying the `environment` and `volumes` sections in the `docker-compose.yml` file
+4. If you plan to use GPU acceleration, uncomment the corresponding section in the `docker-compose.yml` file
 
 Please refer to the `docker-compose.yml` file for details, as it contains detailed comments.
 
@@ -71,7 +70,7 @@ If small images are not being scanned, you can try reducing `IMAGE_MIN_WIDTH` an
 
 ## Troubleshooting
 
-If you encounter any issues, please read this documentation carefully first. If you cannot find an answer, search the issues to see if there are similar problems. If not, you can open a new issue and provide detailed information about the problem, including your attempted solutions and thoughts, error messages and screenshots, and the system you are using (Windows/Linux/MacOS) and the configuration in `config.py`.
+If you encounter any issues, please read this documentation carefully first. If you cannot find an answer, search the issues to see if there are similar problems. If not, you can open a new issue and provide detailed information about the problem, including your attempted solutions and thoughts, error messages and screenshots, and the system you are using (Windows/Linux/MacOS) and the configuration (which will be printed while running `main.py`).
 
 I am only responsible for issues related to the functionality, code, and documentation of this project (such as malfunctions, code errors, and incorrect documentation). **Please resolve any runtime environment issues on your own (such as how to configure the Python environment, inability to use GPU acceleration, how to install ffmpeg, etc.).**
 
