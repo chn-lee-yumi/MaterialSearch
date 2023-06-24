@@ -39,9 +39,8 @@
 
 1. 数据库的保存路径
 2. 你的扫描路径以及打算挂载到容器内的哪个路径
-3. 根据你的路径信息，准备一个`config.py`
-4. 根据你的路径信息，修改`docker-compose.yml`里面的`volume`路径
-5. 如果打算使用GPU，则需要取消注释`docker-compose.yml`里面的对应部分
+3. 你可以通过修改`docker-compose.yml`里面的`environment`和`volumes`来进行配置。
+4. 如果打算使用GPU，则需要取消注释`docker-compose.yml`里面的对应部分
 
 具体请参考`docker-compose.yml`，已经写了详细注释。
 
@@ -58,7 +57,7 @@
 `.env`文件配置示例：
 
 ```
-ASSETS_PATH=C:/Users/Administrator/Documents,C:/Users/Administrator/Pictures
+ASSETS_PATH=C:/Users/Administrator/Pictures,C:/Users/Administrator/Videos
 DEVICE=cuda
 DEVICE_TEXT=cuda
 ```
@@ -71,7 +70,7 @@ DEVICE_TEXT=cuda
 
 ## 问题解答
 
-如遇问题，请先仔细阅读本文档。如果找不到答案，请在issue中搜索是否有类似问题。如果没有，可以新开一个issue，**详细说明你遇到的问题，加上你做过的尝试和思考，附上报错内容和截图，并说明你使用的系统（Windows/Linux/MacOS）和`config.py`的配置**。
+如遇问题，请先仔细阅读本文档。如果找不到答案，请在issue中搜索是否有类似问题。如果没有，可以新开一个issue，**详细说明你遇到的问题，加上你做过的尝试和思考，附上报错内容和截图，并说明你使用的系统（Windows/Linux/MacOS）和你的配置（配置在执行`main.py`的时候会打印出来）**。
 
 本人只负责本项目的功能、代码和文档等相关问题（例如功能不正常、代码报错、文档内容有误等）。**运行环境问题请自行解决（例如：如何配置Python环境，无法使用GPU加速，如何安装ffmpeg等）。**
 
