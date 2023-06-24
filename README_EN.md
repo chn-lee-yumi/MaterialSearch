@@ -29,7 +29,7 @@ If you encounter any issues with the version dependencies in `requirements.txt` 
 
 If you encounter issues with hardware support but are unable to use GPU acceleration, please update the torch version according to the [PyTorch documentation](https://pytorch.org/get-started/locally/).
 
-To use the "Download Video Segments" feature, you need to install `ffmpeg`. If you are using Windows, remember to add the directory where `ffmpeg.exe` is located to the `PATH` environment variable. You can refer to a [Bing search](https://cn.bing.com/search?q=windows+how+to+add+path+environment+variable) for instructions.
+To use the "Download Video Segments" feature, you need to install `ffmpeg`. If you are using Windows, remember to add the directory where `ffmpeg.exe` is located to the `PATH` environment variable. You can refer to a [Bing search](https://bing.com/search?q=windows+add+path+environment+variable) for instructions.
 
 ### Deployment via Docker
 
