@@ -578,6 +578,11 @@ def api_download_video_clip(video_path, start_time, end_time):
         video = db.session.query(Video).filter_by(path=path).first()
         if not video:  # 如果路径不在数据库中，则返回404，防止任意文件读取攻击
             abort(404)
+    # 根据VIDEO_EXTENSION_LENGTH调整时长
+    start_time -= VIDEO_EXTENSION_LENGTH
+    end_time += VIDEO_EXTENSION_LENGTH
+    if start_time < 0:
+        start_time = 0
     # 调用ffmpeg截取视频片段
     output_path = f"{TEMP_PATH}/{start_time}_{end_time}_" + os.path.basename(path)
     if not os.path.exists(output_path):  # 如果存在说明已经剪过，直接返回，如果不存在则剪
