@@ -91,6 +91,7 @@ On a J3455 CPU, approximately 17,000 image matches can be performed in 1 second 
 ## Known Issues
 
 1. Some images and videos cannot be displayed on the web page because the browser does not support that file type (such as TIFF files, videos encoded with SVQ3, etc.).
+2. When searching for videos, if too many videos are displayed and the video size is too large, the computer may freeze, which is normal. So it is suggested that do not select more than 12 results when you searching videos.
 
 ## About Pull Requests
 

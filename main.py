@@ -8,6 +8,7 @@ from functools import lru_cache, wraps
 
 import numpy as np
 from flask import Flask, jsonify, request, send_file, abort, session, redirect, url_for
+from sqlalchemy import asc
 
 from config import *
 from database import db, Image, Video
@@ -108,6 +109,7 @@ def clean_cache():
     """
     search_image.cache_clear()
     search_video.cache_clear()
+    search_file.cache_clear()
 
 
 def auto_scan():
@@ -356,6 +358,29 @@ def search_video(positive_prompt="", negative_prompt="", img_path="", img_id=-1,
     return sorted_list
 
 
+@lru_cache(maxsize=CACHE_SIZE)
+def search_file(path, file_type):
+    """
+    通过路径搜索图片或视频
+    :param path: 路径
+    :param file_type: 文件类型，"image"或"video"
+    :return:
+    """
+    if file_type == "image":
+        files = db.session.query(Image).filter(Image.path.like("%" + path + "%")).order_by(asc(Image.path))
+    elif file_type == "video":
+        files = db.session.query(Video.path).distinct().filter(Video.path.like("%" + path + "%")).order_by(asc(Video.path))
+    else:
+        abort(400)
+    file_list = []
+    for file in files:
+        if file_type == "image":
+            file_list.append({"url": "api/get_image/%d" % file.id, "path": file.path})
+        elif file_type == "video":
+            file_list.append({"url": "api/get_video/%s" % base64.urlsafe_b64encode(file.path.encode()).decode(), "path": file.path})
+    return file_list
+
+
 def get_index_pairs(scores):
     """
     根据每一帧的余弦相似度计算素材片段
@@ -494,8 +519,9 @@ def api_match():
     negative_threshold = data['negative_threshold']
     image_threshold = data['image_threshold']
     img_id = data['img_id']
+    path = data['path']
     logger.debug(data)
-    if search_type not in (0, 1, 2, 3, 4, 5, 6):
+    if search_type not in (0, 1, 2, 3, 4, 5, 6, 7, 8):
         logger.warning(f"search_type不正确：{search_type}")
         abort(500)
     # 进行匹配
@@ -513,8 +539,14 @@ def api_match():
         return jsonify({"score": "%.2f" % (match_text_and_image(process_text(data['text']), process_image(upload_file_path)) * 100)})
     elif search_type == 5:  # 以图搜图(图片是数据库中的)
         sorted_list = search_image(img_id=img_id, image_threshold=image_threshold)[:MAX_RESULT_NUM]
-    else:  # search_type == 6 以图搜视频(图片是数据库中的)
+    elif search_type == 6:  # 以图搜视频(图片是数据库中的)
         sorted_list = search_video(img_id=img_id, image_threshold=image_threshold)[:MAX_RESULT_NUM]
+    elif search_type == 7:  # 路径搜图
+        return jsonify(search_file(path=path, file_type="image")[:top_n])
+    elif search_type == 8:  # 路径搜视频
+        return jsonify(search_file(path=path, file_type="video")[:top_n])
+    else:  # 空
+        abort(400)
     sorted_list = sorted_list[:top_n]
     scores = [item["score"] for item in sorted_list]
     softmax_scores = softmax(scores)

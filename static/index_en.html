@@ -121,6 +121,34 @@
                 </el-form>
             </el-tab-pane>
 
+            <el-tab-pane label="Search image by path">
+                <el-form ref="form" :model="form" :inline="true" style="margin-top:10px;">
+                    <el-input placeholder="Image Path (cannot be empty)" v-model="form.path" class="input-with-select"
+                              @keyup.enter.native="search(7)"></el-input>
+                    <el-select v-model="form.top_n" placeholder="View top n results" style="width:100px">
+                        <el-option label="Top 6" value="6"></el-option>
+                        <el-option label="Top 12" value="12"></el-option>
+                        <el-option label="Top 30" value="30"></el-option>
+                        <el-option label="Top 150" value="150"></el-option>
+                    </el-select>
+                    <el-button type="success" icon="el-icon-search" @click="search(7)">Search</el-button>
+                </el-form>
+            </el-tab-pane>
+
+            <el-tab-pane label="Search video by path">
+                <el-form ref="form" :model="form" :inline="true" style="margin-top:10px;">
+                    <el-input placeholder="Video Path (cannot be empty)" v-model="form.path" class="input-with-select"
+                              @keyup.enter.native="search(8)"></el-input>
+                    <el-select v-model="form.top_n" placeholder="View top n results" style="width:100px">
+                        <el-option label="Top 6" value="6"></el-option>
+                        <el-option label="Top 12" value="12"></el-option>
+                        <el-option label="Top 30" value="30"></el-option>
+                        <el-option label="Top 150" value="150"></el-option>
+                    </el-select>
+                    <el-button type="success" icon="el-icon-search" @click="search(8)">Search</el-button>
+                </el-form>
+            </el-tab-pane>
+
             <el-tab-pane label="Calculation of image-text similarity">
                 <el-input placeholder="Text Content (cannot be empty)" v-model="form.text" class="input-with-select"></el-input>
                 <el-upload ref="upload" drag action="api/upload" limit="1" multiple="false" :limit="1" :on-exceed="handleExceed">
@@ -135,12 +163,12 @@
     </el-row>
 
     <el-row :gutter="5"
-            v-if="form.search_type === 0 || form.search_type === 1 || form.search_type === 2 || form.search_type === 3 || form.search_type === 5 || form.search_type === 6">
+            v-if="form.search_type === 0 || form.search_type === 1 || form.search_type === 2 || form.search_type === 3 || form.search_type === 5 || form.search_type === 6 || form.search_type === 7 || form.search_type === 8">
         <el-col :span="8" v-for="file in files">
             <el-card style="margin-top: 5px;">
-                <el-image v-if="form.search_type === 0 || form.search_type === 1 || form.search_type === 5" style="width: 100%; height: 240px;"
+                <el-image v-if="form.search_type === 0 || form.search_type === 1 || form.search_type === 5 || form.search_type === 7" style="width: 100%; height: 240px;"
                           fit="contain" :src="file.url" :preview-src-list="image_url_list"></el-image>
-                <video v-if="form.search_type === 2 || form.search_type === 3 || form.search_type === 6" style="width: 100%; height: 240px;"
+                <video v-if="form.search_type === 2 || form.search_type === 3 || form.search_type === 6 || form.search_type === 8" style="width: 100%; height: 240px;"
                        :src="file.url" controls></video>
                 <div>
                     <el-tooltip content="Material's matching probability and similarity" placement="bottom">
@@ -153,10 +181,10 @@
                     <el-tooltip v-if="file.end_time" content="The matching time period range" placement="bottom">
                         <el-tag size="mini" type="warning" effect="dark">{{file.start_time}} ~ {{file.end_time}} seconds</el-tag>
                     </el-tooltip>
-                    <el-button size="mini" round type="success" v-if="form.search_type === 0 || form.search_type === 1 || form.search_type === 5"
+                    <el-button size="mini" round type="success" v-if="form.search_type === 0 || form.search_type === 1 || form.search_type === 5 || form.search_type === 7"
                                @click="searchFromImage(5,file.url)">Search Images
                     </el-button>
-                    <el-button size="mini" round type="success" v-if="form.search_type === 0 || form.search_type === 1 || form.search_type === 5"
+                    <el-button size="mini" round type="success" v-if="form.search_type === 0 || form.search_type === 1 || form.search_type === 5 || form.search_type === 7"
                                @click="searchFromImage(6,file.url)">Search Videos
                     </el-button>
                     <el-button size="mini" round type="success" v-if="form.search_type === 2 || form.search_type === 3 || form.search_type === 6"
@@ -219,6 +247,7 @@ new Vue({
             negative_threshold: 10,
             image_threshold: 85,
             img_id: -1,
+            path: "",
         },
         files: [],
         image_url_list: [],
@@ -283,7 +312,7 @@ new Vue({
                 .then(function(response) {
                     console.log(response);
                     that.loading = false;
-                    if (search_type === 0 || search_type === 1 || search_type === 5) {
+                    if (search_type === 0 || search_type === 1 || search_type === 5 || form.search_type === 7) {
                         that.files = response["data"];
                         that.image_url_list = [];
                         that.files.forEach(function(element) {
@@ -292,7 +321,7 @@ new Vue({
                         that.$message.info("Found " + that.files.length + " images");
                         return;
                     }
-                    if (search_type === 2 || search_type === 3 || search_type === 6) {
+                    if (search_type === 2 || search_type === 3 || search_type === 6 || form.search_type === 8) {
                         that.files = response["data"];
                         that.$message.info("Found " + that.files.length + " videos");
                         return;
