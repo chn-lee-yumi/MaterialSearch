@@ -93,6 +93,7 @@ def test_api_match():
         "negative_threshold": 10,
         "image_threshold": 85,
         "img_id": -1,
+        "path": "",
     }
     # 文字搜图
     response = requests.post('http://127.0.0.1:8085/api/match', json=payload)
@@ -121,6 +122,15 @@ def test_api_match():
     # TODO：文字搜视频
     # TODO：以图搜视频
     # TODO：get_video
+    # 路径搜图
+    payload["search_type"] = 7
+    payload["path"] = "test.png"
+    response = requests.post('http://127.0.0.1:8085/api/match', json=payload)
+    data = response.json()
+    assert len(data) == 1
+    assert data[0]["path"] == "/home/runner/work/MaterialSearch/MaterialSearch/test.png"
+    assert data[0]["url"] == image_url
+    # TODO：路径搜视频
 
 
 # 运行测试
