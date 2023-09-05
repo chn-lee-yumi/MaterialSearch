@@ -225,9 +225,12 @@ def scan(auto=False):
                     db.session.query(Video).filter_by(path=asset).delete()  # 视频文件直接删了重新写数据，而不是直接替换，因为视频长短可能有变化，不方便处理
                 else:
                     logger.info(f"新增文件：{asset}")
-                for frame_time, features in process_video(asset):
-                    db.session.add(Video(path=asset, frame_time=frame_time, modify_time=modify_time, features=features.tobytes()))
-                    total_video_frames = db.session.query(Video).count()  # 获取视频帧总数
+                # 使用 bulk_save_objects 一次性提交
+                db.session.bulk_save_objects([
+                    Video(path=asset, frame_time=frame_time, modify_time=modify_time, features=features.tobytes())
+                    for frame_time, features in process_video(asset)
+                ])
+                total_video_frames = db.session.query(Video).count()  # 获取视频帧总数
                 total_videos = db.session.query(Video.path).distinct().count()
             db.session.commit()  # 处理完一张图片或一个完整视频再commit，避免扫描视频到一半时程序中断，下次扫描会跳过这个视频的问题
             assets.remove(asset)
