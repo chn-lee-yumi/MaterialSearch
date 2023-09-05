@@ -163,7 +163,7 @@ def scan(auto=False):
     else:
         is_continue_scan = False
         assets = scan_dir(ASSETS_PATH, SKIP_PATH, IMAGE_EXTENSIONS + VIDEO_EXTENSIONS)
-        with open(f"{TEMP_PATH}/assets.pickle", "wb") as f:
+        with open(temp_file, "wb") as f:
             pickle.dump(assets, f)
     scanning_files = len(assets)
     with app.app_context():
