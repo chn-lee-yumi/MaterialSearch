@@ -7,6 +7,7 @@ import cv2
 import numpy as np
 import torch
 from PIL import Image
+from tqdm import trange
 from transformers import CLIPProcessor, CLIPModel, BertTokenizer, BertForSequenceClassification
 
 from config import *
@@ -110,22 +111,18 @@ def process_video(path):
     try:
         video = cv2.VideoCapture(path)
         frame_rate = round(video.get(cv2.CAP_PROP_FPS))
-        total_frames = video.get(cv2.CAP_PROP_FRAME_COUNT)
+        total_frames = int(video.get(cv2.CAP_PROP_FRAME_COUNT))  # XXX: 这里强制转换为int没问题吗？
         logger.debug(f"fps: {frame_rate} total: {total_frames}")
-        current_frame = 0
-        while True:
-            print("\r进度：%d/%d  " % (current_frame, total_frames), end='')
+        for current_frame in trange(0, total_frames, FRAME_INTERVAL * frame_rate, desc='当前进度', unit='frame'):
             ret, frame = video.read()
             if not ret:
                 return
-            if current_frame % (FRAME_INTERVAL * frame_rate) == 0:
-                inputs = processor(images=frame, return_tensors="pt", padding=True)['pixel_values'].to(torch.device(DEVICE))
-                feature = model.get_image_features(inputs).detach().cpu().numpy()
-                if feature is None:
-                    logger.warning("feature is None")
-                    continue
-                yield current_frame / frame_rate, feature
-            current_frame += 1
+            inputs = processor(images=frame, return_tensors="pt", padding=True)['pixel_values'].to(torch.device(DEVICE))
+            feature = model.get_image_features(inputs).detach().cpu().numpy()
+            if feature is None:
+                logger.warning("feature is None")
+                continue
+            yield current_frame / frame_rate, feature
     except Exception as e:
         logger.warning(f"处理视频出错：{path} {repr(e)}")
         return
