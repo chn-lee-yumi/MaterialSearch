@@ -182,7 +182,7 @@ def scan(auto=False):
         for asset in assets.copy():
             scanned_files += 1
             if scanned_files % 100 == 0:  # 每扫描100次重新save一下
-                with open("assets.pickle", "wb") as f:
+                with open(temp_file, "wb") as f:
                     pickle.dump(assets, f)
             if auto and not is_current_auto_scan_time():  # 如果是自动扫描，判断时间自动停止
                 logger.info(f"超出自动扫描时间，停止扫描")
