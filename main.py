@@ -112,6 +112,19 @@ def clean_cache():
     search_file.cache_clear()
 
 
+def is_current_auto_scan_time() -> bool:
+    """
+    判断当前时间是否在自动扫描时间段内
+    :return: 当前时间是否在自动扫描时间段内时返回True，否则返回False
+    """
+    current_time = datetime.datetime.now().time()
+    start_time = datetime.time(*AUTO_SCAN_START_TIME)
+    end_time = datetime.time(*AUTO_SCAN_END_TIME)
+    is_cross_day = start_time > end_time  # 是否跨日期
+    is_in_range = start_time <= current_time < end_time  # 当前时间是否在 start_time 与 end_time 区间内
+    return is_cross_day ^ is_in_range  # 跨日期与在区间内异或时，在自动扫描时间内
+
+
 def auto_scan():
     """
     自动扫描，每5秒判断一次时间，如果在目标时间段内则开始扫描。
@@ -120,17 +133,10 @@ def auto_scan():
     global is_scanning
     while True:
         time.sleep(5)
-        if is_scanning:
+        if is_scanning and not is_current_auto_scan_time():
             continue
-        current_time = datetime.datetime.now().time()
-        if datetime.time(*AUTO_SCAN_START_TIME) > datetime.time(*AUTO_SCAN_END_TIME):
-            if current_time >= datetime.time(*AUTO_SCAN_START_TIME) or current_time < datetime.time(*AUTO_SCAN_END_TIME):
-                logger.info("触发自动扫描")
-                scan(auto=True)
-        else:
-            if datetime.time(*AUTO_SCAN_START_TIME) <= current_time < datetime.time(*AUTO_SCAN_END_TIME):
-                logger.info("触发自动扫描")
-                scan(auto=True)
+        logger.info("触发自动扫描")
+        scan(auto=True)
 
 
 def scan(auto=False):
@@ -178,16 +184,9 @@ def scan(auto=False):
             if scanned_files % 100 == 0:  # 每扫描100次重新save一下
                 with open("assets.pickle", "wb") as f:
                     pickle.dump(assets, f)
-            if auto:  # 如果是自动扫描，判断时间自动停止
-                current_time = datetime.datetime.now().time()
-                if datetime.time(*AUTO_SCAN_START_TIME) > datetime.time(*AUTO_SCAN_END_TIME):
-                    if datetime.time(*AUTO_SCAN_END_TIME) <= current_time < datetime.time(*AUTO_SCAN_START_TIME):
-                        logger.info(f"超出自动扫描时间，停止扫描")
-                        break
-                else:
-                    if current_time < datetime.time(*AUTO_SCAN_START_TIME) or current_time >= datetime.time(*AUTO_SCAN_END_TIME):
-                        logger.info(f"超出自动扫描时间，停止扫描")
-                        break
+            if auto and not is_current_auto_scan_time():  # 如果是自动扫描，判断时间自动停止
+                logger.info(f"超出自动扫描时间，停止扫描")
+                break
             # 如果文件不存在，则忽略（扫描时文件被移动或删除则会触发这种情况）
             if not os.path.isfile(asset):
                 continue
