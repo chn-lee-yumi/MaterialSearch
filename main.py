@@ -340,17 +340,17 @@ def search_video(positive_prompt="", negative_prompt="", img_path="", img_id=-1,
             image_features = list(map(lambda x: np.frombuffer(x.features, dtype=np.float32).reshape(1, -1), frames))
             scores = match_batch(positive_feature, negative_feature, image_features, positive_threshold, negative_threshold)
             index_pairs = get_index_pairs(scores)
-            for index_pair in index_pairs:
+            for start_index, end_index in index_pairs:
                 # 间隔小于等于2倍FRAME_INTERVAL的算为同一个素材，同时开始时间和结束时间各延长0.5个FRAME_INTERVAL
-                score = max(scores[index_pair[0]:index_pair[1] + 1])
-                if index_pair[0] > 0:
-                    start_time = int((frames[index_pair[0]].frame_time + frames[index_pair[0] - 1].frame_time) / 2)
+                score = max(scores[start_index:end_index + 1])
+                if start_index > 0:
+                    start_time = int((frames[start_index].frame_time + frames[start_index - 1].frame_time) / 2)
                 else:
-                    start_time = frames[index_pair[0]].frame_time
-                if index_pair[1] < len(scores) - 1:
-                    end_time = int((frames[index_pair[1]].frame_time + frames[index_pair[1] + 1].frame_time) / 2 + 0.5)
+                    start_time = frames[start_index].frame_time
+                if end_index < len(scores) - 1:
+                    end_time = int((frames[end_index].frame_time + frames[end_index + 1].frame_time) / 2 + 0.5)
                 else:
-                    end_time = frames[index_pair[1]].frame_time
+                    end_time = frames[end_index].frame_time
                 scores_list.append(
                     {"url": "api/get_video/%s" % base64.urlsafe_b64encode(path.encode()).decode() + "#t=%.1f,%.1f" % (
                         start_time, end_time),
