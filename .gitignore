@@ -134,3 +134,17 @@ dmypy.json
 # ignore local config
 config.py
 config.local.py
+
+# Python venv
+[Ss]hare 
+# https://github.com/github/gitignore/blob/main/Global/VirtualEnv.gitignore
+.Python
+[Bb]in
+[Ii]nclude
+[Ll]ib
+[Ll]ib64
+[Ll]ocal
+[Ss]cripts
+pyvenv.cfg
+.venv
+pip-selfcheck.json
