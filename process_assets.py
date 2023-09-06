@@ -2,6 +2,7 @@
 import concurrent.futures
 import logging
 import os
+import pathlib
 
 import cv2
 import numpy as np
@@ -24,19 +25,6 @@ if MODEL_LANGUAGE == "Chinese":
 logger.info("Model loaded.")
 
 
-def contain_strings(text, sub_set):
-    """
-    判断字符串里是否包含某些子字符串
-    :param text: 被判断的字符串
-    :param sub_set: 子字符串集合
-    :return: Bool
-    """
-    for sub in sub_set:
-        if sub in text:
-            return True
-    return False
-
-
 def create_dir_if_not_exists(dir_path):
     """
     判断目录是否存在，如果目录不存在，则创建目录
@@ -47,30 +35,25 @@ def create_dir_if_not_exists(dir_path):
         os.makedirs(dir_path)
 
 
-def scan_dir(paths, skip_paths, extensions):
+def scan_dir(paths):
     """
     遍历文件并返回特定后缀结尾的文件集合
-    :param paths: (string), 根目录
-    :param skip_paths: (string), 忽略目录
-    :param extensions: tuple, 文件后缀名列表
+    :param paths: iterable(string), 根目录列表
     :return: set, 文件路径集合
     """
     assets = set()
+    skip_keywords = SKIP_PATH + IGNORE_STRINGS  # 没有本质区别
+    skip_keywords = [i for i in skip_keywords if i]  # 避免包含空字符串导致全部跳过的情况
+    extensions = IMAGE_EXTENSIONS + VIDEO_EXTENSIONS
     # 遍历根目录及其子目录下的所有文件
     for path in paths:
-        for dir_path, dir_names, filenames in os.walk(path):
-            if dir_path.startswith(skip_paths) or contain_strings(dir_path.lower(), IGNORE_STRINGS):
-                logger.debug(f"跳过目录/缩略图：{dir_path}")
-                continue
-            for filename in filenames:
-                if contain_strings(filename.lower(), IGNORE_STRINGS):
-                    continue
-                # 判断文件是否为特定后缀结尾
-                if filename.lower().endswith(extensions):
-                    # 获取图片文件的绝对路径
-                    img_path = os.path.join(dir_path, filename)
-                    # 将路径增加到文件集合
-                    assets.add(img_path)
+        path = pathlib.Path(path)
+        for file in filter(lambda x: x.is_file(), path.rglob('*')):
+            right_ext = file.suffix in extensions
+            not_skip = all((keyword not in str(file).lower() for keyword in skip_keywords))
+            logger.debug(f'{path} 匹配后缀：{right_ext} 跳过：{not_skip}')
+            if right_ext and not_skip:
+                assets.add(str(file))
     return assets
 
 

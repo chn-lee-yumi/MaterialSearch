@@ -162,22 +162,27 @@ def scan(auto=False):
                 assets.remove(asset)
     else:
         is_continue_scan = False
-        assets = scan_dir(ASSETS_PATH, SKIP_PATH, IMAGE_EXTENSIONS + VIDEO_EXTENSIONS)
+        assets = scan_dir(ASSETS_PATH)
         with open(temp_file, "wb") as f:
             pickle.dump(assets, f)
     scanning_files = len(assets)
     with app.app_context():
         # 删除不存在的文件记录
-        for file in db.session.query(Image):
-            if not is_continue_scan and (file.path not in assets or file.path.startswith(SKIP_PATH)):
-                logger.info(f"文件已删除：{file.path}")
-                db.session.delete(file)
-        for path in db.session.query(Video.path).distinct():
-            path = path[0]
-            if not is_continue_scan and (path not in assets or path.startswith(SKIP_PATH)):
-                logger.info(f"文件已删除：{path}")
-                db.session.query(Video).filter_by(path=path).delete()
-        db.session.commit()
+        if not is_continue_scan:  # 非断点恢复的情况下才删除
+            skip_keywords = SKIP_PATH + IGNORE_STRINGS  # 没有本质区别
+            skip_keywords = [i for i in skip_keywords if i]  # 避免包含空字符串导致删库的情况
+            for file in db.session.query(Image):
+                skip = any([keyword in file.path.lower() for keyword in skip_keywords])
+                if skip or file.path not in assets:
+                    logger.info(f"文件已删除：{file.path}")
+                    db.session.delete(file)
+            for path in db.session.query(Video.path).distinct():
+                path = path[0]
+                skip = any([keyword in path.lower() for keyword in skip_keywords])
+                if skip or path not in assets:
+                    logger.info(f"文件已删除：{path}")
+                    db.session.query(Video).filter_by(path=path).delete()
+            db.session.commit()
         # 扫描文件
         for asset in assets.copy():
             scanned_files += 1
