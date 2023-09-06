@@ -100,6 +100,8 @@ def process_video(path):
             ret, frame = video.read()
             if not ret:
                 return
+            for _ in range(FRAME_INTERVAL * frame_rate):
+                video.grab()  # 跳帧
             inputs = processor(images=frame, return_tensors="pt", padding=True)['pixel_values'].to(torch.device(DEVICE))
             feature = model.get_image_features(inputs).detach().cpu().numpy()
             if feature is None:
