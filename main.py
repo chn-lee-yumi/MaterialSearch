@@ -2,13 +2,13 @@ import base64
 import logging
 import pickle
 import threading
-import time
 from functools import wraps
 
 from flask import abort, jsonify, redirect, request, send_file, session, url_for
 
 from app_base import app
 from config import *
+import crud
 from database import Image, Video, db
 from process_assets import match_text_and_image, process_image, process_text
 from scan import Scanner
@@ -38,9 +38,9 @@ def optimize_db():
     :return: None
     """
     with app.app_context():
-        total_images = db.session.query(Image).count()
-        total_videos = db.session.query(Video.path).distinct().count()
-        image = db.session.query(Image).first()
+        total_images = crud.get_image_count(db.session)
+        total_videos = crud.get_video_count(db.session)
+        image = crud.get_image(db.session)
         try:
             pickle.loads(image.features)
         except Exception as e:
@@ -51,7 +51,7 @@ def optimize_db():
             logger.info("开始优化数据库，切勿中断，否则要删库重扫！如果你文件数量多，可能比较久。")
             logger.info("参考速度：5万图片+200个视频（100万视频帧），在J3455上大约需要15分钟。")
             i = 0
-            for file in db.session.query(Image):
+            for file in crud.get_images(db.session):
                 features = pickle.loads(file.features)
                 if features is None:
                     db.session.delete(file)
