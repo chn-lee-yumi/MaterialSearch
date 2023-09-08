@@ -108,8 +108,10 @@ def clean_cache():
     清空搜索缓存
     :return: None
     """
-    search_image.cache_clear()
-    search_video.cache_clear()
+    search_image_by_text.cache_clear()
+    search_image_by_image.cache_clear()
+    search_video_by_text.cache_clear()
+    search_video_by_image.cache_clear()
     search_file.cache_clear()
 
 
@@ -253,36 +255,15 @@ def scan(auto=False):
     is_scanning = False
 
 
-@lru_cache(maxsize=CACHE_SIZE)
-def search_image(positive_prompt="", negative_prompt="", img_path="", img_id=-1,
-                 positive_threshold=POSITIVE_THRESHOLD, negative_threshold=NEGATIVE_THRESHOLD, image_threshold=IMAGE_THRESHOLD):
+def search_image_by_feature(positive_feature, negative_feature=None, positive_threshold=POSITIVE_THRESHOLD, negative_threshold=NEGATIVE_THRESHOLD):
     """
-    搜图
-    :param positive_prompt: string, 正向提示词
-    :param negative_prompt: string, 反向提示词
-    :param img_path: string, 图片路径，如果存在，说明是用图搜索，此时忽略提示词
-    :param img_id: int, 图片在数据库中的id，如果大于等于0，说明是用数据库的图来进行搜索，此时忽略提示词和img_path
-    :param positive_threshold: int/float, 文字搜索阈值，高于此分数才显示
-    :param negative_threshold: int/float, 文字过滤阈值，低于此分数才显示
-    :param image_threshold: int/float, 以图搜素材匹配阈值，高于这个分数才展示
-    :return:
+    通过特征搜索图片
+    :param positive_feature: np.array, 正向特征向量
+    :param negative_feature: np.array, 反向特征向量
+    :param positive_threshold: int/float, 正向阈值
+    :param negative_threshold: int/float, 反向阈值
+    :return: list[dict], 搜索结果列表
     """
-    if img_id >= 0:
-        with app.app_context():
-            image = db.session.query(Image).filter_by(id=img_id).first()
-            if not image:
-                logger.warning("用数据库的图来进行搜索，但id在数据库中不存在")
-                return []
-            positive_feature = np.frombuffer(image.features, dtype=np.float32).reshape(1, -1)
-        positive_threshold = image_threshold
-        negative_feature = None
-    elif img_path:
-        positive_feature = process_image(img_path)
-        positive_threshold = image_threshold
-        negative_feature = None
-    else:
-        positive_feature = process_text(positive_prompt)
-        negative_feature = process_text(negative_prompt)
     scores_list = []
     t0 = time.time()
     with app.app_context():
@@ -308,38 +289,78 @@ def search_image(positive_prompt="", negative_prompt="", img_path="", img_id=-1,
     return sorted_list
 
 
-@lru_cache(maxsize=CACHE_SIZE)
-def search_video(positive_prompt="", negative_prompt="", img_path="", img_id=-1,
-                 positive_threshold=POSITIVE_THRESHOLD, negative_threshold=NEGATIVE_THRESHOLD, image_threshold=IMAGE_THRESHOLD):
+def search_image_by_text(positive_prompt="", negative_prompt="", positive_threshold=POSITIVE_THRESHOLD, negative_threshold=NEGATIVE_THRESHOLD):
     """
-    搜视频
+    使用文字搜图片
     :param positive_prompt: string, 正向提示词
     :param negative_prompt: string, 反向提示词
-    :param img_path: string, 图片路径，如果存在，说明是用图搜索，此时忽略提示词
-    :param img_id: int, 图片在数据库中的id，如果大于等于0，说明是用数据库的图来进行搜索，此时忽略提示词和img_path
-    :param positive_threshold: int/float, 文字搜索阈值，高于此分数才显示
-    :param negative_threshold: int/float, 文字过滤阈值，低于此分数才显示
-    :param image_threshold: int/float, 以图搜素材匹配阈值，高于这个分数才展示
-    :return:
+    :param positive_threshold: int/float, 正向阈值
+    :param negative_threshold: int/float, 反向阈值
+    :return: list[dict], 搜索结果列表
     """
-    if img_id >= 0:
+    positive_feature = process_text(positive_prompt)
+    negative_feature = process_text(negative_prompt)
+    return search_image_by_feature(positive_feature, negative_feature, positive_threshold, negative_threshold)
+
+
+@lru_cache(maxsize=CACHE_SIZE)
+def search_image_by_image(img_id_or_path, threshold=IMAGE_THRESHOLD):
+    """
+    使用图片搜图片
+    :param img_id_or_path: int/string, 图片ID 或 图片路径
+    :param threshold: int/float, 搜索阈值
+    :return: list[dict], 搜索结果列表
+    """
+    try:
+        img_id = int(img_id_or_path)
+    except ValueError as e:
+        img_path = img_id_or_path
+    if img_id:
         with app.app_context():
             image = db.session.query(Image).filter_by(id=img_id).first()
             if not image:
                 logger.warning("用数据库的图来进行搜索，但id在数据库中不存在")
                 return []
-            positive_feature = np.frombuffer(image.features, dtype=np.float32).reshape(1, -1)
-        positive_threshold = image_threshold
-        negative_feature = None
+            feature = np.frombuffer(image.features, dtype=np.float32).reshape(1, -1)
     elif img_path:
-        positive_feature = process_image(img_path)
-        positive_threshold = image_threshold
-        negative_feature = None
-    else:
-        positive_feature = process_text(positive_prompt)
-        negative_feature = process_text(negative_prompt)
-    scores_list = []
+        feature = process_image(img_path)
+    return search_image_by_feature(feature, None, threshold)
+
+
+def get_index_pairs(scores):
+    """
+    根据每一帧的余弦相似度计算素材片段
+    :param scores: [<class 'numpy.nparray'>], 余弦相似度列表，里面每个元素的shape=(1, 1)
+    :return: 返回连续的帧序号列表，如第2-5帧、第11-13帧都符合搜索内容，则返回[(2,5),(11,13)]
+    """
+    indexes = []
+    for i in range(len(scores)):
+        if scores[i]:
+            indexes.append(i)
+    result = []
+    start_index = -1
+    for i in range(len(indexes)):
+        if start_index == -1:
+            start_index = indexes[i]
+        elif indexes[i] - indexes[i - 1] > 2:  # 允许中间空1帧
+            result.append((start_index, indexes[i - 1]))
+            start_index = indexes[i]
+    if start_index != -1:
+        result.append((start_index, indexes[-1]))
+    return result
+
+
+def search_video_by_feature(positive_feature, negative_feature=None, positive_threshold=POSITIVE_THRESHOLD, negative_threshold=NEGATIVE_THRESHOLD):
+    """
+    通过特征搜索视频
+    :param positive_feature: np.array, 正向特征向量
+    :param negative_feature: np.array, 反向特征向量
+    :param positive_threshold: int/float, 正向阈值
+    :param negative_threshold: int/float, 反向阈值
+    :return: list[dict], 搜索结果列表
+    """
     t0 = time.time()
+    scores_list = []
     with app.app_context():
         for path in db.session.query(Video.path).distinct():  # 逐个视频比对
             path = path[0]
@@ -368,6 +389,46 @@ def search_video(positive_prompt="", negative_prompt="", img_path="", img_id=-1,
 
 
 @lru_cache(maxsize=CACHE_SIZE)
+def search_video_by_text(positive_prompt="", negative_prompt="", positive_threshold=POSITIVE_THRESHOLD, negative_threshold=NEGATIVE_THRESHOLD):
+    """
+    使用文字搜视频
+    :param positive_prompt: string, 正向提示词
+    :param negative_prompt: string, 反向提示词
+    :param positive_threshold: int/float, 正向阈值
+    :param negative_threshold: int/float, 反向阈值
+    :return: list[dict], 搜索结果列表
+    """
+    positive_feature = process_text(positive_prompt)
+    negative_feature = process_text(negative_prompt)
+    ret = search_video_by_feature(positive_feature, negative_feature, positive_threshold, negative_threshold)
+    return ret
+
+
+@lru_cache(maxsize=CACHE_SIZE)
+def search_video_by_image(img_id_or_path, threshold=IMAGE_THRESHOLD):
+    """
+    使用图片搜视频
+    :param img_id_or_path: int/string, 图片ID 或 图片路径
+    :param threshold: int/float, 搜索阈值
+    :return: list[dict], 搜索结果列表
+    """
+    try:
+        img_id = int(img_id_or_path)
+    except ValueError as e:
+        img_path = img_id_or_path
+    if img_id:
+        with app.app_context():
+            image = db.session.query(Image).filter_by(id=img_id).first()
+            if not image:
+                logger.warning("用数据库的图来进行搜索，但id在数据库中不存在")
+                return []
+            feature = np.frombuffer(image.features, dtype=np.float32).reshape(1, -1)
+    elif img_path:
+        feature = process_image(img_path)
+    return search_video_by_feature(feature, None, threshold)
+
+
+@lru_cache(maxsize=CACHE_SIZE)
 def search_file(path, file_type):
     """
     通过路径搜索图片或视频
@@ -388,29 +449,6 @@ def search_file(path, file_type):
         elif file_type == "video":
             file_list.append({"url": "api/get_video/%s" % base64.urlsafe_b64encode(file.path.encode()).decode(), "path": file.path})
     return file_list
-
-
-def get_index_pairs(scores):
-    """
-    根据每一帧的余弦相似度计算素材片段
-    :param scores: [<class 'numpy.nparray'>], 余弦相似度列表，里面每个元素的shape=(1, 1)
-    :return: 返回连续的帧序号列表，如第2-5帧、第11-13帧都符合搜索内容，则返回[(2,5),(11,13)]
-    """
-    indexes = []
-    for i in range(len(scores)):
-        if scores[i]:
-            indexes.append(i)
-    result = []
-    start_index = -1
-    for i in range(len(indexes)):
-        if start_index == -1:
-            start_index = indexes[i]
-        elif indexes[i] - indexes[i - 1] > 2:  # 允许中间空1帧
-            result.append((start_index, indexes[i - 1]))
-            start_index = indexes[i]
-    if start_index != -1:
-        result.append((start_index, indexes[-1]))
-    return result
 
 
 def login_required(view_func):
@@ -535,21 +573,21 @@ def api_match():
         abort(500)
     # 进行匹配
     if search_type == 0:  # 文字搜图
-        sorted_list = search_image(positive_prompt=data['positive'], negative_prompt=data['negative'],
-                                   positive_threshold=positive_threshold, negative_threshold=negative_threshold)[:MAX_RESULT_NUM]
+        sorted_list = search_image_by_text(data['positive'], data['negative'],
+                                   positive_threshold, negative_threshold)[:MAX_RESULT_NUM]
     elif search_type == 1:  # 以图搜图
-        sorted_list = search_image(img_path=upload_file_path, image_threshold=image_threshold)[:MAX_RESULT_NUM]
+        sorted_list = search_image_by_image(upload_file_path, image_threshold)[:MAX_RESULT_NUM]
     elif search_type == 2:  # 文字搜视频
-        sorted_list = search_video(positive_prompt=data['positive'], negative_prompt=data['negative'],
-                                   positive_threshold=positive_threshold, negative_threshold=negative_threshold)[:MAX_RESULT_NUM]
+        sorted_list = search_video_by_text(data['positive'], data['negative'],
+                                   positive_threshold, negative_threshold)[:MAX_RESULT_NUM]
     elif search_type == 3:  # 以图搜视频
-        sorted_list = search_video(img_path=upload_file_path, image_threshold=image_threshold)[:MAX_RESULT_NUM]
+        sorted_list = search_video_by_image(upload_file_path, image_threshold)[:MAX_RESULT_NUM]
     elif search_type == 4:  # 图文相似度匹配
         return jsonify({"score": "%.2f" % (match_text_and_image(process_text(data['text']), process_image(upload_file_path)) * 100)})
     elif search_type == 5:  # 以图搜图(图片是数据库中的)
-        sorted_list = search_image(img_id=img_id, image_threshold=image_threshold)[:MAX_RESULT_NUM]
+        sorted_list = search_image_by_image(img_id, image_threshold)[:MAX_RESULT_NUM]
     elif search_type == 6:  # 以图搜视频(图片是数据库中的)
-        sorted_list = search_video(img_id=img_id, image_threshold=image_threshold)[:MAX_RESULT_NUM]
+        sorted_list = search_video_by_image(img_id, image_threshold)[:MAX_RESULT_NUM]
     elif search_type == 7:  # 路径搜图
         return jsonify(search_file(path=path, file_type="image")[:top_n])
     elif search_type == 8:  # 路径搜视频
