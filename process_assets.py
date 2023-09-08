@@ -9,10 +9,10 @@ import torch
 from PIL import Image
 from tqdm import trange
 from transformers import (
-    CLIPProcessor,
-    CLIPModel,
-    BertTokenizer,
     BertForSequenceClassification,
+    BertTokenizer,
+    CLIPModel,
+    CLIPProcessor,
 )
 
 from config import *

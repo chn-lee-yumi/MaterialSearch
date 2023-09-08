@@ -11,7 +11,7 @@ from app_base import app
 from config import *
 from database import Image, Video
 from process_assets import process_image, process_video
-
+from search import clean_cache
 
 class Scanner:
     """
@@ -43,6 +43,38 @@ class Scanner:
         self.skip_paths = [Path(i) for i in SKIP_PATH if i]
         self.ignore_keywords = [i for i in IGNORE_STRINGS if i]
         self.extensions = IMAGE_EXTENSIONS + VIDEO_EXTENSIONS
+
+    def init(self):
+        self.total_images = self.db.session.query(Image).count()  # 获取图片总数
+        self.total_videos = (
+            self.db.session.query(Video.path).distinct().count()
+        )  # 获取视频总数
+        self.total_video_frames = self.db.session.query(Video).count()  # 获取视频帧总数
+
+    def get_status(self):
+        if self.scanned_files:
+            remain_time = (
+                (time.time() - self.scan_start_time)
+                / self.scanned_files
+                * self.scanning_files
+            )
+        else:
+            remain_time = 0
+        if self.is_scanning and self.scanning_files != 0:
+            progress = self.scanned_files / self.scanning_files
+        else:
+            progress = 0
+        return {
+            "status": self.is_scanning,
+            "total_images": self.total_images,
+            "total_videos": self.total_videos,
+            "total_video_frames": self.total_video_frames,
+            "scanning_files": self.scanning_files,
+            "remain_files": self.scanning_files - self.scanned_files,
+            "progress": progress,
+            "remain_time": int(remain_time),
+            "enable_login": ENABLE_LOGIN,
+        }
 
     def save_assets(self):
         with open(self.temp_file, "wb") as f:
@@ -239,5 +271,5 @@ class Scanner:
         self.scanned_files = 0
         os.remove(self.temp_file)
         self.logger.info("扫描完成，用时%d秒" % int(time.time() - start_time))
-        # clean_cache()  # 清空搜索缓存 FIXME:
+        clean_cache()  # 清空搜索缓存
         self.is_scanning = False
