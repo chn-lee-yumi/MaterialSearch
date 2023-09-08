@@ -51,7 +51,7 @@ def scan_dir(paths):
         path = Path(path)
         for file in filter(lambda x: x.is_file(), path.rglob('*')):
             wrong_ext = file.suffix not in extensions
-            skip = any((p in file for p in skip_paths))
+            skip = any((path.is_relative_to(p) for p in skip_paths))
             ignore = any((keyword in str(file).lower() for keyword in ignore_keywords))
             logger.debug(f'{path} 不匹配后缀：{wrong_ext} 跳过：{skip} 忽略： {ignore}')
             if any((wrong_ext, skip, ignore)):

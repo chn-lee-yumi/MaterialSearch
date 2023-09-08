@@ -161,7 +161,7 @@ def scan(auto=False):
         skip_paths = [Path(i) for i in SKIP_PATH if i]
         ignore_keywords = [i for i in IGNORE_STRINGS if i]
         for path in assets.copy():
-            skip = any((p in Path(path) for p in skip_paths))
+            skip = any((Path(path).is_relative_to(p) for p in skip_paths))
             ignore = any((keyword in path.lower() for keyword in ignore_keywords))
             if skip or ignore:
                 assets.remove(path)
