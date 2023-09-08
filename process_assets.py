@@ -2,11 +2,11 @@
 import concurrent.futures
 import logging
 import os
-import pathlib
 
 import cv2
 import numpy as np
 import torch
+from pathlib import Path
 from PIL import Image
 from tqdm import trange
 from transformers import CLIPProcessor, CLIPModel, BertTokenizer, BertForSequenceClassification
@@ -42,18 +42,21 @@ def scan_dir(paths):
     :return: set, 文件路径集合
     """
     assets = set()
-    skip_keywords = SKIP_PATH + IGNORE_STRINGS  # 没有本质区别
-    skip_keywords = [i for i in skip_keywords if i]  # 避免包含空字符串导致全部跳过的情况
+    # 避免包含空字符串导致删库的情况
+    skip_paths = [Path(i) for i in SKIP_PATH if i]
+    ignore_keywords = [i for i in IGNORE_STRINGS if i]
     extensions = IMAGE_EXTENSIONS + VIDEO_EXTENSIONS
     # 遍历根目录及其子目录下的所有文件
     for path in paths:
-        path = pathlib.Path(path)
+        path = Path(path)
         for file in filter(lambda x: x.is_file(), path.rglob('*')):
-            right_ext = file.suffix in extensions
-            not_skip = all((keyword not in str(file).lower() for keyword in skip_keywords))
-            logger.debug(f'{path} 匹配后缀：{right_ext} 跳过：{not_skip}')
-            if right_ext and not_skip:
-                assets.add(str(file))
+            wrong_ext = file.suffix not in extensions
+            skip = any((p in file for p in skip_paths))
+            ignore = any((keyword in str(file).lower() for keyword in ignore_keywords))
+            logger.debug(f'{path} 不匹配后缀：{wrong_ext} 跳过：{skip} 忽略： {ignore}')
+            if any((wrong_ext, skip, ignore)):
+                continue
+            assets.add(str(file))
     return assets
 
 
@@ -94,7 +97,7 @@ def process_video(path):
     try:
         video = cv2.VideoCapture(path)
         frame_rate = round(video.get(cv2.CAP_PROP_FPS))
-        total_frames = int(video.get(cv2.CAP_PROP_FRAME_COUNT))  # XXX: 这里强制转换为int没问题吗？
+        total_frames = int(video.get(cv2.CAP_PROP_FRAME_COUNT))
         logger.debug(f"fps: {frame_rate} total: {total_frames}")
         for current_frame in trange(0, total_frames, FRAME_INTERVAL * frame_rate, desc='当前进度', unit='frame'):
             ret, frame = video.read()

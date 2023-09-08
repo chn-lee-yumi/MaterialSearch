@@ -5,6 +5,7 @@ import pickle
 import threading
 import time
 from functools import lru_cache, wraps
+from pathlib import Path
 
 import numpy as np
 from flask import Flask, jsonify, request, send_file, abort, session, redirect, url_for
@@ -133,7 +134,7 @@ def auto_scan():
     global is_scanning
     while True:
         time.sleep(5)
-        if is_scanning and not is_current_auto_scan_time():
+        if is_scanning or not is_current_auto_scan_time():
             continue
         logger.info("触发自动扫描")
         scan(auto=True)
@@ -157,9 +158,13 @@ def scan(auto=False):
         is_continue_scan = True
         with open(temp_file, "rb") as f:
             assets = pickle.load(f)
-        for asset in assets.copy():
-            if asset.startswith(SKIP_PATH):
-                assets.remove(asset)
+        skip_paths = [Path(i) for i in SKIP_PATH if i]
+        ignore_keywords = [i for i in IGNORE_STRINGS if i]
+        for path in assets.copy():
+            skip = any((p in Path(path) for p in skip_paths))
+            ignore = any((keyword in path.lower() for keyword in ignore_keywords))
+            if skip or ignore:
+                assets.remove(path)
     else:
         is_continue_scan = False
         assets = scan_dir(ASSETS_PATH)
@@ -169,22 +174,19 @@ def scan(auto=False):
     with app.app_context():
         # 删除不存在的文件记录
         if not is_continue_scan:  # 非断点恢复的情况下才删除
-            skip_keywords = SKIP_PATH + IGNORE_STRINGS  # 没有本质区别
-            skip_keywords = [i for i in skip_keywords if i]  # 避免包含空字符串导致删库的情况
             for file in db.session.query(Image):
-                skip = any([keyword in file.path.lower() for keyword in skip_keywords])
-                if skip or file.path not in assets:
+                # assets 预处理过了，无需再判断 skip / ignore
+                if file.path not in assets:
                     logger.info(f"文件已删除：{file.path}")
                     db.session.delete(file)
             for path in db.session.query(Video.path).distinct():
                 path = path[0]
-                skip = any([keyword in path.lower() for keyword in skip_keywords])
-                if skip or path not in assets:
+                if path not in assets:
                     logger.info(f"文件已删除：{path}")
                     db.session.query(Video).filter_by(path=path).delete()
             db.session.commit()
         # 扫描文件
-        for asset in assets.copy():
+        for path in assets.copy():
             scanned_files += 1
             if scanned_files % AUTO_SAVE_INTERVAL == 0:  # 每扫描 AUTO_SAVE_INTERVAL 个文件重新save一下
                 with open(temp_file, "wb") as f:
@@ -193,52 +195,52 @@ def scan(auto=False):
                 logger.info(f"超出自动扫描时间，停止扫描")
                 break
             # 如果文件不存在，则忽略（扫描时文件被移动或删除则会触发这种情况）
-            if not os.path.isfile(asset):
+            if not os.path.isfile(path):
                 continue
             # 如果数据库里有这个文件，并且修改时间一致，则跳过，否则进行预处理并入库
-            if asset.lower().endswith(IMAGE_EXTENSIONS):  # 图片
-                db_record = db.session.query(Image).filter_by(path=asset).first()
-                modify_time = datetime.datetime.fromtimestamp(os.path.getmtime(asset))
+            if path.lower().endswith(IMAGE_EXTENSIONS):  # 图片
+                db_record = db.session.query(Image).filter_by(path=path).first()
+                modify_time = datetime.datetime.fromtimestamp(os.path.getmtime(path))
                 if db_record and db_record.modify_time == modify_time:
-                    logger.debug(f"文件无变更，跳过：{asset}")
-                    assets.remove(asset)
+                    logger.debug(f"文件无变更，跳过：{path}")
+                    assets.remove(path)
                     continue
-                features = process_image(asset)
+                features = process_image(path)
                 if features is None:
-                    assets.remove(asset)
+                    assets.remove(path)
                     continue
                 # 写入数据库
                 features = features.tobytes()
                 if db_record:
-                    logger.info(f"文件有更新：{asset}")
+                    logger.info(f"文件有更新：{path}")
                     db_record.modify_time = modify_time
                     db_record.features = features
                 else:
-                    logger.info(f"新增文件：{asset}")
-                    db.session.add(Image(path=asset, modify_time=modify_time, features=features))
+                    logger.info(f"新增文件：{path}")
+                    db.session.add(Image(path=path, modify_time=modify_time, features=features))
                     total_images = db.session.query(Image).count()  # 获取图片总数
             else:  # 视频
-                db_record = db.session.query(Video).filter_by(path=asset).first()
-                modify_time = datetime.datetime.fromtimestamp(os.path.getmtime(asset))
+                db_record = db.session.query(Video).filter_by(path=path).first()
+                modify_time = datetime.datetime.fromtimestamp(os.path.getmtime(path))
                 if db_record and db_record.modify_time == modify_time:
-                    logger.debug(f"文件无变更，跳过：{asset}")
-                    assets.remove(asset)
+                    logger.debug(f"文件无变更，跳过：{path}")
+                    assets.remove(path)
                     continue
                 # 写入数据库
                 if db_record:
-                    logger.info(f"文件有更新：{asset}")
-                    db.session.query(Video).filter_by(path=asset).delete()  # 视频文件直接删了重新写数据，而不是直接替换，因为视频长短可能有变化，不方便处理
+                    logger.info(f"文件有更新：{path}")
+                    db.session.query(Video).filter_by(path=path).delete()  # 视频文件直接删了重新写数据，而不是直接替换，因为视频长短可能有变化，不方便处理
                 else:
-                    logger.info(f"新增文件：{asset}")
+                    logger.info(f"新增文件：{path}")
                 # 使用 bulk_save_objects 一次性提交
                 db.session.bulk_save_objects([
-                    Video(path=asset, frame_time=frame_time, modify_time=modify_time, features=features.tobytes())
-                    for frame_time, features in process_video(asset)
+                    Video(path=path, frame_time=frame_time, modify_time=modify_time, features=features.tobytes())
+                    for frame_time, features in process_video(path)
                 ])
                 total_video_frames = db.session.query(Video).count()  # 获取视频帧总数
                 total_videos = db.session.query(Video.path).distinct().count()
             db.session.commit()  # 处理完一张图片或一个完整视频再commit，避免扫描视频到一半时程序中断，下次扫描会跳过这个视频的问题
-            assets.remove(asset)
+            assets.remove(path)
         # 最后重新统计一下数量
         total_images = db.session.query(Image).count()  # 获取图片总数
         total_videos = db.session.query(Video.path).distinct().count()  # 获取视频总数
