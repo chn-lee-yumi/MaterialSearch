@@ -6,7 +6,9 @@ import os
 import cv2
 import numpy as np
 import torch
+from pathlib import Path
 from PIL import Image
+from tqdm import trange
 from transformers import CLIPProcessor, CLIPModel, BertTokenizer, BertForSequenceClassification
 
 from config import *
@@ -23,19 +25,6 @@ if MODEL_LANGUAGE == "Chinese":
 logger.info("Model loaded.")
 
 
-def contain_strings(text, sub_set):
-    """
-    判断字符串里是否包含某些子字符串
-    :param text: 被判断的字符串
-    :param sub_set: 子字符串集合
-    :return: Bool
-    """
-    for sub in sub_set:
-        if sub in text:
-            return True
-    return False
-
-
 def create_dir_if_not_exists(dir_path):
     """
     判断目录是否存在，如果目录不存在，则创建目录
@@ -46,30 +35,28 @@ def create_dir_if_not_exists(dir_path):
         os.makedirs(dir_path)
 
 
-def scan_dir(paths, skip_paths, extensions):
+def scan_dir(paths):
     """
     遍历文件并返回特定后缀结尾的文件集合
-    :param paths: (string), 根目录
-    :param skip_paths: (string), 忽略目录
-    :param extensions: tuple, 文件后缀名列表
+    :param paths: iterable(string), 根目录列表
     :return: set, 文件路径集合
     """
     assets = set()
+    # 避免包含空字符串导致删库的情况
+    skip_paths = [Path(i) for i in SKIP_PATH if i]
+    ignore_keywords = [i for i in IGNORE_STRINGS if i]
+    extensions = IMAGE_EXTENSIONS + VIDEO_EXTENSIONS
     # 遍历根目录及其子目录下的所有文件
     for path in paths:
-        for dir_path, dir_names, filenames in os.walk(path):
-            if dir_path.startswith(skip_paths) or contain_strings(dir_path.lower(), IGNORE_STRINGS):
-                logger.debug(f"跳过目录/缩略图：{dir_path}")
+        path = Path(path)
+        for file in filter(lambda x: x.is_file(), path.rglob('*')):
+            wrong_ext = file.suffix not in extensions
+            skip = any((path.is_relative_to(p) for p in skip_paths))
+            ignore = any((keyword in str(file).lower() for keyword in ignore_keywords))
+            logger.debug(f'{path} 不匹配后缀：{wrong_ext} 跳过：{skip} 忽略： {ignore}')
+            if any((wrong_ext, skip, ignore)):
                 continue
-            for filename in filenames:
-                if contain_strings(filename.lower(), IGNORE_STRINGS):
-                    continue
-                # 判断文件是否为特定后缀结尾
-                if filename.lower().endswith(extensions):
-                    # 获取图片文件的绝对路径
-                    img_path = os.path.join(dir_path, filename)
-                    # 将路径增加到文件集合
-                    assets.add(img_path)
+            assets.add(str(file))
     return assets
 
 
@@ -110,22 +97,20 @@ def process_video(path):
     try:
         video = cv2.VideoCapture(path)
         frame_rate = round(video.get(cv2.CAP_PROP_FPS))
-        total_frames = video.get(cv2.CAP_PROP_FRAME_COUNT)
+        total_frames = int(video.get(cv2.CAP_PROP_FRAME_COUNT))
         logger.debug(f"fps: {frame_rate} total: {total_frames}")
-        current_frame = 0
-        while True:
-            print("\r进度：%d/%d  " % (current_frame, total_frames), end='')
+        for current_frame in trange(0, total_frames, FRAME_INTERVAL * frame_rate, desc='当前进度', unit='frame'):
             ret, frame = video.read()
             if not ret:
                 return
-            if current_frame % (FRAME_INTERVAL * frame_rate) == 0:
-                inputs = processor(images=frame, return_tensors="pt", padding=True)['pixel_values'].to(torch.device(DEVICE))
-                feature = model.get_image_features(inputs).detach().cpu().numpy()
-                if feature is None:
-                    logger.warning("feature is None")
-                    continue
-                yield current_frame / frame_rate, feature
-            current_frame += 1
+            for _ in range(FRAME_INTERVAL * frame_rate):
+                video.grab()  # 跳帧
+            inputs = processor(images=frame, return_tensors="pt", padding=True)['pixel_values'].to(torch.device(DEVICE))
+            feature = model.get_image_features(inputs).detach().cpu().numpy()
+            if feature is None:
+                logger.warning("feature is None")
+                continue
+            yield current_frame / frame_rate, feature
     except Exception as e:
         logger.warning(f"处理视频出错：{path} {repr(e)}")
         return
