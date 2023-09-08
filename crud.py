@@ -17,6 +17,13 @@ def get_images(session: Session):
     return session.query(Image)
 
 
+def get_image_path_by_id(session: Session, id: int):
+    path = session.query(Image.path).filter_by(id=id).first()
+    if path:
+        return path[0]
+    return ""
+
+
 def get_image_count(session: Session):
     return session.query(Image).count()
 
@@ -113,3 +120,10 @@ def delete_record_if_not_exist(session: Session, assets: set):
             logger.info(f"文件已删除：{path}")
             session.query(Video).filter_by(path=path).delete()
     session.commit()
+
+
+def is_video_exist(session: Session, path: str):
+    video = session.query(Video).filter_by(path=path).first()
+    if video:
+        return True
+    return False

@@ -9,7 +9,7 @@ from flask import abort, jsonify, redirect, request, send_file, session, url_for
 from app_base import app
 from config import *
 import crud
-from database import Image, Video, db
+from database import Video, db
 from process_assets import match_text_and_image, process_image, process_text
 from scan import Scanner
 from search import (
@@ -27,7 +27,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-scanner = Scanner(app, db)
+scanner = Scanner(db)
 upload_file_path = ""
 
 
@@ -92,7 +92,7 @@ def init():
         os.mkdir(TEMP_PATH)
     optimize_db()  # 数据库优化（临时功能）
     if AUTO_SCAN:
-        auto_scan_thread = threading.Thread(target=scanner.auto_scan, args=())
+        auto_scan_thread = threading.Thread(target=scanner.auto_scan, args=(app.app_context(), ))
         auto_scan_thread.start()
 
 
@@ -161,7 +161,8 @@ def api_scan():
     """开始扫描"""
     global scanner
     if not scanner.is_scanning:
-        scan_thread = threading.Thread(target=scanner.scan, args=(False,))
+        # https://stackoverflow.com/questions/72541670/why-flask-app-context-is-lost-in-child-thread-when-application-factory-pattern-i
+        scan_thread = threading.Thread(target=scanner.scan, args=(False, app.app_context(), ))
         scan_thread.start()
         return jsonify({"status": "start scanning"})
     return jsonify({"status": "already scanning"})
@@ -207,38 +208,39 @@ def api_match():
         logger.warning(f"search_type不正确：{search_type}")
         abort(500)
     # 进行匹配
-    if search_type == 0:  # 文字搜图
-        sorted_list = search_image_by_text(
-            data["positive"], data["negative"], positive_threshold, negative_threshold
-        )[:MAX_RESULT_NUM]
-    elif search_type == 1:  # 以图搜图
-        sorted_list = search_image_by_image(upload_file_path, image_threshold)[
-            :MAX_RESULT_NUM
-        ]
-    elif search_type == 2:  # 文字搜视频
-        sorted_list = search_video_by_text(
-            data["positive"], data["negative"], positive_threshold, negative_threshold
-        )[:MAX_RESULT_NUM]
-    elif search_type == 3:  # 以图搜视频
-        sorted_list = search_video_by_image(upload_file_path, image_threshold)[
-            :MAX_RESULT_NUM
-        ]
-    elif search_type == 4:  # 图文相似度匹配
-        score = match_text_and_image(process_text(data["text"]), process_image(upload_file_path)) * 100
-        return jsonify({
-                "score": f"{score:.2f}"
-            }
-        )
-    elif search_type == 5:  # 以图搜图(图片是数据库中的)
-        sorted_list = search_image_by_image(img_id, image_threshold)[:MAX_RESULT_NUM]
-    elif search_type == 6:  # 以图搜视频(图片是数据库中的)
-        sorted_list = search_video_by_image(img_id, image_threshold)[:MAX_RESULT_NUM]
-    elif search_type == 7:  # 路径搜图
-        return jsonify(search_file(path=path, file_type="image")[:top_n])
-    elif search_type == 8:  # 路径搜视频
-        return jsonify(search_file(path=path, file_type="video")[:top_n])
-    else:  # 空
-        abort(400)
+    with app.app_context():
+        if search_type == 0:  # 文字搜图
+            sorted_list = search_image_by_text(
+                data["positive"], data["negative"], positive_threshold, negative_threshold
+            )[:MAX_RESULT_NUM]
+        elif search_type == 1:  # 以图搜图
+            sorted_list = search_image_by_image(upload_file_path, image_threshold)[
+                :MAX_RESULT_NUM
+            ]
+        elif search_type == 2:  # 文字搜视频
+            sorted_list = search_video_by_text(
+                data["positive"], data["negative"], positive_threshold, negative_threshold
+            )[:MAX_RESULT_NUM]
+        elif search_type == 3:  # 以图搜视频
+            sorted_list = search_video_by_image(upload_file_path, image_threshold)[
+                :MAX_RESULT_NUM
+            ]
+        elif search_type == 4:  # 图文相似度匹配
+            score = match_text_and_image(process_text(data["text"]), process_image(upload_file_path)) * 100
+            return jsonify({
+                    "score": f"{score:.2f}"
+                }
+            )
+        elif search_type == 5:  # 以图搜图(图片是数据库中的)
+            sorted_list = search_image_by_image(img_id, image_threshold)[:MAX_RESULT_NUM]
+        elif search_type == 6:  # 以图搜视频(图片是数据库中的)
+            sorted_list = search_video_by_image(img_id, image_threshold)[:MAX_RESULT_NUM]
+        elif search_type == 7:  # 路径搜图
+            return jsonify(search_file(path=path, file_type="image")[:top_n])
+        elif search_type == 8:  # 路径搜视频
+            return jsonify(search_file(path=path, file_type="video")[:top_n])
+        else:  # 空
+            abort(400)
     sorted_list = sorted_list[:top_n]
     scores = [item["score"] for item in sorted_list]
     softmax_scores = softmax(scores)
@@ -276,9 +278,9 @@ def api_get_image(image_id):
     :return: 图片文件
     """
     with app.app_context():
-        file = db.session.query(Image).filter_by(id=image_id).first()
-        logger.debug(file.path)
-    return send_file(file.path)
+        path = crud.get_image_path_by_id(db.session, image_id)
+        logger.debug(path)
+    return send_file(path)
 
 
 @app.route("/api/get_video/<video_path>", methods=["GET"])
@@ -292,8 +294,7 @@ def api_get_video(video_path):
     path = base64.urlsafe_b64decode(video_path).decode()
     logger.debug(path)
     with app.app_context():
-        video = db.session.query(Video).filter_by(path=path).first()
-        if not video:  # 如果路径不在数据库中，则返回404，防止任意文件读取攻击
+        if not crud.is_video_exist(db.session, path):  # 如果路径不在数据库中，则返回404，防止任意文件读取攻击
             abort(404)
     return send_file(path)
 
@@ -315,8 +316,7 @@ def api_download_video_clip(video_path, start_time, end_time):
     path = base64.urlsafe_b64decode(video_path).decode()
     logger.debug(path)
     with app.app_context():
-        video = db.session.query(Video).filter_by(path=path).first()
-        if not video:  # 如果路径不在数据库中，则返回404，防止任意文件读取攻击
+        if not crud.is_video_exist(db.session, path):  # 如果路径不在数据库中，则返回404，防止任意文件读取攻击
             abort(404)
     # 根据VIDEO_EXTENSION_LENGTH调整时长
     start_time -= VIDEO_EXTENSION_LENGTH

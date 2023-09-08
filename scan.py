@@ -4,11 +4,9 @@ import pickle
 import time
 from pathlib import Path
 
-from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 
 import crud
-from app_base import app
 from config import *
 from database import Image, Video
 from process_assets import process_image, process_video
@@ -20,9 +18,8 @@ class Scanner:
     扫描类
     """
 
-    def __init__(self, app, db) -> None:
+    def __init__(self, db) -> None:
         # 全局变量
-        self.app: Flask = app
         self.db: SQLAlchemy = db
         self.is_scanning = False
         self.scan_start_time = 0
@@ -119,7 +116,7 @@ class Scanner:
         )  # 当前时间是否在 start_time 与 end_time 区间内
         return self.is_cross_day ^ is_in_range  # 跨日期与在区间内异或时，在自动扫描时间内
 
-    def auto_scan(self):
+    def auto_scan(self, app_context=None):
         """
         自动扫描，每5秒判断一次时间，如果在目标时间段内则开始扫描。
         :return: None
@@ -129,7 +126,7 @@ class Scanner:
             if self.is_scanning or not self.is_current_auto_scan_time():
                 continue
             self.logger.info("触发自动扫描")
-            self.scan(auto=True)
+            self.scan(True, app_context)
 
     def scan_dir(self):
         """
@@ -143,85 +140,86 @@ class Scanner:
             for file in filter(self.filter_path, path.rglob("*")):
                 self.assets.add(str(file))
 
-    def scan(self, auto=False):
+    def scan(self, auto=False, app_context=None):
         """
         扫描资源。如果存在assets.pickle，则直接读取并开始扫描。如果不存在，则先读取所有文件路径，并写入assets.pickle，然后开始扫描。
         每100个文件重新保存一次assets.pickle，如果程序被中断，下次可以从断点处继续扫描。扫描完成后删除assets.pickle并清缓存。
         :param auto: 是否由AUTO_SCAN触发的
         :return: None
         """
+        if app_context:
+            app_context.push()
         self.logger.info("开始扫描")
         self.is_scanning = True
         self.scan_start_time = time.time()
         start_time = time.time()
         self.generate_or_load_assets()
-        with app.app_context():
-            # 删除不存在的文件记录
-            if not self.is_continue_scan:  # 非断点恢复的情况下才删除
-                crud.delete_record_if_not_exist(self.db.session, self.assets)
-            # 扫描文件
-            for path in self.assets.copy():
-                self.scanned_files += 1
-                if (
-                    self.scanned_files % AUTO_SAVE_INTERVAL == 0
-                ):  # 每扫描 AUTO_SAVE_INTERVAL 个文件重新save一下
-                    self.save_assets()
-                if auto and not self.is_current_auto_scan_time():  # 如果是自动扫描，判断时间自动停止
-                    self.logger.info(f"超出自动扫描时间，停止扫描")
-                    break
-                # 如果文件不存在，则忽略（扫描时文件被移动或删除则会触发这种情况）
-                if not os.path.isfile(path):
+        # 删除不存在的文件记录
+        if not self.is_continue_scan:  # 非断点恢复的情况下才删除
+            crud.delete_record_if_not_exist(self.db.session, self.assets)
+        # 扫描文件
+        for path in self.assets.copy():
+            self.scanned_files += 1
+            if (
+                self.scanned_files % AUTO_SAVE_INTERVAL == 0
+            ):  # 每扫描 AUTO_SAVE_INTERVAL 个文件重新save一下
+                self.save_assets()
+            if auto and not self.is_current_auto_scan_time():  # 如果是自动扫描，判断时间自动停止
+                self.logger.info(f"超出自动扫描时间，停止扫描")
+                break
+            # 如果文件不存在，则忽略（扫描时文件被移动或删除则会触发这种情况）
+            if not os.path.isfile(path):
+                continue
+            modify_time = os.path.getmtime(path)
+            modify_time = datetime.datetime.fromtimestamp(modify_time)
+            # 如果数据库里有这个文件，并且修改时间一致，则跳过，否则进行预处理并入库
+            if path.lower().endswith(IMAGE_EXTENSIONS):  # 图片
+                not_modified = crud.delete_image_if_outdated(
+                    self.db.session, path, modify_time
+                )
+                if not_modified:
+                    self.assets.remove(path)
                     continue
-                modify_time = os.path.getmtime(path)
-                modify_time = datetime.datetime.fromtimestamp(modify_time)
-                # 如果数据库里有这个文件，并且修改时间一致，则跳过，否则进行预处理并入库
-                if path.lower().endswith(IMAGE_EXTENSIONS):  # 图片
-                    not_modified = crud.delete_image_if_outdated(
-                        self.db.session, path, modify_time
-                    )
-                    if not_modified:
-                        self.assets.remove(path)
-                        continue
-                    features = process_image(path)
-                    if features is None:
-                        self.assets.remove(path)
-                        continue
-                    # 写入数据库
-                    features = features.tobytes()
-                    crud.add_image(
-                        Image(path=path, modify_time=modify_time, features=features)
-                    )
-                    self.total_images = crud.get_image_count(self.db.session)
-                elif path.lower().endswith(VIDEO_EXTENSIONS):  # 视频
-                    not_modified = crud.delete_video_if_outdated(
-                        self.db.session, path, modify_time
-                    )
-                    if not_modified:
-                        self.assets.remove(path)
-                        continue
-                    crud.add_video(
-                        self.db.session,
-                        [
-                            Video(
-                                path=path,
-                                frame_time=frame_time,
-                                modify_time=modify_time,
-                                features=features.tobytes(),
-                            )
-                            for frame_time, features in process_video(path)
-                        ],
-                    )
-                    self.total_video_frames = crud.get_video_frame_count(
-                        self.db.session
-                    )
-                    self.total_videos = crud.get_video_count(self.db.session)
-                # FIXME: 处理完一张图片或一个完整视频再commit，避免扫描视频到一半时程序中断，下次扫描会跳过这个视频的问题
-                self.db.session.commit()
-                self.assets.remove(path)
-            # 最后重新统计一下数量
-            self.total_images = crud.get_image_count(self.db.session)
-            self.total_videos = crud.get_video_count(self.db.session)
-            self.total_video_frames = crud.get_video_frame_count(self.db.session)
+                features = process_image(path)
+                if features is None:
+                    self.assets.remove(path)
+                    continue
+                # 写入数据库
+                features = features.tobytes()
+                crud.add_image(
+                    Image(path=path, modify_time=modify_time, features=features)
+                )
+                self.total_images = crud.get_image_count(self.db.session)
+            elif path.lower().endswith(VIDEO_EXTENSIONS):  # 视频
+                not_modified = crud.delete_video_if_outdated(
+                    self.db.session, path, modify_time
+                )
+                if not_modified:
+                    self.assets.remove(path)
+                    continue
+                crud.add_video(
+                    self.db.session,
+                    [
+                        Video(
+                            path=path,
+                            frame_time=frame_time,
+                            modify_time=modify_time,
+                            features=features.tobytes(),
+                        )
+                        for frame_time, features in process_video(path)
+                    ],
+                )
+                self.total_video_frames = crud.get_video_frame_count(
+                    self.db.session
+                )
+                self.total_videos = crud.get_video_count(self.db.session)
+            # FIXME: 处理完一张图片或一个完整视频再commit，避免扫描视频到一半时程序中断，下次扫描会跳过这个视频的问题
+            self.db.session.commit()
+            self.assets.remove(path)
+        # 最后重新统计一下数量
+        self.total_images = crud.get_image_count(self.db.session)
+        self.total_videos = crud.get_video_count(self.db.session)
+        self.total_video_frames = crud.get_video_frame_count(self.db.session)
         self.scanning_files = 0
         self.scanned_files = 0
         os.remove(self.temp_file)

@@ -7,7 +7,6 @@ import numpy as np
 from flask import abort
 from sqlalchemy import asc
 
-from app_base import app
 from config import *
 from database import Image, Video, db
 from process_assets import match_batch, process_image, process_text
@@ -43,36 +42,35 @@ def search_image_by_feature(
     """
     scores_list = []
     t0 = time.time()
-    with app.app_context():
-        image_features = []
-        file_list = []
-        for file in db.session.query(Image):
-            features = np.frombuffer(file.features, dtype=np.float32).reshape(1, -1)
-            if features is None:  # 内容损坏，删除该条记录
-                db.session.delete(file)
-                db.session.commit()
-                continue
-            file_list.append(file)
-            image_features.append(features)
-        if len(image_features) == 0:  # 没有素材，直接返回空
-            return []
-        scores = match_batch(
-            positive_feature,
-            negative_feature,
-            image_features,
-            positive_threshold,
-            negative_threshold,
+    image_features = []
+    file_list = []
+    for file in db.session.query(Image):
+        features = np.frombuffer(file.features, dtype=np.float32).reshape(1, -1)
+        if features is None:  # 内容损坏，删除该条记录
+            db.session.delete(file)
+            db.session.commit()
+            continue
+        file_list.append(file)
+        image_features.append(features)
+    if len(image_features) == 0:  # 没有素材，直接返回空
+        return []
+    scores = match_batch(
+        positive_feature,
+        negative_feature,
+        image_features,
+        positive_threshold,
+        negative_threshold,
+    )
+    for i in range(len(file_list)):
+        if not scores[i]:
+            continue
+        scores_list.append(
+            {
+                "url": "api/get_image/%d" % file_list[i].id,
+                "path": file_list[i].path,
+                "score": float(scores[i]),
+            }
         )
-        for i in range(len(file_list)):
-            if not scores[i]:
-                continue
-            scores_list.append(
-                {
-                    "url": "api/get_image/%d" % file_list[i].id,
-                    "path": file_list[i].path,
-                    "score": float(scores[i]),
-                }
-            )
     logger.info("查询使用时间：%.2f" % (time.time() - t0))
     sorted_list = sorted(scores_list, key=lambda x: x["score"], reverse=True)
     return sorted_list
@@ -112,12 +110,11 @@ def search_image_by_image(img_id_or_path, threshold=IMAGE_THRESHOLD):
     except ValueError as e:
         img_path = img_id_or_path
     if img_id:
-        with app.app_context():
-            image = db.session.query(Image).filter_by(id=img_id).first()
-            if not image:
-                logger.warning("用数据库的图来进行搜索，但id在数据库中不存在")
-                return []
-            feature = np.frombuffer(image.features, dtype=np.float32).reshape(1, -1)
+        image = db.session.query(Image).filter_by(id=img_id).first()
+        if not image:
+            logger.warning("用数据库的图来进行搜索，但id在数据库中不存在")
+            return []
+        feature = np.frombuffer(image.features, dtype=np.float32).reshape(1, -1)
     elif img_path:
         feature = process_image(img_path)
     return search_image_by_feature(feature, None, threshold)
@@ -162,66 +159,65 @@ def search_video_by_feature(
     """
     t0 = time.time()
     scores_list = []
-    with app.app_context():
-        for path in db.session.query(Video.path).distinct():  # 逐个视频比对
-            path = path[0]
-            frames = (
-                db.session.query(Video)
-                .filter_by(path=path)
-                .order_by(Video.frame_time)
-                .all()
+    for path in db.session.query(Video.path).distinct():  # 逐个视频比对
+        path = path[0]
+        frames = (
+            db.session.query(Video)
+            .filter_by(path=path)
+            .order_by(Video.frame_time)
+            .all()
+        )
+        image_features = list(
+            map(
+                lambda x: np.frombuffer(x.features, dtype=np.float32).reshape(
+                    1, -1
+                ),
+                frames,
             )
-            image_features = list(
-                map(
-                    lambda x: np.frombuffer(x.features, dtype=np.float32).reshape(
-                        1, -1
-                    ),
-                    frames,
-                )
-            )
-            scores = match_batch(
-                positive_feature,
-                negative_feature,
-                image_features,
-                positive_threshold,
-                negative_threshold,
-            )
-            index_pairs = get_index_pairs(scores)
-            for start_index, end_index in index_pairs:
-                # 间隔小于等于2倍FRAME_INTERVAL的算为同一个素材，同时开始时间和结束时间各延长0.5个FRAME_INTERVAL
-                score = max(scores[start_index : end_index + 1])
-                if start_index > 0:
-                    start_time = int(
-                        (
-                            frames[start_index].frame_time
-                            + frames[start_index - 1].frame_time
-                        )
-                        / 2
+        )
+        scores = match_batch(
+            positive_feature,
+            negative_feature,
+            image_features,
+            positive_threshold,
+            negative_threshold,
+        )
+        index_pairs = get_index_pairs(scores)
+        for start_index, end_index in index_pairs:
+            # 间隔小于等于2倍FRAME_INTERVAL的算为同一个素材，同时开始时间和结束时间各延长0.5个FRAME_INTERVAL
+            score = max(scores[start_index : end_index + 1])
+            if start_index > 0:
+                start_time = int(
+                    (
+                        frames[start_index].frame_time
+                        + frames[start_index - 1].frame_time
                     )
-                else:
-                    start_time = frames[start_index].frame_time
-                if end_index < len(scores) - 1:
-                    end_time = int(
-                        (
-                            frames[end_index].frame_time
-                            + frames[end_index + 1].frame_time
-                        )
-                        / 2
-                        + 0.5
-                    )
-                else:
-                    end_time = frames[end_index].frame_time
-                scores_list.append(
-                    {
-                        "url": "api/get_video/%s"
-                        % base64.urlsafe_b64encode(path.encode()).decode()
-                        + "#t=%.1f,%.1f" % (start_time, end_time),
-                        "path": path,
-                        "score": score,
-                        "start_time": start_time,
-                        "end_time": end_time,
-                    }
+                    / 2
                 )
+            else:
+                start_time = frames[start_index].frame_time
+            if end_index < len(scores) - 1:
+                end_time = int(
+                    (
+                        frames[end_index].frame_time
+                        + frames[end_index + 1].frame_time
+                    )
+                    / 2
+                    + 0.5
+                )
+            else:
+                end_time = frames[end_index].frame_time
+            scores_list.append(
+                {
+                    "url": "api/get_video/%s"
+                    % base64.urlsafe_b64encode(path.encode()).decode()
+                    + "#t=%.1f,%.1f" % (start_time, end_time),
+                    "path": path,
+                    "score": score,
+                    "start_time": start_time,
+                    "end_time": end_time,
+                }
+            )
     logger.info("查询使用时间：%.2f" % (time.time() - t0))
     sorted_list = sorted(scores_list, key=lambda x: x["score"], reverse=True)
     return sorted_list
@@ -262,12 +258,11 @@ def search_video_by_image(img_id_or_path, threshold=IMAGE_THRESHOLD):
     except ValueError as e:
         img_path = img_id_or_path
     if img_id:
-        with app.app_context():
-            image = db.session.query(Image).filter_by(id=img_id).first()
-            if not image:
-                logger.warning("用数据库的图来进行搜索，但id在数据库中不存在")
-                return []
-            feature = np.frombuffer(image.features, dtype=np.float32).reshape(1, -1)
+        image = db.session.query(Image).filter_by(id=img_id).first()
+        if not image:
+            logger.warning("用数据库的图来进行搜索，但id在数据库中不存在")
+            return []
+        feature = np.frombuffer(image.features, dtype=np.float32).reshape(1, -1)
     elif img_path:
         feature = process_image(img_path)
     return search_video_by_feature(feature, None, threshold)
