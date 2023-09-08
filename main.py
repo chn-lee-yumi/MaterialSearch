@@ -1,38 +1,33 @@
 import base64
-import datetime
 import logging
 import pickle
 import threading
 import time
 from functools import lru_cache, wraps
-from pathlib import Path
 
 import numpy as np
-from flask import Flask, jsonify, request, send_file, abort, session, redirect, url_for
+from flask import abort, jsonify, redirect, request, send_file, session, url_for
 from sqlalchemy import asc
 
+from app_base import app
 from config import *
-from database import db, Image, Video
-from process_assets import scan_dir, process_image, process_video, process_text, match_text_and_image, match_batch
-from utils import softmax, get_file_hash, crop_video
+from database import Image, Video, db
+from process_assets import (
+    match_batch,
+    match_text_and_image,
+    process_image,
+    process_text,
+    process_video,
+)
+from scan import Scanner
+from utils import crop_video, get_file_hash, softmax
 
-logging.basicConfig(level=LOG_LEVEL, format='%(asctime)s %(name)s %(levelname)s %(message)s')
+logging.basicConfig(
+    level=LOG_LEVEL, format="%(asctime)s %(name)s %(levelname)s %(message)s"
+)
 logger = logging.getLogger(__name__)
 
-app = Flask(__name__)
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///assets.db'
-app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = True
-app.secret_key = 'https://github.com/chn-lee-yumi/MaterialSearch'
-db.init_app(app)
-
-is_scanning = False
-scan_start_time = 0
-scanning_files = 0
-total_images = 0
-total_videos = 0
-total_video_frames = 0
-scanned_files = 0
-is_continue_scan = False
+scanner = Scanner(app, db)
 upload_file_path = ""
 
 
@@ -63,7 +58,7 @@ def optimize_db():
                 else:
                     file.features = features.tobytes()
                 i += 1
-                print(f"\rprocessing images: {i}/{total_images}", end='')
+                print(f"\rprocessing images: {i}/{total_images}", end="")
                 if i % 1000 == 0:
                     db.session.commit()
             db.session.commit()
@@ -78,7 +73,7 @@ def optimize_db():
                     else:
                         file.features = features.tobytes()
                 i += 1
-                print(f"\rprocessing videos: {i}/{total_videos}", end='')
+                print(f"\rprocessing videos: {i}/{total_videos}", end="")
                 db.session.commit()
             db.session.commit()
             logger.info(f"数据库优化完成")
@@ -89,17 +84,17 @@ def init():
     初始化数据库，创建临时文件夹，根据AUTO_SCAN决定是否开启自动扫描线程
     :return: None
     """
-    global total_images, total_videos, total_video_frames, is_scanning
+    global scanner
     with app.app_context():
         db.create_all()  # 初始化数据库
-        total_images = db.session.query(Image).count()  # 获取图片总数
-        total_videos = db.session.query(Video.path).distinct().count()  # 获取视频总数
-        total_video_frames = db.session.query(Video).count()  # 获取视频帧总数
+        scanner.total_images = db.session.query(Image).count()  # 获取图片总数
+        scanner.total_videos = db.session.query(Video.path).distinct().count()  # 获取视频总数
+        scanner.total_video_frames = db.session.query(Video).count()  # 获取视频帧总数
     if not os.path.exists(TEMP_PATH):  # 如果临时文件夹不存在，则创建
         os.mkdir(TEMP_PATH)
     optimize_db()  # 数据库优化（临时功能）
     if AUTO_SCAN:
-        auto_scan_thread = threading.Thread(target=auto_scan, args=())
+        auto_scan_thread = threading.Thread(target=scanner.auto_scan, args=())
         auto_scan_thread.start()
 
 
@@ -115,147 +110,12 @@ def clean_cache():
     search_file.cache_clear()
 
 
-def is_current_auto_scan_time() -> bool:
-    """
-    判断当前时间是否在自动扫描时间段内
-    :return: 当前时间是否在自动扫描时间段内时返回True，否则返回False
-    """
-    current_time = datetime.datetime.now().time()
-    start_time = datetime.time(*AUTO_SCAN_START_TIME)
-    end_time = datetime.time(*AUTO_SCAN_END_TIME)
-    is_cross_day = start_time > end_time  # 是否跨日期
-    is_in_range = start_time <= current_time < end_time  # 当前时间是否在 start_time 与 end_time 区间内
-    return is_cross_day ^ is_in_range  # 跨日期与在区间内异或时，在自动扫描时间内
-
-
-def auto_scan():
-    """
-    自动扫描，每5秒判断一次时间，如果在目标时间段内则开始扫描。
-    :return: None
-    """
-    global is_scanning
-    while True:
-        time.sleep(5)
-        if is_scanning or not is_current_auto_scan_time():
-            continue
-        logger.info("触发自动扫描")
-        scan(auto=True)
-
-
-def scan(auto=False):
-    """
-    扫描资源。如果存在assets.pickle，则直接读取并开始扫描。如果不存在，则先读取所有文件路径，并写入assets.pickle，然后开始扫描。
-    每100个文件重新保存一次assets.pickle，如果程序被中断，下次可以从断点处继续扫描。扫描完成后删除assets.pickle并清缓存。
-    :param auto: 是否由AUTO_SCAN触发的
-    :return: None
-    """
-    global is_scanning, total_images, total_videos, total_video_frames, scanning_files, scanned_files, scan_start_time, is_continue_scan
-    logger.info("开始扫描")
-    is_scanning = True
-    temp_file = f"{TEMP_PATH}/assets.pickle"
-    scan_start_time = time.time()
-    start_time = time.time()
-    if os.path.isfile(temp_file):
-        logger.info("读取上次的目录缓存")
-        is_continue_scan = True
-        with open(temp_file, "rb") as f:
-            assets = pickle.load(f)
-        skip_paths = [Path(i) for i in SKIP_PATH if i]
-        ignore_keywords = [i for i in IGNORE_STRINGS if i]
-        for path in assets.copy():
-            skip = any((p in Path(path) for p in skip_paths))
-            ignore = any((keyword in path.lower() for keyword in ignore_keywords))
-            if skip or ignore:
-                assets.remove(path)
-    else:
-        is_continue_scan = False
-        assets = scan_dir(ASSETS_PATH)
-        with open(temp_file, "wb") as f:
-            pickle.dump(assets, f)
-    scanning_files = len(assets)
-    with app.app_context():
-        # 删除不存在的文件记录
-        if not is_continue_scan:  # 非断点恢复的情况下才删除
-            for file in db.session.query(Image):
-                # assets 预处理过了，无需再判断 skip / ignore
-                if file.path not in assets:
-                    logger.info(f"文件已删除：{file.path}")
-                    db.session.delete(file)
-            for path in db.session.query(Video.path).distinct():
-                path = path[0]
-                if path not in assets:
-                    logger.info(f"文件已删除：{path}")
-                    db.session.query(Video).filter_by(path=path).delete()
-            db.session.commit()
-        # 扫描文件
-        for path in assets.copy():
-            scanned_files += 1
-            if scanned_files % AUTO_SAVE_INTERVAL == 0:  # 每扫描 AUTO_SAVE_INTERVAL 个文件重新save一下
-                with open(temp_file, "wb") as f:
-                    pickle.dump(assets, f)
-            if auto and not is_current_auto_scan_time():  # 如果是自动扫描，判断时间自动停止
-                logger.info(f"超出自动扫描时间，停止扫描")
-                break
-            # 如果文件不存在，则忽略（扫描时文件被移动或删除则会触发这种情况）
-            if not os.path.isfile(path):
-                continue
-            # 如果数据库里有这个文件，并且修改时间一致，则跳过，否则进行预处理并入库
-            if path.lower().endswith(IMAGE_EXTENSIONS):  # 图片
-                db_record = db.session.query(Image).filter_by(path=path).first()
-                modify_time = datetime.datetime.fromtimestamp(os.path.getmtime(path))
-                if db_record and db_record.modify_time == modify_time:
-                    logger.debug(f"文件无变更，跳过：{path}")
-                    assets.remove(path)
-                    continue
-                features = process_image(path)
-                if features is None:
-                    assets.remove(path)
-                    continue
-                # 写入数据库
-                features = features.tobytes()
-                if db_record:
-                    logger.info(f"文件有更新：{path}")
-                    db_record.modify_time = modify_time
-                    db_record.features = features
-                else:
-                    logger.info(f"新增文件：{path}")
-                    db.session.add(Image(path=path, modify_time=modify_time, features=features))
-                    total_images = db.session.query(Image).count()  # 获取图片总数
-            else:  # 视频
-                db_record = db.session.query(Video).filter_by(path=path).first()
-                modify_time = datetime.datetime.fromtimestamp(os.path.getmtime(path))
-                if db_record and db_record.modify_time == modify_time:
-                    logger.debug(f"文件无变更，跳过：{path}")
-                    assets.remove(path)
-                    continue
-                # 写入数据库
-                if db_record:
-                    logger.info(f"文件有更新：{path}")
-                    db.session.query(Video).filter_by(path=path).delete()  # 视频文件直接删了重新写数据，而不是直接替换，因为视频长短可能有变化，不方便处理
-                else:
-                    logger.info(f"新增文件：{path}")
-                # 使用 bulk_save_objects 一次性提交
-                db.session.bulk_save_objects([
-                    Video(path=path, frame_time=frame_time, modify_time=modify_time, features=features.tobytes())
-                    for frame_time, features in process_video(path)
-                ])
-                total_video_frames = db.session.query(Video).count()  # 获取视频帧总数
-                total_videos = db.session.query(Video.path).distinct().count()
-            db.session.commit()  # 处理完一张图片或一个完整视频再commit，避免扫描视频到一半时程序中断，下次扫描会跳过这个视频的问题
-            assets.remove(path)
-        # 最后重新统计一下数量
-        total_images = db.session.query(Image).count()  # 获取图片总数
-        total_videos = db.session.query(Video.path).distinct().count()  # 获取视频总数
-        total_video_frames = db.session.query(Video).count()  # 获取视频帧总数
-    scanning_files = 0
-    scanned_files = 0
-    os.remove(temp_file)
-    logger.info("扫描完成，用时%d秒" % int(time.time() - start_time))
-    clean_cache()  # 清空搜索缓存
-    is_scanning = False
-
-
-def search_image_by_feature(positive_feature, negative_feature=None, positive_threshold=POSITIVE_THRESHOLD, negative_threshold=NEGATIVE_THRESHOLD):
+def search_image_by_feature(
+    positive_feature,
+    negative_feature=None,
+    positive_threshold=POSITIVE_THRESHOLD,
+    negative_threshold=NEGATIVE_THRESHOLD,
+):
     """
     通过特征搜索图片
     :param positive_feature: np.array, 正向特征向量
@@ -279,17 +139,34 @@ def search_image_by_feature(positive_feature, negative_feature=None, positive_th
             image_features.append(features)
         if len(image_features) == 0:  # 没有素材，直接返回空
             return []
-        scores = match_batch(positive_feature, negative_feature, image_features, positive_threshold, negative_threshold)
+        scores = match_batch(
+            positive_feature,
+            negative_feature,
+            image_features,
+            positive_threshold,
+            negative_threshold,
+        )
         for i in range(len(file_list)):
             if not scores[i]:
                 continue
-            scores_list.append({"url": "api/get_image/%d" % file_list[i].id, "path": file_list[i].path, "score": float(scores[i])})
+            scores_list.append(
+                {
+                    "url": "api/get_image/%d" % file_list[i].id,
+                    "path": file_list[i].path,
+                    "score": float(scores[i]),
+                }
+            )
     logger.info("查询使用时间：%.2f" % (time.time() - t0))
     sorted_list = sorted(scores_list, key=lambda x: x["score"], reverse=True)
     return sorted_list
 
 
-def search_image_by_text(positive_prompt="", negative_prompt="", positive_threshold=POSITIVE_THRESHOLD, negative_threshold=NEGATIVE_THRESHOLD):
+def search_image_by_text(
+    positive_prompt="",
+    negative_prompt="",
+    positive_threshold=POSITIVE_THRESHOLD,
+    negative_threshold=NEGATIVE_THRESHOLD,
+):
     """
     使用文字搜图片
     :param positive_prompt: string, 正向提示词
@@ -300,7 +177,9 @@ def search_image_by_text(positive_prompt="", negative_prompt="", positive_thresh
     """
     positive_feature = process_text(positive_prompt)
     negative_feature = process_text(negative_prompt)
-    return search_image_by_feature(positive_feature, negative_feature, positive_threshold, negative_threshold)
+    return search_image_by_feature(
+        positive_feature, negative_feature, positive_threshold, negative_threshold
+    )
 
 
 @lru_cache(maxsize=CACHE_SIZE)
@@ -350,7 +229,12 @@ def get_index_pairs(scores):
     return result
 
 
-def search_video_by_feature(positive_feature, negative_feature=None, positive_threshold=POSITIVE_THRESHOLD, negative_threshold=NEGATIVE_THRESHOLD):
+def search_video_by_feature(
+    positive_feature,
+    negative_feature=None,
+    positive_threshold=POSITIVE_THRESHOLD,
+    negative_threshold=NEGATIVE_THRESHOLD,
+):
     """
     通过特征搜索视频
     :param positive_feature: np.array, 正向特征向量
@@ -364,32 +248,75 @@ def search_video_by_feature(positive_feature, negative_feature=None, positive_th
     with app.app_context():
         for path in db.session.query(Video.path).distinct():  # 逐个视频比对
             path = path[0]
-            frames = db.session.query(Video).filter_by(path=path).order_by(Video.frame_time).all()
-            image_features = list(map(lambda x: np.frombuffer(x.features, dtype=np.float32).reshape(1, -1), frames))
-            scores = match_batch(positive_feature, negative_feature, image_features, positive_threshold, negative_threshold)
+            frames = (
+                db.session.query(Video)
+                .filter_by(path=path)
+                .order_by(Video.frame_time)
+                .all()
+            )
+            image_features = list(
+                map(
+                    lambda x: np.frombuffer(x.features, dtype=np.float32).reshape(
+                        1, -1
+                    ),
+                    frames,
+                )
+            )
+            scores = match_batch(
+                positive_feature,
+                negative_feature,
+                image_features,
+                positive_threshold,
+                negative_threshold,
+            )
             index_pairs = get_index_pairs(scores)
             for start_index, end_index in index_pairs:
                 # 间隔小于等于2倍FRAME_INTERVAL的算为同一个素材，同时开始时间和结束时间各延长0.5个FRAME_INTERVAL
-                score = max(scores[start_index:end_index + 1])
+                score = max(scores[start_index : end_index + 1])
                 if start_index > 0:
-                    start_time = int((frames[start_index].frame_time + frames[start_index - 1].frame_time) / 2)
+                    start_time = int(
+                        (
+                            frames[start_index].frame_time
+                            + frames[start_index - 1].frame_time
+                        )
+                        / 2
+                    )
                 else:
                     start_time = frames[start_index].frame_time
                 if end_index < len(scores) - 1:
-                    end_time = int((frames[end_index].frame_time + frames[end_index + 1].frame_time) / 2 + 0.5)
+                    end_time = int(
+                        (
+                            frames[end_index].frame_time
+                            + frames[end_index + 1].frame_time
+                        )
+                        / 2
+                        + 0.5
+                    )
                 else:
                     end_time = frames[end_index].frame_time
                 scores_list.append(
-                    {"url": "api/get_video/%s" % base64.urlsafe_b64encode(path.encode()).decode() + "#t=%.1f,%.1f" % (
-                        start_time, end_time),
-                     "path": path, "score": score, "start_time": start_time, "end_time": end_time})
+                    {
+                        "url": "api/get_video/%s"
+                        % base64.urlsafe_b64encode(path.encode()).decode()
+                        + "#t=%.1f,%.1f" % (start_time, end_time),
+                        "path": path,
+                        "score": score,
+                        "start_time": start_time,
+                        "end_time": end_time,
+                    }
+                )
     logger.info("查询使用时间：%.2f" % (time.time() - t0))
     sorted_list = sorted(scores_list, key=lambda x: x["score"], reverse=True)
     return sorted_list
 
 
 @lru_cache(maxsize=CACHE_SIZE)
-def search_video_by_text(positive_prompt="", negative_prompt="", positive_threshold=POSITIVE_THRESHOLD, negative_threshold=NEGATIVE_THRESHOLD):
+def search_video_by_text(
+    positive_prompt="",
+    negative_prompt="",
+    positive_threshold=POSITIVE_THRESHOLD,
+    negative_threshold=NEGATIVE_THRESHOLD,
+):
     """
     使用文字搜视频
     :param positive_prompt: string, 正向提示词
@@ -400,8 +327,9 @@ def search_video_by_text(positive_prompt="", negative_prompt="", positive_thresh
     """
     positive_feature = process_text(positive_prompt)
     negative_feature = process_text(negative_prompt)
-    ret = search_video_by_feature(positive_feature, negative_feature, positive_threshold, negative_threshold)
-    return ret
+    return search_video_by_feature(
+        positive_feature, negative_feature, positive_threshold, negative_threshold
+    )
 
 
 @lru_cache(maxsize=CACHE_SIZE)
@@ -437,9 +365,18 @@ def search_file(path, file_type):
     :return:
     """
     if file_type == "image":
-        files = db.session.query(Image).filter(Image.path.like("%" + path + "%")).order_by(asc(Image.path))
+        files = (
+            db.session.query(Image)
+            .filter(Image.path.like("%" + path + "%"))
+            .order_by(asc(Image.path))
+        )
     elif file_type == "video":
-        files = db.session.query(Video.path).distinct().filter(Video.path.like("%" + path + "%")).order_by(asc(Video.path))
+        files = (
+            db.session.query(Video.path)
+            .distinct()
+            .filter(Video.path.like("%" + path + "%"))
+            .order_by(asc(Video.path))
+        )
     else:
         abort(400)
     file_list = []
@@ -447,7 +384,13 @@ def search_file(path, file_type):
         if file_type == "image":
             file_list.append({"url": "api/get_image/%d" % file.id, "path": file.path})
         elif file_type == "video":
-            file_list.append({"url": "api/get_video/%s" % base64.urlsafe_b64encode(file.path.encode()).decode(), "path": file.path})
+            file_list.append(
+                {
+                    "url": "api/get_video/%s"
+                    % base64.urlsafe_b64encode(file.path.encode()).decode(),
+                    "path": file.path,
+                }
+            )
     return file_list
 
 
@@ -461,9 +404,9 @@ def login_required(view_func):
         # 检查登录开关状态
         if ENABLE_LOGIN:
             # 如果开关已启用，则进行登录认证检查
-            if 'username' not in session:
+            if "username" not in session:
                 # 如果用户未登录，则重定向到登录页面
-                return redirect(url_for('login'))
+                return redirect(url_for("login"))
         # 调用原始的视图函数
         return view_func(*args, **kwargs)
 
@@ -484,39 +427,39 @@ def index_page():
 @app.route("/login", methods=["GET", "POST"])
 def login():
     """简单的登录功能"""
-    if request.method == 'POST':
+    if request.method == "POST":
         # 获取用户IP地址
-        ip_addr = request.environ.get('HTTP_X_FORWARDED_FOR', request.remote_addr)
+        ip_addr = request.environ.get("HTTP_X_FORWARDED_FOR", request.remote_addr)
         # 获取表单数据
-        username = request.form['username']
-        password = request.form['password']
+        username = request.form["username"]
+        password = request.form["password"]
         # 简单的验证逻辑
         if username == USERNAME and password == PASSWORD:
             # 登录成功，将用户名保存到会话中
             logger.info(f"用户登录成功 {ip_addr}")
-            session['username'] = username
-            return redirect(url_for('index_page'))
+            session["username"] = username
+            return redirect(url_for("index_page"))
         # 登录失败，重定向到登录页面
         logger.info(f"用户登录失败 {ip_addr}")
-        return redirect(url_for('login'))
+        return redirect(url_for("login"))
     return app.send_static_file("login.html")
 
 
-@app.route('/logout', methods=["GET", "POST"])
+@app.route("/logout", methods=["GET", "POST"])
 def logout():
     """登出"""
     # 清除会话数据
     session.clear()
-    return redirect(url_for('index_page'))
+    return redirect(url_for("index_page"))
 
 
 @app.route("/api/scan", methods=["GET"])
 @login_required
 def api_scan():
     """开始扫描"""
-    global is_scanning
-    if not is_scanning:
-        scan_thread = threading.Thread(target=scan, args=(False,))
+    global scanner
+    if not scanner.is_scanning:
+        scan_thread = threading.Thread(target=scanner.scan, args=(False,))
         scan_thread.start()
         return jsonify({"status": "start scanning"})
     return jsonify({"status": "already scanning"})
@@ -526,18 +469,32 @@ def api_scan():
 @login_required
 def api_status():
     """状态"""
-    global is_scanning, scanning_files, scanned_files, scan_start_time, total_images, total_video_frames
-    if scanned_files:
-        remain_time = (time.time() - scan_start_time) / scanned_files * scanning_files
+    global scanner
+    if scanner.scanned_files:
+        remain_time = (
+            (time.time() - scanner.scan_start_time)
+            / scanner.scanned_files
+            * scanner.scanning_files
+        )
     else:
         remain_time = 0
-    if is_scanning and scanning_files != 0:
-        progress = scanned_files / scanning_files
+    if scanner.is_scanning and scanner.scanning_files != 0:
+        progress = scanner.scanned_files / scanner.scanning_files
     else:
         progress = 0
-    return jsonify({"status": is_scanning, "total_images": total_images, "total_videos": total_videos, "total_video_frames": total_video_frames,
-                    "scanning_files": scanning_files, "remain_files": scanning_files - scanned_files, "progress": progress,
-                    "remain_time": int(remain_time), "enable_login": ENABLE_LOGIN})
+    return jsonify(
+        {
+            "status": scanner.is_scanning,
+            "total_images": scanner.total_images,
+            "total_videos": scanner.total_videos,
+            "total_video_frames": scanner.total_video_frames,
+            "scanning_files": scanner.scanning_files,
+            "remain_files": scanner.scanning_files - scanner.scanned_files,
+            "progress": progress,
+            "remain_time": int(remain_time),
+            "enable_login": ENABLE_LOGIN,
+        }
+    )
 
 
 @app.route("/api/clean_cache", methods=["GET", "POST"])
@@ -560,30 +517,46 @@ def api_match():
     """
     global upload_file_path
     data = request.get_json()
-    top_n = int(data['top_n'])
-    search_type = data['search_type']
-    positive_threshold = data['positive_threshold']
-    negative_threshold = data['negative_threshold']
-    image_threshold = data['image_threshold']
-    img_id = data['img_id']
-    path = data['path']
+    top_n = int(data["top_n"])
+    search_type = data["search_type"]
+    positive_threshold = data["positive_threshold"]
+    negative_threshold = data["negative_threshold"]
+    image_threshold = data["image_threshold"]
+    img_id = data["img_id"]
+    path = data["path"]
     logger.debug(data)
     if search_type not in (0, 1, 2, 3, 4, 5, 6, 7, 8):
         logger.warning(f"search_type不正确：{search_type}")
         abort(500)
     # 进行匹配
     if search_type == 0:  # 文字搜图
-        sorted_list = search_image_by_text(data['positive'], data['negative'],
-                                   positive_threshold, negative_threshold)[:MAX_RESULT_NUM]
+        sorted_list = search_image_by_text(
+            data["positive"], data["negative"], positive_threshold, negative_threshold
+        )[:MAX_RESULT_NUM]
     elif search_type == 1:  # 以图搜图
-        sorted_list = search_image_by_image(upload_file_path, image_threshold)[:MAX_RESULT_NUM]
+        sorted_list = search_image_by_image(upload_file_path, image_threshold)[
+            :MAX_RESULT_NUM
+        ]
     elif search_type == 2:  # 文字搜视频
-        sorted_list = search_video_by_text(data['positive'], data['negative'],
-                                   positive_threshold, negative_threshold)[:MAX_RESULT_NUM]
+        sorted_list = search_video_by_text(
+            data["positive"], data["negative"], positive_threshold, negative_threshold
+        )[:MAX_RESULT_NUM]
     elif search_type == 3:  # 以图搜视频
-        sorted_list = search_video_by_image(upload_file_path, image_threshold)[:MAX_RESULT_NUM]
+        sorted_list = search_video_by_image(upload_file_path, image_threshold)[
+            :MAX_RESULT_NUM
+        ]
     elif search_type == 4:  # 图文相似度匹配
-        return jsonify({"score": "%.2f" % (match_text_and_image(process_text(data['text']), process_image(upload_file_path)) * 100)})
+        return jsonify(
+            {
+                "score": "%.2f"
+                % (
+                    match_text_and_image(
+                        process_text(data["text"]), process_image(upload_file_path)
+                    )
+                    * 100
+                )
+            }
+        )
     elif search_type == 5:  # 以图搜图(图片是数据库中的)
         sorted_list = search_image_by_image(img_id, image_threshold)[:MAX_RESULT_NUM]
     elif search_type == 6:  # 以图搜视频(图片是数据库中的)
@@ -598,18 +571,31 @@ def api_match():
     scores = [item["score"] for item in sorted_list]
     softmax_scores = softmax(scores)
     if search_type in (0, 1, 5):
-        new_sorted_list = [{
-            "url": item["url"], "path": item["path"], "score": "%.2f" % (item["score"] * 100), "softmax_score": "%.2f%%" % (score * 100)
-        } for item, score in zip(sorted_list, softmax_scores)]
+        new_sorted_list = [
+            {
+                "url": item["url"],
+                "path": item["path"],
+                "score": "%.2f" % (item["score"] * 100),
+                "softmax_score": "%.2f%%" % (score * 100),
+            }
+            for item, score in zip(sorted_list, softmax_scores)
+        ]
     else:  # search_type in (2, 3, 6)
-        new_sorted_list = [{
-            "url": item["url"], "path": item["path"], "score": "%.2f" % (item["score"] * 100), "softmax_score": "%.2f%%" % (score * 100),
-            "start_time": item["start_time"], "end_time": item["end_time"]
-        } for item, score in zip(sorted_list, softmax_scores)]
+        new_sorted_list = [
+            {
+                "url": item["url"],
+                "path": item["path"],
+                "score": "%.2f" % (item["score"] * 100),
+                "softmax_score": "%.2f%%" % (score * 100),
+                "start_time": item["start_time"],
+                "end_time": item["end_time"],
+            }
+            for item, score in zip(sorted_list, softmax_scores)
+        ]
     return jsonify(new_sorted_list)
 
 
-@app.route('/api/get_image/<int:image_id>', methods=['GET'])
+@app.route("/api/get_image/<int:image_id>", methods=["GET"])
 @login_required
 def api_get_image(image_id):
     """
@@ -623,7 +609,7 @@ def api_get_image(image_id):
     return send_file(file.path)
 
 
-@app.route('/api/get_video/<video_path>', methods=['GET'])
+@app.route("/api/get_video/<video_path>", methods=["GET"])
 @login_required
 def api_get_video(video_path):
     """
@@ -640,7 +626,10 @@ def api_get_video(video_path):
     return send_file(path)
 
 
-@app.route('/api/download_video_clip/<video_path>/<int:start_time>/<int:end_time>', methods=['GET'])
+@app.route(
+    "/api/download_video_clip/<video_path>/<int:start_time>/<int:end_time>",
+    methods=["GET"],
+)
 @login_required
 def api_download_video_clip(video_path, start_time, end_time):
     """
@@ -669,7 +658,7 @@ def api_download_video_clip(video_path, start_time, end_time):
     return send_file(output_path)
 
 
-@app.route('/api/upload', methods=['POST'])
+@app.route("/api/upload", methods=["POST"])
 @login_required
 def api_upload():
     """
@@ -683,15 +672,15 @@ def api_upload():
         os.remove(upload_file_path)
     # 保存文件
     temp_path = f"{TEMP_PATH}/upload.tmp"
-    f = request.files['file']
+    f = request.files["file"]
     f.save(temp_path)
     # 计算hash并重命名文件
     new_filename = get_file_hash(temp_path)
     upload_file_path = f"{TEMP_PATH}/{new_filename}"
     os.rename(temp_path, upload_file_path)
-    return 'file uploaded successfully'
+    return "file uploaded successfully"
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     init()
     app.run(port=PORT, host=HOST)

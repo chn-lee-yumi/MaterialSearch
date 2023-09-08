@@ -1,7 +1,10 @@
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import Column, String, BINARY, Integer, DateTime
 
+from app_base import app
+
 db = SQLAlchemy()
+db.init_app(app)
 
 
 class Image(db.Model):
