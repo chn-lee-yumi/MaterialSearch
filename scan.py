@@ -4,11 +4,9 @@ import pickle
 import time
 from pathlib import Path
 
-from flask_sqlalchemy import SQLAlchemy
-
 import crud
 from config import *
-from database import Image, Video
+from database import db
 from process_assets import process_image, process_video
 from search import clean_cache
 
@@ -18,9 +16,8 @@ class Scanner:
     扫描类
     """
 
-    def __init__(self, db) -> None:
+    def __init__(self) -> None:
         # 全局变量
-        self.db: SQLAlchemy = db
         self.is_scanning = False
         self.scan_start_time = 0
         self.scanning_files = 0
@@ -44,9 +41,9 @@ class Scanner:
         self.extensions = IMAGE_EXTENSIONS + VIDEO_EXTENSIONS
 
     def init(self):
-        self.total_images = crud.get_image_count(self.db.session)
-        self.total_videos = crud.get_video_count(self.db.session)
-        self.total_video_frames = crud.get_video_frame_count(self.db.session)
+        self.total_images = crud.get_image_count(db.session)
+        self.total_videos = crud.get_video_count(db.session)
+        self.total_video_frames = crud.get_video_frame_count(db.session)
 
     def get_status(self):
         """
@@ -156,7 +153,7 @@ class Scanner:
         self.generate_or_load_assets()
         # 删除不存在的文件记录
         if not self.is_continue_scan:  # 非断点恢复的情况下才删除
-            crud.delete_record_if_not_exist(self.db.session, self.assets)
+            crud.delete_record_if_not_exist(db.session, self.assets)
         # 扫描文件
         for path in self.assets.copy():
             self.scanned_files += 1
@@ -175,7 +172,7 @@ class Scanner:
             # 如果数据库里有这个文件，并且修改时间一致，则跳过，否则进行预处理并入库
             if path.lower().endswith(IMAGE_EXTENSIONS):  # 图片
                 not_modified = crud.delete_image_if_outdated(
-                    self.db.session, path, modify_time
+                    db.session, path, modify_time
                 )
                 if not_modified:
                     self.assets.remove(path)
@@ -186,41 +183,25 @@ class Scanner:
                     continue
                 # 写入数据库
                 features = features.tobytes()
-                crud.add_image(
-                    self.db.session,
-                    Image(path=path, modify_time=modify_time, features=features)
-                )
-                self.total_images = crud.get_image_count(self.db.session)
+                crud.add_image(db.session, path, modify_time, features)
+                self.total_images = crud.get_image_count(db.session)
             elif path.lower().endswith(VIDEO_EXTENSIONS):  # 视频
                 not_modified = crud.delete_video_if_outdated(
-                    self.db.session, path, modify_time
+                    db.session, path, modify_time
                 )
                 if not_modified:
                     self.assets.remove(path)
                     continue
-                crud.add_video(
-                    self.db.session,
-                    [
-                        Video(
-                            path=path,
-                            frame_time=frame_time,
-                            modify_time=modify_time,
-                            features=features.tobytes(),
-                        )
-                        for frame_time, features in process_video(path)
-                    ],
-                )
-                self.total_video_frames = crud.get_video_frame_count(
-                    self.db.session
-                )
-                self.total_videos = crud.get_video_count(self.db.session)
+                crud.add_video(db.session, path, modify_time, process_video(path))
+                self.total_video_frames = crud.get_video_frame_count(db.session)
+                self.total_videos = crud.get_video_count(db.session)
             # FIXME: 处理完一张图片或一个完整视频再commit，避免扫描视频到一半时程序中断，下次扫描会跳过这个视频的问题
-            self.db.session.commit()
+            db.session.commit()
             self.assets.remove(path)
         # 最后重新统计一下数量
-        self.total_images = crud.get_image_count(self.db.session)
-        self.total_videos = crud.get_video_count(self.db.session)
-        self.total_video_frames = crud.get_video_frame_count(self.db.session)
+        self.total_images = crud.get_image_count(db.session)
+        self.total_videos = crud.get_video_count(db.session)
+        self.total_video_frames = crud.get_video_frame_count(db.session)
         self.scanning_files = 0
         self.scanned_files = 0
         os.remove(self.temp_file)

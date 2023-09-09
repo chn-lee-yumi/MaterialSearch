@@ -27,7 +27,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-scanner = Scanner(db)
+scanner = Scanner()
 upload_file_path = ""
 
 
@@ -236,9 +236,15 @@ def api_match():
         elif search_type == 6:  # 以图搜视频(图片是数据库中的)
             sorted_list = search_video_by_image(img_id, image_threshold)[:MAX_RESULT_NUM]
         elif search_type == 7:  # 路径搜图
-            return jsonify(search_file(path=path, file_type="image")[:top_n])
+            results = search_file(path=path, file_type="image")[:top_n]
+            if not results:
+                abort(400)
+            return jsonify(results)
         elif search_type == 8:  # 路径搜视频
-            return jsonify(search_file(path=path, file_type="video")[:top_n])
+            results = search_file(path=path, file_type="video")[:top_n]
+            if not results:
+                abort(400)
+            return jsonify(results)
         else:  # 空
             abort(400)
     sorted_list = sorted_list[:top_n]

@@ -4,12 +4,10 @@ import time
 from functools import lru_cache
 
 import numpy as np
-from flask import abort
-from sqlalchemy import asc
 
 import crud
 from config import *
-from database import Image, Video, db
+from database import db
 from process_assets import match_batch, process_image, process_text
 
 logger = logging.getLogger(__name__)
@@ -44,7 +42,7 @@ def search_image_by_feature(
     scores_list = []
     t0 = time.time()
     ids, paths, features = crud.get_image_id_path_features(db.session)
-    features = np.frombuffer(b''.join(features), dtype=np.float32).reshape(len(features), -1)
+    features = np.frombuffer(b"".join(features), dtype=np.float32).reshape(len(features), -1)
     if len(ids) == 0:  # 没有素材，直接返回空
         return []
     scores = match_batch(
@@ -104,14 +102,13 @@ def search_image_by_image(img_id_or_path, threshold=IMAGE_THRESHOLD):
     except ValueError as e:
         img_path = img_id_or_path
     if img_id:
-        image = db.session.query(Image).filter_by(id=img_id).first()
-        if not image:
-            logger.warning("用数据库的图来进行搜索，但id在数据库中不存在")
+        features = crud.get_image_features_by_id(db.session, img_id)
+        if not features:
             return []
-        feature = np.frombuffer(image.features, dtype=np.float32).reshape(1, -1)
+        features = np.frombuffer(features, dtype=np.float32).reshape(1, -1)
     elif img_path:
-        feature = process_image(img_path)
-    return search_image_by_feature(feature, None, threshold)
+        features = process_image(img_path)
+    return search_image_by_feature(features, None, threshold)
 
 
 def get_index_pairs(scores):
@@ -137,6 +134,22 @@ def get_index_pairs(scores):
     return result
 
 
+def get_video_range(start_index, end_index, scores, frame_times):
+    """
+    根据帧数范围，获取视频时长范围
+    """
+    # 间隔小于等于2倍FRAME_INTERVAL的算为同一个素材，同时开始时间和结束时间各延长0.5个FRAME_INTERVAL
+    if start_index > 0:
+        start_time = int((frame_times[start_index] + frame_times[start_index - 1]) / 2)
+    else:
+        start_time = frame_times[start_index]
+    if end_index < len(scores) - 1:
+        end_time = int((frame_times[end_index] + frame_times[end_index + 1]) / 2 + 0.5)
+    else:
+        end_time = frame_times[end_index]
+    return start_time, end_time
+
+
 def search_video_by_feature(
     positive_feature,
     negative_feature=None,
@@ -153,54 +166,24 @@ def search_video_by_feature(
     """
     t0 = time.time()
     scores_list = []
-    for path in db.session.query(Video.path).distinct():  # 逐个视频比对
-        path = path[0]
-        frames = (
-            db.session.query(Video)
-            .filter_by(path=path)
-            .order_by(Video.frame_time)
-            .all()
-        )
-        image_features = list(
-            map(
-                lambda x: np.frombuffer(x.features, dtype=np.float32).reshape(
-                    1, -1
-                ),
-                frames,
-            )
+    for path in crud.get_video_paths(db.session):  # 逐个视频比对
+        frame_times, features = crud.get_frame_times_features_by_path(db.session, path)
+        features = np.frombuffer(b"".join(features), dtype=np.float32).reshape(
+            len(features), -1
         )
         scores = match_batch(
             positive_feature,
             negative_feature,
-            image_features,
+            features,
             positive_threshold,
             negative_threshold,
         )
         index_pairs = get_index_pairs(scores)
         for start_index, end_index in index_pairs:
-            # 间隔小于等于2倍FRAME_INTERVAL的算为同一个素材，同时开始时间和结束时间各延长0.5个FRAME_INTERVAL
             score = max(scores[start_index : end_index + 1])
-            if start_index > 0:
-                start_time = int(
-                    (
-                        frames[start_index].frame_time
-                        + frames[start_index - 1].frame_time
-                    )
-                    / 2
-                )
-            else:
-                start_time = frames[start_index].frame_time
-            if end_index < len(scores) - 1:
-                end_time = int(
-                    (
-                        frames[end_index].frame_time
-                        + frames[end_index + 1].frame_time
-                    )
-                    / 2
-                    + 0.5
-                )
-            else:
-                end_time = frames[end_index].frame_time
+            start_time, end_time = get_video_range(
+                start_index, end_index, scores, frame_times
+            )
             scores_list.append(
                 {
                     "url": "api/get_video/%s"
@@ -252,11 +235,10 @@ def search_video_by_image(img_id_or_path, threshold=IMAGE_THRESHOLD):
     except ValueError as e:
         img_path = img_id_or_path
     if img_id:
-        image = db.session.query(Image).filter_by(id=img_id).first()
-        if not image:
-            logger.warning("用数据库的图来进行搜索，但id在数据库中不存在")
+        feature = crud.get_image_features_by_id(db.session, img_id)
+        if not feature:
             return []
-        feature = np.frombuffer(image.features, dtype=np.float32).reshape(1, -1)
+        feature = np.frombuffer(feature, dtype=np.float32).reshape(1, -1)
     elif img_path:
         feature = process_image(img_path)
     return search_video_by_feature(feature, None, threshold)
@@ -270,31 +252,26 @@ def search_file(path, file_type):
     :param file_type: 文件类型，"image"或"video"
     :return:
     """
-    if file_type == "image":
-        files = (
-            db.session.query(Image)
-            .filter(Image.path.like("%" + path + "%"))
-            .order_by(asc(Image.path))
-        )
-    elif file_type == "video":
-        files = (
-            db.session.query(Video.path)
-            .distinct()
-            .filter(Video.path.like("%" + path + "%"))
-            .order_by(asc(Video.path))
-        )
-    else:
-        abort(400)
     file_list = []
-    for file in files:
-        if file_type == "image":
-            file_list.append({"url": "api/get_image/%d" % file.id, "path": file.path})
-        elif file_type == "video":
-            file_list.append(
-                {
-                    "url": "api/get_video/%s"
-                    % base64.urlsafe_b64encode(file.path.encode()).decode(),
-                    "path": file.path,
-                }
-            )
+    if file_type == "image":
+        files = crud.search_image_by_path(db.session, path)
+        file_list = [
+            {
+                "url": "api/get_image/%d" % id,
+                "path": path,
+            }
+            for id, path in files
+        ]
+    elif file_type == "video":
+        files = crud.search_video_by_path(db.session, path)
+        file_list = [
+            {
+                "url": "api/get_video/%s"
+                % base64.urlsafe_b64encode(path.encode()).decode(),
+                "path": path,
+            }
+            for path, in files
+        ]  # 这里的,不可以省，用于解包tuple
+    else:
+        return []
     return file_list
