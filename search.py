@@ -7,6 +7,7 @@ import numpy as np
 from flask import abort
 from sqlalchemy import asc
 
+import crud
 from config import *
 from database import Image, Video, db
 from process_assets import match_batch, process_image, process_text
@@ -42,32 +43,24 @@ def search_image_by_feature(
     """
     scores_list = []
     t0 = time.time()
-    image_features = []
-    file_list = []
-    for file in db.session.query(Image):
-        features = np.frombuffer(file.features, dtype=np.float32).reshape(1, -1)
-        if features is None:  # 内容损坏，删除该条记录
-            db.session.delete(file)
-            db.session.commit()
-            continue
-        file_list.append(file)
-        image_features.append(features)
-    if len(image_features) == 0:  # 没有素材，直接返回空
+    ids, paths, features = crud.get_image_id_path_features(db.session)
+    features = np.frombuffer(b''.join(features), dtype=np.float32).reshape(len(features), -1)
+    if len(ids) == 0:  # 没有素材，直接返回空
         return []
     scores = match_batch(
         positive_feature,
         negative_feature,
-        image_features,
+        features,
         positive_threshold,
         negative_threshold,
     )
-    for i in range(len(file_list)):
+    for i in range(len(ids)):
         if not scores[i]:
             continue
         scores_list.append(
             {
-                "url": "api/get_image/%d" % file_list[i].id,
-                "path": file_list[i].path,
+                "url": "api/get_image/%d" % ids[i],
+                "path": paths[i],
                 "score": float(scores[i]),
             }
         )
@@ -76,6 +69,7 @@ def search_image_by_feature(
     return sorted_list
 
 
+@lru_cache(maxsize=CACHE_SIZE)
 def search_image_by_text(
     positive_prompt="",
     negative_prompt="",

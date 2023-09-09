@@ -127,3 +127,11 @@ def is_video_exist(session: Session, path: str):
     if video:
         return True
     return False
+
+
+def get_image_id_path_features(session: Session):
+    session.query(Image).filter(Image.features.is_(None)).delete()
+    session.commit()
+    query = session.query(Image.id, Image.path, Image.features)
+    id_list, path_list, features_list = zip(*query)
+    return id_list, path_list, features_list 

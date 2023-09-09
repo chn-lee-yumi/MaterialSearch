@@ -187,6 +187,7 @@ class Scanner:
                 # 写入数据库
                 features = features.tobytes()
                 crud.add_image(
+                    self.db.session,
                     Image(path=path, modify_time=modify_time, features=features)
                 )
                 self.total_images = crud.get_image_count(self.db.session)

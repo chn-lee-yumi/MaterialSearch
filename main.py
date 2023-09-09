@@ -245,7 +245,7 @@ def api_match():
     scores = [item["score"] for item in sorted_list]
     softmax_scores = softmax(scores)
     if search_type in (0, 1, 5):
-        new_sorted_list = [
+        sorted_list = [
             {
                 "url": item["url"],
                 "path": item["path"],
@@ -254,8 +254,8 @@ def api_match():
             }
             for item, score in zip(sorted_list, softmax_scores)
         ]
-    else:  # search_type in (2, 3, 6)
-        new_sorted_list = [
+    elif search_type in (2, 3, 6):
+        sorted_list = [
             {
                 "url": item["url"],
                 "path": item["path"],
@@ -266,7 +266,7 @@ def api_match():
             }
             for item, score in zip(sorted_list, softmax_scores)
         ]
-    return jsonify(new_sorted_list)
+    return jsonify(sorted_list)
 
 
 @app.route("/api/get_image/<int:image_id>", methods=["GET"])

@@ -189,7 +189,6 @@ def match_batch(
     :param negative_threshold: int/float, 反向提示分数阈值，低于此分数才显示
     :return: [<class 'numpy.nparray'>], 提示词和每个图片余弦相似度列表，里面每个元素的shape=(1, 1)，如果小于正向提示分数阈值或大于反向提示分数阈值则会置0
     """
-    image_features = np.concatenate(image_features, axis=0)
     # 计算余弦相似度
     if len(image_features) > 1024:  # 多线程只对大矩阵效果好，1024是随便写的
         new_features = multithread_normalize(image_features)
