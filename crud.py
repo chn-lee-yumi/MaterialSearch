@@ -1,22 +1,55 @@
 import datetime
 import logging
 import os
+import pickle
+import tqdm
 
 from sqlalchemy import asc
 from sqlalchemy.orm import Session
 
 from config import MAX_RESULT_NUM
-from database import Image, Video
+from models import Image, Video
 
 logger = logging.getLogger(__name__)
 
 
-def get_image(session: Session):
-    return session.query(Image).first()
+def check_if_optimized_database(session: Session) -> bool:
+    image = session.query(Image).first()
+    try:
+        pickle.loads(image.features)
+        return False
+    except Exception as e:
+        logger.debug(f"optimize_db pickle.loads: {repr(e)}")
+        logger.info("数据库已经优化过")
+        return True
 
 
-def get_images(session: Session):
-    return session.query(Image)
+def optimize_image(session: Session):
+    i = 0
+    for file in tqdm.tqdm(session.query(Image), desc='优化图像数据库'):
+        features = pickle.loads(file.features)
+        if features is None:
+            session.delete(file)
+        else:
+            file.features = features.tobytes()
+        i += 1
+        if i % 1000 == 0:
+            session.commit()
+    session.commit()
+
+
+def optimize_video(session: Session):
+    i = 0
+    for frame in tqdm.tqdm(session.query(Video), desc='优化视频数据库'):
+        features = pickle.loads(frame.features)
+        if features is None:
+            session.delete(frame)
+        else:
+            frame.features = features.tobytes()
+        i += 1
+        if i % 1000 == 0:
+            session.commit()
+    session.commit()
 
 
 def get_image_features_by_id(session: Session, id: int):
@@ -89,8 +122,8 @@ def delete_video_if_outdated(
 
 
 def get_video_paths(session: Session):
-    for i in session.query(Video.path).distinct():
-        yield i[0]
+    for i, in session.query(Video.path).distinct():
+        yield i
 
 
 def get_frame_times_features_by_path(session: Session, path: str):

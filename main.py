@@ -1,6 +1,5 @@
 import base64
 import logging
-import pickle
 import threading
 from functools import wraps
 
@@ -9,7 +8,7 @@ from flask import abort, jsonify, redirect, request, send_file, session, url_for
 from app_base import app
 from config import *
 import crud
-from database import Video, db
+from database import db
 from process_assets import match_text_and_image, process_image, process_text
 from scan import Scanner
 from search import (
@@ -38,45 +37,13 @@ def optimize_db():
     :return: None
     """
     with app.app_context():
-        total_images = crud.get_image_count(db.session)
-        total_videos = crud.get_video_count(db.session)
-        image = crud.get_image(db.session)
-        try:
-            pickle.loads(image.features)
-        except Exception as e:
-            logger.debug(f"optimize_db pickle.loads: {repr(e)}")
-            logger.info("数据库已经优化过")
+        if crud.check_if_optimized_database(db.session):
             return
-        else:
-            logger.info("开始优化数据库，切勿中断，否则要删库重扫！如果你文件数量多，可能比较久。")
-            logger.info("参考速度：5万图片+200个视频（100万视频帧），在J3455上大约需要15分钟。")
-            i = 0
-            for file in crud.get_images(db.session):
-                features = pickle.loads(file.features)
-                if features is None:
-                    db.session.delete(file)
-                else:
-                    file.features = features.tobytes()
-                i += 1
-                print(f"\rprocessing images: {i}/{total_images}", end="")
-                if i % 1000 == 0:
-                    db.session.commit()
-            db.session.commit()
-            print()
-            i = 0
-            for path in db.session.query(Video.path).distinct():
-                path = path[0]
-                for file in db.session.query(Video).filter_by(path=path):
-                    features = pickle.loads(file.features)
-                    if features is None:
-                        db.session.delete(file)
-                    else:
-                        file.features = features.tobytes()
-                i += 1
-                print(f"\rprocessing videos: {i}/{total_videos}", end="")
-                db.session.commit()
-            db.session.commit()
-            logger.info(f"数据库优化完成")
+        logger.info("开始优化数据库，切勿中断，否则要删库重扫！如果你文件数量多，可能比较久。")
+        logger.info("参考速度：5万图片+200个视频（100万视频帧），在J3455上大约需要15分钟。")
+        crud.optimize_image(db.session)
+        crud.optimize_video(db.session)
+        logger.info(f"数据库优化完成")
 
 
 def init():
