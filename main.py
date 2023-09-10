@@ -19,7 +19,7 @@ from search import (
     search_video_by_image,
     search_video_by_text,
 )
-from utils import crop_video, get_file_hash, softmax
+from utils import crop_video, get_file_hash
 
 logging.basicConfig(
     level=LOG_LEVEL, format="%(asctime)s %(name)s %(levelname)s %(message)s"
@@ -215,30 +215,6 @@ def api_match():
         else:  # 空
             abort(400)
     sorted_list = sorted_list[:top_n]
-    scores = [item["score"] for item in sorted_list]
-    softmax_scores = softmax(scores)
-    if search_type in (0, 1, 5):
-        sorted_list = [
-            {
-                "url": item["url"],
-                "path": item["path"],
-                "score": "%.2f" % (item["score"] * 100),
-                "softmax_score": "%.2f%%" % (score * 100),
-            }
-            for item, score in zip(sorted_list, softmax_scores)
-        ]
-    elif search_type in (2, 3, 6):
-        sorted_list = [
-            {
-                "url": item["url"],
-                "path": item["path"],
-                "score": "%.2f" % (item["score"] * 100),
-                "softmax_score": "%.2f%%" % (score * 100),
-                "start_time": item["start_time"],
-                "end_time": item["end_time"],
-            }
-            for item, score in zip(sorted_list, softmax_scores)
-        ]
     return jsonify(sorted_list)
 
 
@@ -328,4 +304,4 @@ def api_upload():
 
 if __name__ == "__main__":
     init()
-    app.run(port=PORT, host=HOST)
+    app.run(port=PORT, host=HOST, debug=FLASK_DEBUG)

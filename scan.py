@@ -91,6 +91,11 @@ class Scanner:
         return not any((wrong_ext, skip, ignore))
 
     def generate_or_load_assets(self):
+        """
+        若无缓存文件，扫描目录到self.assets, 并生成新的缓存文件；
+        否则加载缓存文件到self.assets
+        :return: None
+        """
         if os.path.isfile(self.temp_file):
             self.logger.info("读取上次的目录缓存")
             self.is_continue_scan = True
@@ -101,6 +106,7 @@ class Scanner:
             self.is_continue_scan = False
             self.scan_dir()
             self.save_assets()
+        self.scanning_files = len(self.assets)
 
     def is_current_auto_scan_time(self) -> bool:
         """
@@ -195,8 +201,6 @@ class Scanner:
                 crud.add_video(db.session, path, modify_time, process_video(path))
                 self.total_video_frames = crud.get_video_frame_count(db.session)
                 self.total_videos = crud.get_video_count(db.session)
-            # FIXME: 处理完一张图片或一个完整视频再commit，避免扫描视频到一半时程序中断，下次扫描会跳过这个视频的问题
-            db.session.commit()
             self.assets.remove(path)
         # 最后重新统计一下数量
         self.total_images = crud.get_image_count(db.session)

@@ -9,6 +9,7 @@ import crud
 from config import *
 from database import db
 from process_assets import match_batch, process_image, process_text
+from utils import softmax
 
 logger = logging.getLogger(__name__)
 
@@ -39,7 +40,6 @@ def search_image_by_feature(
     :param negative_threshold: int/float, 反向阈值
     :return: list[dict], 搜索结果列表
     """
-    scores_list = []
     t0 = time.time()
     ids, paths, features = crud.get_image_id_path_features(db.session)
     features = np.frombuffer(b"".join(features), dtype=np.float32).reshape(len(features), -1)
@@ -52,19 +52,26 @@ def search_image_by_feature(
         positive_threshold,
         negative_threshold,
     )
+    data_list = []
+    scores_list = []
     for i in range(len(ids)):
         if not scores[i]:
             continue
-        scores_list.append(
-            {
-                "url": "api/get_image/%d" % ids[i],
-                "path": paths[i],
-                "score": float(scores[i]),
-            }
-        )
+        data_list.append((ids[i], paths[i], scores[i]))
+        scores_list.append(scores[i])
+    softmax_scores = softmax(scores_list)
+    return_list = [
+        {
+            "url": "api/get_image/%d" % id,
+            "path": path,
+            "score": float(score),
+            "softmax_score": float(softmax_score),
+        }
+        for (id, path, score), softmax_score  in zip(data_list, softmax_scores)
+    ]
+    return_list = sorted(return_list, key=lambda x: x["score"], reverse=True)
     logger.info("查询使用时间：%.2f" % (time.time() - t0))
-    sorted_list = sorted(scores_list, key=lambda x: x["score"], reverse=True)
-    return sorted_list
+    return return_list
 
 
 @lru_cache(maxsize=CACHE_SIZE)
@@ -166,6 +173,7 @@ def search_video_by_feature(
     """
     t0 = time.time()
     scores_list = []
+    data_list = []
     for path in crud.get_video_paths(db.session):  # 逐个视频比对
         frame_times, features = crud.get_frame_times_features_by_path(db.session, path)
         features = np.frombuffer(b"".join(features), dtype=np.float32).reshape(
@@ -184,20 +192,25 @@ def search_video_by_feature(
             start_time, end_time = get_video_range(
                 start_index, end_index, scores, frame_times
             )
-            scores_list.append(
-                {
-                    "url": "api/get_video/%s"
-                    % base64.urlsafe_b64encode(path.encode()).decode()
-                    + "#t=%.1f,%.1f" % (start_time, end_time),
-                    "path": path,
-                    "score": score,
-                    "start_time": start_time,
-                    "end_time": end_time,
-                }
-            )
+            data_list.append((path, score, start_time, end_time))
+            scores_list.append(score)
+    softmax_scores = softmax(scores_list)
+    return_list = [
+        {
+            "url": "api/get_video/%s"
+            % base64.urlsafe_b64encode(path.encode()).decode()
+            + "#t=%.1f,%.1f" % (start_time, end_time),
+            "path": path,
+            "score": float(score),
+            "start_time": start_time,
+            "end_time": end_time,
+            "softmax_score": float(softmax_score)
+        }
+        for (path, score, start_time, end_time), softmax_score in zip(data_list, softmax_scores)
+    ]
     logger.info("查询使用时间：%.2f" % (time.time() - t0))
-    sorted_list = sorted(scores_list, key=lambda x: x["score"], reverse=True)
-    return sorted_list
+    return_list = sorted(return_list, key=lambda x: x["score"], reverse=True)
+    return return_list
 
 
 @lru_cache(maxsize=CACHE_SIZE)
