@@ -14,11 +14,12 @@ from process_assets import match_text_and_image, process_image, process_text
 from scan import Scanner
 from search import (
     clean_cache,
-    search_file,
     search_image_by_image,
     search_image_by_text,
+    search_image_file,
     search_video_by_image,
     search_video_by_text,
+    search_video_file,
 )
 from utils import crop_video, get_file_hash
 
@@ -207,14 +208,10 @@ def api_match():
     elif search_type == 6:  # 以图搜视频(图片是数据库中的)
         sorted_list = search_video_by_image(img_id, image_threshold)[:MAX_RESULT_NUM]
     elif search_type == 7:  # 路径搜图
-        results = search_file(path=path, file_type="image")[:top_n]
-        if not results:
-            abort(400)
+        results = search_image_file(path)[:top_n]
         return jsonify(results)
     elif search_type == 8:  # 路径搜视频
-        results = search_file(path=path, file_type="video")[:top_n]
-        if not results:
-            abort(400)
+        results = search_video_file(path=path)[:top_n]
         return jsonify(results)
     else:  # 空
         abort(400)

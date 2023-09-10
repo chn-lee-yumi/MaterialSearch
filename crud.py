@@ -159,7 +159,14 @@ def add_image(
 
 
 def add_video(session: Session, path: str, modify_time, frame_time_features_generator):
-    # 使用 bulk_save_objects 一次性提交
+    """ 
+    将处理后的视频数据入库
+    :param session: Session, 数据库session
+    :param path: str, 视频路径
+    :param modify_time: datetime, 文件修改时间
+    :param frame_time_features_generator: 返回(帧序列号,特征)元组的迭代器
+    """
+    # 使用 bulk_save_objects 一次性提交，因此处理至一半中断不会导致下次扫描时跳过
     video_list = (
         Video(
             path=path, modify_time=modify_time, frame_time=frame_time, features=features
@@ -172,7 +179,7 @@ def add_video(session: Session, path: str, modify_time, frame_time_features_gene
 
 def delete_record_if_not_exist(session: Session, assets: set):
     """
-    删除不存在于 assets 集合中的图片 / 视频记录
+    删除不存在于 assets 集合中的图片 / 视频的数据库记录
     """
     for file in session.query(Image):
         if file.path not in assets:
@@ -193,7 +200,10 @@ def is_video_exist(session: Session, path: str):
     return False
 
 
-def get_image_id_path_features(session: Session):
+def get_image_id_path_features(session: Session) -> tuple[list[int], list[str], list[bytes]]:
+    """
+    获取全部图片的 id, 路径, 特征，返回三个列表
+    """
     session.query(Image).filter(Image.features.is_(None)).delete()
     session.commit()
     query = session.query(Image.id, Image.path, Image.features)
@@ -201,7 +211,11 @@ def get_image_id_path_features(session: Session):
     return id_list, path_list, features_list
 
 
-def search_image_by_path(session: Session, path: str):
+def search_image_by_path(session: Session, path: str) -> list[tuple[int, str]]:
+    """
+    根据路径搜索图片，最多返回 MAX_RESULT_NUM 个数据
+    :return: (图片id, 图片路径) 元组列表
+    """
     return (
         session.query(Image.id, Image.path)
         .filter(Image.path.like("%" + path + "%"))
@@ -212,6 +226,9 @@ def search_image_by_path(session: Session, path: str):
 
 
 def search_video_by_path(session: Session, path: str):
+    """
+    根据路径搜索视频，最多返回 MAX_RESULT_NUM 个数据
+    """
     return (
         session.query(Video.path)
         .distinct()

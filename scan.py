@@ -13,7 +13,7 @@ from search import clean_cache
 
 class Scanner:
     """
-    扫描类
+    扫描类  # TODO: 继承 Thread 类？
     """
 
     def __init__(self) -> None:

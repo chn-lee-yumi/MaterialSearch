@@ -17,9 +17,6 @@ from transformers import (
 
 from config import *
 
-logging.basicConfig(
-    level=LOG_LEVEL, format="%(asctime)s %(name)s %(levelname)s %(message)s"
-)
 logger = logging.getLogger(__name__)
 
 logger.info("Loading model...")
@@ -33,16 +30,6 @@ if MODEL_LANGUAGE == "Chinese":
         .to(torch.device(DEVICE_TEXT))
     )
 logger.info("Model loaded.")
-
-
-def create_dir_if_not_exists(dir_path):
-    """
-    判断目录是否存在，如果目录不存在，则创建目录
-    :param dir_path: string, 目录路径
-    :return: None
-    """
-    if not os.path.exists(dir_path):
-        os.makedirs(dir_path)
 
 
 def process_image(path, ignore_small_images=True):

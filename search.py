@@ -21,9 +21,10 @@ def clean_cache():
     """
     search_image_by_text.cache_clear()
     search_image_by_image.cache_clear()
+    search_image_file.cache_clear()
     search_video_by_text.cache_clear()
     search_video_by_image.cache_clear()
-    search_file.cache_clear()
+    search_video_file.cache_clear()
 
 
 def search_image_by_feature(
@@ -267,34 +268,40 @@ def search_video_by_image(img_id_or_path, threshold=IMAGE_THRESHOLD):
 
 
 @lru_cache(maxsize=CACHE_SIZE)
-def search_file(path, file_type):
+def search_image_file(path: str):
     """
-    通过路径搜索图片或视频
+    通过路径搜索图片
     :param path: 路径
-    :param file_type: 文件类型，"image"或"video"
     :return:
     """
     file_list = []
     with SessionLocal() as session:
-        if file_type == "image":
-            files = crud.search_image_by_path(session, path)
-            file_list = [
-                {
-                    "url": "api/get_image/%d" % id,
-                    "path": path,
-                }
-                for id, path in files
-            ]
-        elif file_type == "video":
-            files = crud.search_video_by_path(session, path)
-            file_list = [
-                {
-                    "url": "api/get_video/%s"
-                    % base64.urlsafe_b64encode(path.encode()).decode(),
-                    "path": path,
-                }
-                for path, in files
-            ]  # 这里的,不可以省，用于解包tuple
-        else:
-            return []
-    return file_list
+        id_paths = crud.search_image_by_path(session, path)
+        file_list = [
+            {
+                "url": "api/get_image/%d" % id,
+                "path": path,
+            }
+            for id, path in id_paths
+        ]
+        return file_list
+
+
+@lru_cache(maxsize=CACHE_SIZE)
+def search_video_file(path: str):
+    """
+    通过路径搜索视频
+    :param path: 路径
+    :return:
+    """
+    with SessionLocal() as session:
+        paths = crud.search_video_by_path(session, path)
+        file_list = [
+            {
+                "url": "api/get_video/%s"
+                % base64.urlsafe_b64encode(path.encode()).decode(),
+                "path": path,
+            }
+            for path, in paths
+        ]  # 这里的,不可以省，用于解包tuple
+        return file_list

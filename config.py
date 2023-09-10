@@ -49,7 +49,7 @@ LOG_LEVEL = os.getenv('LOG_LEVEL', 'INFO')  # 日志等级：NOTSET/DEBUG/INFO/W
 
 # *****其它配置*****
 # 数据库保存路径，默认路径为兼容 flask_sqlalchemy 创建的数据库
-SQLALCHEMY_DATABASE_URL = os.getenv('SQLALCHEMY_DATABASE_URL', 'sqlite:///./var/main-instance/assets.db')
+SQLALCHEMY_DATABASE_URL = os.getenv('SQLALCHEMY_DATABASE_URL', 'sqlite:///./var/main-instance/assets.db')  # 数据库保存路径
 TEMP_PATH = os.getenv('TEMP_PATH', './tmp')  # 临时目录路径
 VIDEO_EXTENSION_LENGTH = int(os.getenv('VIDEO_EXTENSION_LENGTH', 0))  # 下载视频片段时，视频前后增加的时长，单位为秒
 ENABLE_LOGIN = os.getenv('ENABLE_LOGIN', 'False').lower() == 'true'  # 是否启用登录

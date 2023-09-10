@@ -7,4 +7,5 @@ engine = create_engine(
     connect_args={"check_same_thread": False}
 )
 
+# 起名为 SessionLocal，与 sqlalchemy 的 Session 类所区分
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
