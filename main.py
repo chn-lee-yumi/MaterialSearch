@@ -1,14 +1,15 @@
 import base64
 import logging
+import os
 import threading
 from functools import wraps
 
-from flask import abort, jsonify, redirect, request, send_file, session, url_for
+from flask import Flask, abort, jsonify, redirect, request, send_file, session, url_for
 
-from app_base import app
-from config import *
 import crud
-from database import db
+from config import *
+from database import SessionLocal
+from models import create_tables
 from process_assets import match_text_and_image, process_image, process_text
 from scan import Scanner
 from search import (
@@ -26,6 +27,9 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+app = Flask(__name__)
+app.secret_key = "https://github.com/chn-lee-yumi/MaterialSearch"
+
 scanner = Scanner()
 upload_file_path = ""
 
@@ -36,13 +40,13 @@ def optimize_db():
     本功能为临时功能，几个月后会移除（默认大家后面都已经全部迁移好了）
     :return: None
     """
-    with app.app_context():
-        if crud.check_if_optimized_database(db.session):
+    with SessionLocal() as session:
+        if crud.check_if_optimized_database(session):
             return
         logger.info("开始优化数据库，切勿中断，否则要删库重扫！如果你文件数量多，可能比较久。")
         logger.info("参考速度：5万图片+200个视频（100万视频帧），在J3455上大约需要15分钟。")
-        crud.optimize_image(db.session)
-        crud.optimize_video(db.session)
+        crud.optimize_image(session)
+        crud.optimize_video(session)
         logger.info(f"数据库优化完成")
 
 
@@ -52,14 +56,13 @@ def init():
     :return: None
     """
     global scanner
-    with app.app_context():
-        db.create_all()  # 初始化数据库
-        scanner.init()
+    create_tables()
+    scanner.init()
     if not os.path.exists(TEMP_PATH):  # 如果临时文件夹不存在，则创建
         os.mkdir(TEMP_PATH)
     optimize_db()  # 数据库优化（临时功能）
     if AUTO_SCAN:
-        auto_scan_thread = threading.Thread(target=scanner.auto_scan, args=(app.app_context(), ))
+        auto_scan_thread = threading.Thread(target=scanner.auto_scan, args=())
         auto_scan_thread.start()
 
 
@@ -129,7 +132,7 @@ def api_scan():
     global scanner
     if not scanner.is_scanning:
         # https://stackoverflow.com/questions/72541670/why-flask-app-context-is-lost-in-child-thread-when-application-factory-pattern-i
-        scan_thread = threading.Thread(target=scanner.scan, args=(False, app.app_context(), ))
+        scan_thread = threading.Thread(target=scanner.scan, args=(False,))
         scan_thread.start()
         return jsonify({"status": "start scanning"})
     return jsonify({"status": "already scanning"})
@@ -175,45 +178,46 @@ def api_match():
         logger.warning(f"search_type不正确：{search_type}")
         abort(500)
     # 进行匹配
-    with app.app_context():
-        if search_type == 0:  # 文字搜图
-            sorted_list = search_image_by_text(
-                data["positive"], data["negative"], positive_threshold, negative_threshold
-            )[:MAX_RESULT_NUM]
-        elif search_type == 1:  # 以图搜图
-            sorted_list = search_image_by_image(upload_file_path, image_threshold)[
-                :MAX_RESULT_NUM
-            ]
-        elif search_type == 2:  # 文字搜视频
-            sorted_list = search_video_by_text(
-                data["positive"], data["negative"], positive_threshold, negative_threshold
-            )[:MAX_RESULT_NUM]
-        elif search_type == 3:  # 以图搜视频
-            sorted_list = search_video_by_image(upload_file_path, image_threshold)[
-                :MAX_RESULT_NUM
-            ]
-        elif search_type == 4:  # 图文相似度匹配
-            score = match_text_and_image(process_text(data["text"]), process_image(upload_file_path)) * 100
-            return jsonify({
-                    "score": f"{score:.2f}"
-                }
+    if search_type == 0:  # 文字搜图
+        sorted_list = search_image_by_text(
+            data["positive"], data["negative"], positive_threshold, negative_threshold
+        )[:MAX_RESULT_NUM]
+    elif search_type == 1:  # 以图搜图
+        sorted_list = search_image_by_image(upload_file_path, image_threshold)[
+            :MAX_RESULT_NUM
+        ]
+    elif search_type == 2:  # 文字搜视频
+        sorted_list = search_video_by_text(
+            data["positive"], data["negative"], positive_threshold, negative_threshold
+        )[:MAX_RESULT_NUM]
+    elif search_type == 3:  # 以图搜视频
+        sorted_list = search_video_by_image(upload_file_path, image_threshold)[
+            :MAX_RESULT_NUM
+        ]
+    elif search_type == 4:  # 图文相似度匹配
+        score = (
+            match_text_and_image(
+                process_text(data["text"]), process_image(upload_file_path)
             )
-        elif search_type == 5:  # 以图搜图(图片是数据库中的)
-            sorted_list = search_image_by_image(img_id, image_threshold)[:MAX_RESULT_NUM]
-        elif search_type == 6:  # 以图搜视频(图片是数据库中的)
-            sorted_list = search_video_by_image(img_id, image_threshold)[:MAX_RESULT_NUM]
-        elif search_type == 7:  # 路径搜图
-            results = search_file(path=path, file_type="image")[:top_n]
-            if not results:
-                abort(400)
-            return jsonify(results)
-        elif search_type == 8:  # 路径搜视频
-            results = search_file(path=path, file_type="video")[:top_n]
-            if not results:
-                abort(400)
-            return jsonify(results)
-        else:  # 空
+            * 100
+        )
+        return jsonify({"score": f"{score:.2f}"})
+    elif search_type == 5:  # 以图搜图(图片是数据库中的)
+        sorted_list = search_image_by_image(img_id, image_threshold)[:MAX_RESULT_NUM]
+    elif search_type == 6:  # 以图搜视频(图片是数据库中的)
+        sorted_list = search_video_by_image(img_id, image_threshold)[:MAX_RESULT_NUM]
+    elif search_type == 7:  # 路径搜图
+        results = search_file(path=path, file_type="image")[:top_n]
+        if not results:
             abort(400)
+        return jsonify(results)
+    elif search_type == 8:  # 路径搜视频
+        results = search_file(path=path, file_type="video")[:top_n]
+        if not results:
+            abort(400)
+        return jsonify(results)
+    else:  # 空
+        abort(400)
     sorted_list = sorted_list[:top_n]
     return jsonify(sorted_list)
 
@@ -226,8 +230,8 @@ def api_get_image(image_id):
     :param image_id: int, 图片在数据库中的id
     :return: 图片文件
     """
-    with app.app_context():
-        path = crud.get_image_path_by_id(db.session, image_id)
+    with SessionLocal() as session:
+        path = crud.get_image_path_by_id(session, image_id)
         logger.debug(path)
     return send_file(path)
 
@@ -242,8 +246,8 @@ def api_get_video(video_path):
     """
     path = base64.urlsafe_b64decode(video_path).decode()
     logger.debug(path)
-    with app.app_context():
-        if not crud.is_video_exist(db.session, path):  # 如果路径不在数据库中，则返回404，防止任意文件读取攻击
+    with SessionLocal() as session:
+        if not crud.is_video_exist(session, path):  # 如果路径不在数据库中，则返回404，防止任意文件读取攻击
             abort(404)
     return send_file(path)
 
@@ -264,8 +268,8 @@ def api_download_video_clip(video_path, start_time, end_time):
     """
     path = base64.urlsafe_b64decode(video_path).decode()
     logger.debug(path)
-    with app.app_context():
-        if not crud.is_video_exist(db.session, path):  # 如果路径不在数据库中，则返回404，防止任意文件读取攻击
+    with SessionLocal() as session:
+        if not crud.is_video_exist(session, path):  # 如果路径不在数据库中，则返回404，防止任意文件读取攻击
             abort(404)
     # 根据VIDEO_EXTENSION_LENGTH调整时长
     start_time -= VIDEO_EXTENSION_LENGTH

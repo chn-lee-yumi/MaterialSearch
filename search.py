@@ -7,7 +7,7 @@ import numpy as np
 
 import crud
 from config import *
-from database import db
+from database import SessionLocal
 from process_assets import match_batch, process_image, process_text
 from utils import softmax
 
@@ -41,8 +41,11 @@ def search_image_by_feature(
     :return: list[dict], 搜索结果列表
     """
     t0 = time.time()
-    ids, paths, features = crud.get_image_id_path_features(db.session)
-    features = np.frombuffer(b"".join(features), dtype=np.float32).reshape(len(features), -1)
+    with SessionLocal() as session:
+        ids, paths, features = crud.get_image_id_path_features(session)
+    features = np.frombuffer(b"".join(features), dtype=np.float32).reshape(
+        len(features), -1
+    )
     if len(ids) == 0:  # 没有素材，直接返回空
         return []
     scores = match_batch(
@@ -67,7 +70,7 @@ def search_image_by_feature(
             "score": float(score),
             "softmax_score": float(softmax_score),
         }
-        for (id, path, score), softmax_score  in zip(data_list, softmax_scores)
+        for (id, path, score), softmax_score in zip(data_list, softmax_scores)
     ]
     return_list = sorted(return_list, key=lambda x: x["score"], reverse=True)
     logger.info("查询使用时间：%.2f" % (time.time() - t0))
@@ -109,7 +112,9 @@ def search_image_by_image(img_id_or_path, threshold=IMAGE_THRESHOLD):
     except ValueError as e:
         img_path = img_id_or_path
     if img_id:
-        features = crud.get_image_features_by_id(db.session, img_id)
+        features = b""
+        with SessionLocal() as session:
+            features = crud.get_image_features_by_id(session, img_id)
         if not features:
             return []
         features = np.frombuffer(features, dtype=np.float32).reshape(1, -1)
@@ -174,39 +179,41 @@ def search_video_by_feature(
     t0 = time.time()
     scores_list = []
     data_list = []
-    for path in crud.get_video_paths(db.session):  # 逐个视频比对
-        frame_times, features = crud.get_frame_times_features_by_path(db.session, path)
-        features = np.frombuffer(b"".join(features), dtype=np.float32).reshape(
-            len(features), -1
-        )
-        scores = match_batch(
-            positive_feature,
-            negative_feature,
-            features,
-            positive_threshold,
-            negative_threshold,
-        )
-        index_pairs = get_index_pairs(scores)
-        for start_index, end_index in index_pairs:
-            score = max(scores[start_index : end_index + 1])
-            start_time, end_time = get_video_range(
-                start_index, end_index, scores, frame_times
+    with SessionLocal() as session:
+        for path in crud.get_video_paths(session):  # 逐个视频比对
+            frame_times, features = crud.get_frame_times_features_by_path(session, path)
+            features = np.frombuffer(b"".join(features), dtype=np.float32).reshape(
+                len(features), -1
             )
-            data_list.append((path, score, start_time, end_time))
-            scores_list.append(score)
+            scores = match_batch(
+                positive_feature,
+                negative_feature,
+                features,
+                positive_threshold,
+                negative_threshold,
+            )
+            index_pairs = get_index_pairs(scores)
+            for start_index, end_index in index_pairs:
+                score = max(scores[start_index : end_index + 1])
+                start_time, end_time = get_video_range(
+                    start_index, end_index, scores, frame_times
+                )
+                data_list.append((path, score, start_time, end_time))
+                scores_list.append(score)
     softmax_scores = softmax(scores_list)
     return_list = [
         {
-            "url": "api/get_video/%s"
-            % base64.urlsafe_b64encode(path.encode()).decode()
+            "url": "api/get_video/%s" % base64.urlsafe_b64encode(path.encode()).decode()
             + "#t=%.1f,%.1f" % (start_time, end_time),
             "path": path,
             "score": float(score),
             "start_time": start_time,
             "end_time": end_time,
-            "softmax_score": float(softmax_score)
+            "softmax_score": float(softmax_score),
         }
-        for (path, score, start_time, end_time), softmax_score in zip(data_list, softmax_scores)
+        for (path, score, start_time, end_time), softmax_score in zip(
+            data_list, softmax_scores
+        )
     ]
     logger.info("查询使用时间：%.2f" % (time.time() - t0))
     return_list = sorted(return_list, key=lambda x: x["score"], reverse=True)
@@ -248,7 +255,9 @@ def search_video_by_image(img_id_or_path, threshold=IMAGE_THRESHOLD):
     except ValueError as e:
         img_path = img_id_or_path
     if img_id:
-        feature = crud.get_image_features_by_id(db.session, img_id)
+        feature = b""
+        with SessionLocal() as session:
+            feature = crud.get_image_features_by_id(session, img_id)
         if not feature:
             return []
         feature = np.frombuffer(feature, dtype=np.float32).reshape(1, -1)
@@ -266,25 +275,26 @@ def search_file(path, file_type):
     :return:
     """
     file_list = []
-    if file_type == "image":
-        files = crud.search_image_by_path(db.session, path)
-        file_list = [
-            {
-                "url": "api/get_image/%d" % id,
-                "path": path,
-            }
-            for id, path in files
-        ]
-    elif file_type == "video":
-        files = crud.search_video_by_path(db.session, path)
-        file_list = [
-            {
-                "url": "api/get_video/%s"
-                % base64.urlsafe_b64encode(path.encode()).decode(),
-                "path": path,
-            }
-            for path, in files
-        ]  # 这里的,不可以省，用于解包tuple
-    else:
-        return []
+    with SessionLocal() as session:
+        if file_type == "image":
+            files = crud.search_image_by_path(session, path)
+            file_list = [
+                {
+                    "url": "api/get_image/%d" % id,
+                    "path": path,
+                }
+                for id, path in files
+            ]
+        elif file_type == "video":
+            files = crud.search_video_by_path(session, path)
+            file_list = [
+                {
+                    "url": "api/get_video/%s"
+                    % base64.urlsafe_b64encode(path.encode()).decode(),
+                    "path": path,
+                }
+                for path, in files
+            ]  # 这里的,不可以省，用于解包tuple
+        else:
+            return []
     return file_list

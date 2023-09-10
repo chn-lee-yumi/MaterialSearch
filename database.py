@@ -1,5 +1,10 @@
-from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
+from config import SQLALCHEMY_DATABASE_URL
 
-from app_base import app
+engine = create_engine(
+    SQLALCHEMY_DATABASE_URL, 
+    connect_args={"check_same_thread": False}
+)
 
-db = SQLAlchemy(app)
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
