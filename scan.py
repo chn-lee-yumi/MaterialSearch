@@ -7,6 +7,7 @@ from pathlib import Path
 import crud
 from config import *
 from database import SessionLocal
+from models import create_tables
 from process_assets import process_image, process_video
 from search import clean_cache
 
@@ -41,6 +42,7 @@ class Scanner:
         self.extensions = IMAGE_EXTENSIONS + VIDEO_EXTENSIONS
 
     def init(self):
+        create_tables()
         with SessionLocal() as session:
             self.total_images = crud.get_image_count(session)
             self.total_videos = crud.get_video_count(session)
@@ -154,7 +156,6 @@ class Scanner:
         self.logger.info("开始扫描")
         self.is_scanning = True
         self.scan_start_time = time.time()
-        start_time = time.time()
         self.generate_or_load_assets()
         with SessionLocal() as session:
             # 删除不存在的文件记录
@@ -209,6 +210,12 @@ class Scanner:
         self.scanning_files = 0
         self.scanned_files = 0
         os.remove(self.temp_file)
-        self.logger.info("扫描完成，用时%d秒" % int(time.time() - start_time))
+        self.logger.info("扫描完成，用时%d秒" % int(time.time() - self.scan_start_time))
         clean_cache()  # 清空搜索缓存
         self.is_scanning = False
+
+
+if __name__ == '__main__':
+    scanner = Scanner()
+    scanner.init()
+    scanner.scan(False)

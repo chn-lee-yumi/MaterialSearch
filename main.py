@@ -9,7 +9,6 @@ from flask import Flask, abort, jsonify, redirect, request, send_file, session, 
 import crud
 from config import *
 from database import SessionLocal
-from models import create_tables
 from process_assets import match_text_and_image, process_image, process_text
 from scan import Scanner
 from search import (
@@ -57,10 +56,9 @@ def init():
     :return: None
     """
     global scanner
-    create_tables()
-    scanner.init()
     if not os.path.exists(TEMP_PATH):  # 如果临时文件夹不存在，则创建
         os.mkdir(TEMP_PATH)
+    scanner.init()
     optimize_db()  # 数据库优化（临时功能）
     if AUTO_SCAN:
         auto_scan_thread = threading.Thread(target=scanner.auto_scan, args=())
