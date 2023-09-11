@@ -87,7 +87,7 @@ def delete_image_if_outdated(
         return False
     modify_time = os.path.getmtime(path)
     modify_time = datetime.datetime.fromtimestamp(modify_time)
-    if record and record.modify_time == modify_time:
+    if record.modify_time == modify_time:
         # 未修改
         logger.debug(f"文件无变更，跳过：{path}")
         return True
@@ -111,7 +111,7 @@ def delete_video_if_outdated(
     if not record:
         logger.info(f"新增文件：{path}")
         return False
-    if record and record.modify_time == modify_time:
+    if record.modify_time == modify_time:
         # 未修改
         logger.debug(f"文件无变更，跳过：{path}")
         return True

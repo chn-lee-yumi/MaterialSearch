@@ -46,10 +46,6 @@ def process_image(path, ignore_small_images=True):
             width, height = image.size
             if width < IMAGE_MIN_WIDTH or height < IMAGE_MIN_HEIGHT:
                 return None
-    except Exception as e:
-        logger.warning(f"处理图片报错：{path} {repr(e)}")
-        return None
-    try:
         inputs = processor(images=image, return_tensors="pt", padding=True)[
             "pixel_values"
         ].to(torch.device(DEVICE))
@@ -79,7 +75,7 @@ def process_video(path):
             ret, frame = video.read()
             if not ret:
                 return
-            for _ in range(FRAME_INTERVAL * frame_rate):
+            for _ in range(FRAME_INTERVAL * frame_rate - 1):
                 video.grab()  # 跳帧
             inputs = processor(images=frame, return_tensors="pt", padding=True)[
                 "pixel_values"

@@ -61,6 +61,8 @@ def init():
     os.makedirs(f'{TEMP_PATH}/upload')
     shutil.rmtree(f'{TEMP_PATH}/video_clips', ignore_errors=True)
     os.makedirs(f'{TEMP_PATH}/video_clips')
+    # 兼容曾经的 Flask-SQLAlchemy 数据库默认路径
+    os.makedirs('./var/main-instance/', exist_ok=True)
     scanner.init()
     optimize_db()  # 数据库优化（临时功能）
     if AUTO_SCAN:
