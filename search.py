@@ -68,8 +68,8 @@ def search_image_by_feature(
         {
             "url": "api/get_image/%d" % id,
             "path": path,
-            "score": float(score),
-            "softmax_score": float(softmax_score),
+            "score": score.max(),  # XXX: 使用 max 为了避免强转导致的 Warning
+            "softmax_score": softmax_score.max(),  # 同上
         }
         for (id, path, score), softmax_score in zip(data_list, softmax_scores)
     ]
@@ -205,10 +205,10 @@ def search_video_by_feature(
             "url": "api/get_video/%s" % base64.urlsafe_b64encode(path.encode()).decode()
             + "#t=%.1f,%.1f" % (start_time, end_time),
             "path": path,
-            "score": float(score),
+            "score": score.max(),  # XXX: 使用 max 为了避免强转导致的 Warning
             "start_time": start_time,
             "end_time": end_time,
-            "softmax_score": float(softmax_score),
+            "softmax_score": softmax_score.max(),  # 同上
         }
         for (path, score, start_time, end_time), softmax_score in zip(
             data_list, softmax_scores
@@ -301,3 +301,34 @@ def search_video_file(path: str):
             for path, in paths
         ]  # 这里的,不可以省，用于解包tuple
         return file_list
+
+
+if __name__ == '__main__':
+    import argparse
+    from utils import format_seconds
+    parser = argparse.ArgumentParser(description='Search local photos and videos through natural language.')
+    parser.add_argument('search_type', metavar='<type>', choices=['image', 'video'], help='search type (image or video).')
+    parser.add_argument('positive_prompt', metavar='<positive_prompt>')
+    args = parser.parse_args()
+    positive_prompt = args.positive_prompt
+    if args.search_type == 'image':
+        results = search_image_by_text(positive_prompt)
+        print(positive_prompt)
+        print(f'results count: {len(results)}')
+        print('-' * 30)
+        for item in results[:5]:
+            print(f'path  : {item["path"]}')
+            print(f'score: {item["score"]:.3f}')
+            print('-' * 30)
+    elif args.search_type == 'video':
+        results = search_video_by_text(positive_prompt)
+        print(positive_prompt)
+        print(f'results count: {len(results)}')
+        print('-' * 30)
+        for item in results[:5]:
+            start_time = format_seconds(item["start_time"])
+            end_time = format_seconds(item["end_time"])
+            print(f'path  : {item["path"]}')
+            print(f'range: {start_time} ~ {end_time}')
+            print(f'score: {item["score"]:.3f}')
+            print('-' * 30)
