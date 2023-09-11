@@ -58,11 +58,11 @@ def search_image_by_feature(
     )
     data_list = []
     scores_list = []
-    for i in range(len(ids)):
-        if not scores[i]:
+    for id, path, score in zip(ids, paths, scores):
+        if not score:
             continue
-        data_list.append((ids[i], paths[i], scores[i]))
-        scores_list.append(scores[i])
+        data_list.append((id, path, scores))
+        scores_list.append(score)
     softmax_scores = softmax(scores_list)
     return_list = [
         {

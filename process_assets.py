@@ -56,6 +56,37 @@ def process_image(path, ignore_small_images=True):
     return feature
 
 
+def get_frames(video: cv2.VideoCapture):
+    """ 
+    获取视频的帧数据
+    :return: (list[int], list[array]) (帧编号列表, 帧像素数据列表) 元组
+    """
+    frame_rate = round(video.get(cv2.CAP_PROP_FPS))
+    total_frames = int(video.get(cv2.CAP_PROP_FRAME_COUNT))
+    logger.debug(f"fps: {frame_rate} total: {total_frames}")
+    ids, frames = [], []
+    for current_frame in trange(
+        0, total_frames, FRAME_INTERVAL * frame_rate, desc="当前进度", unit="frame"
+    ):
+        # 在 FRAME_INTERVAL 为 2（默认值），frame_rate 为 24
+        # 即 FRAME_INTERVAL * frame_rate == 48 时测试
+        # 直接设置当前帧的运行效率低于使用 grab 跳帧
+        # 如果需要跳的帧足够多，也许直接设置效率更高
+        # video.set(cv2.CAP_PROP_POS_FRAMES, current_frame)
+        ret, frame = video.read()
+        if not ret:
+            break
+        ids.append(current_frame // frame_rate)
+        frames.append(frame)
+        if  len(frames) == SCAN_PROCESS_BATCH_SIZE:
+            yield ids, frames
+            ids = []
+            frames = []
+        for _ in range(FRAME_INTERVAL * frame_rate - 1):
+            video.grab()  # 跳帧
+    yield ids, frames
+
+
 def process_video(path):
     """
     处理视频并返回处理完成的数据
@@ -66,25 +97,16 @@ def process_video(path):
     logger.info(f"处理视频中：{path}")
     try:
         video = cv2.VideoCapture(path)
-        frame_rate = round(video.get(cv2.CAP_PROP_FPS))
-        total_frames = int(video.get(cv2.CAP_PROP_FRAME_COUNT))
-        logger.debug(f"fps: {frame_rate} total: {total_frames}")
-        for current_frame in trange(
-            0, total_frames, FRAME_INTERVAL * frame_rate, desc="当前进度", unit="frame"
-        ):
-            ret, frame = video.read()
-            if not ret:
-                return
-            for _ in range(FRAME_INTERVAL * frame_rate - 1):
-                video.grab()  # 跳帧
-            inputs = processor(images=frame, return_tensors="pt", padding=True)[
+        for ids, frames in get_frames(video):
+            inputs = processor(images=frames, return_tensors="pt", padding=True)[
                 "pixel_values"
             ].to(torch.device(DEVICE))
-            feature = model.get_image_features(inputs).detach().cpu().numpy()
-            if feature is None:
-                logger.warning("feature is None")
+            features = model.get_image_features(inputs).detach().cpu().numpy()
+            if features is None:
+                logger.warning("features is None")
                 continue
-            yield current_frame / frame_rate, feature
+            for id, feature in zip(ids, features):
+                yield id, feature 
     except Exception as e:
         logger.warning(f"处理视频出错：{path} {repr(e)}")
         return

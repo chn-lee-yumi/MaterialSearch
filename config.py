@@ -23,6 +23,8 @@ AUTO_SCAN = os.getenv('AUTO_SCAN', 'False').lower() == 'true'  # 是否自动扫
 AUTO_SCAN_START_TIME = tuple(map(int, os.getenv('AUTO_SCAN_START_TIME', '22:30').split(':')))  # 自动扫描开始时间
 AUTO_SCAN_END_TIME = tuple(map(int, os.getenv('AUTO_SCAN_END_TIME', '8:00').split(':')))  # 自动扫描结束时间
 AUTO_SAVE_INTERVAL = int(os.getenv('AUTO_SAVE_INTERVAL', 100))  # 扫描自动保存间隔，默认为每 100 个文件自动保存一次
+# 扫描的视频批处理数量，默认每读取32帧计算一次特征，设置太高或太低都会降低视频扫描效率
+SCAN_PROCESS_BATCH_SIZE = int(os.getenv('SCAN_PROCESS_BATCH_SIZE', 32))
 
 # *****模型配置*****
 # 目前支持中文或英文搜索，只能二选一。英文搜索速度会更快。中文搜索需要额外下载模型，而且搜索英文或NSFW内容的效果不好。
