@@ -11,23 +11,23 @@ logging.basicConfig(level=LOG_LEVEL, format='%(asctime)s %(name)s %(levelname)s 
 logger = logging.getLogger(__name__)
 
 
-def get_file_hash(path):
+def get_hash(bytesio):
     """
-    计算文件hash
-    :param path: string, 文件路径
+    计算字节流的 hash
+    :param bytesio: 字节流
     :return: string, 十六进制字符串
     """
     _hash = hashlib.sha1()
     try:
-        with open(path, "rb") as f:
-            while True:
-                data = f.read(1048576)
-                if not data:
-                    break
-                _hash.update(data)
+        while True:
+            data = bytesio.read(1048576)
+            if not data:
+                break
+            _hash.update(data)
     except Exception as e:
-        logger.error(f"计算hash出错：{path} {repr(e)}")
+        logger.error(f"计算hash出错：{bytesio} {repr(e)}")
         return None
+    bytesio.seek(0)  # 归零，用于后续写入文件
     return _hash.hexdigest()
 
 

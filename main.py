@@ -1,9 +1,10 @@
 import base64
 import logging
 import os
+import shutil
 import threading
-from functools import wraps
 
+from functools import wraps
 from flask import Flask, abort, jsonify, redirect, request, send_file, session, url_for
 
 import crud
@@ -20,7 +21,7 @@ from search import (
     search_video_by_text,
     search_video_file,
 )
-from utils import crop_video, get_file_hash
+from utils import crop_video, get_hash
 
 logging.basicConfig(
     level=LOG_LEVEL, format="%(asctime)s %(name)s %(levelname)s %(message)s"
@@ -31,7 +32,6 @@ app = Flask(__name__)
 app.secret_key = "https://github.com/chn-lee-yumi/MaterialSearch"
 
 scanner = Scanner()
-upload_file_path = ""
 
 
 def optimize_db():
@@ -56,8 +56,11 @@ def init():
     :return: None
     """
     global scanner
-    if not os.path.exists(TEMP_PATH):  # 如果临时文件夹不存在，则创建
-        os.mkdir(TEMP_PATH)
+    # 删除上传目录中所有文件
+    shutil.rmtree(f'{TEMP_PATH}/upload', ignore_errors=True)
+    os.makedirs(f'{TEMP_PATH}/upload')
+    shutil.rmtree(f'{TEMP_PATH}/video_clips', ignore_errors=True)
+    os.makedirs(f'{TEMP_PATH}/video_clips')
     scanner.init()
     optimize_db()  # 数据库优化（临时功能）
     if AUTO_SCAN:
@@ -130,7 +133,6 @@ def api_scan():
     """开始扫描"""
     global scanner
     if not scanner.is_scanning:
-        # https://stackoverflow.com/questions/72541670/why-flask-app-context-is-lost-in-child-thread-when-application-factory-pattern-i
         scan_thread = threading.Thread(target=scanner.scan, args=(False,))
         scan_thread.start()
         return jsonify({"status": "start scanning"})
@@ -163,7 +165,6 @@ def api_match():
     匹配文字对应的素材
     :return: json格式的素材信息列表
     """
-    global upload_file_path
     data = request.get_json()
     top_n = int(data["top_n"])
     search_type = data["search_type"]
@@ -172,16 +173,16 @@ def api_match():
     image_threshold = data["image_threshold"]
     img_id = data["img_id"]
     path = data["path"]
+    upload_file_path = session.get('upload_file_path', '')
     logger.debug(data)
-    if search_type not in (0, 1, 2, 3, 4, 5, 6, 7, 8):
-        logger.warning(f"search_type不正确：{search_type}")
-        abort(500)
     # 进行匹配
     if search_type == 0:  # 文字搜图
         sorted_list = search_image_by_text(
             data["positive"], data["negative"], positive_threshold, negative_threshold
         )[:MAX_RESULT_NUM]
     elif search_type == 1:  # 以图搜图
+        if not upload_file_path:
+            abort(400)
         sorted_list = search_image_by_image(upload_file_path, image_threshold)[
             :MAX_RESULT_NUM
         ]
@@ -190,10 +191,14 @@ def api_match():
             data["positive"], data["negative"], positive_threshold, negative_threshold
         )[:MAX_RESULT_NUM]
     elif search_type == 3:  # 以图搜视频
+        if not upload_file_path:
+            abort(400)
         sorted_list = search_video_by_image(upload_file_path, image_threshold)[
             :MAX_RESULT_NUM
         ]
     elif search_type == 4:  # 图文相似度匹配
+        if not upload_file_path:
+            abort(400)
         score = (
             match_text_and_image(
                 process_text(data["text"]), process_image(upload_file_path)
@@ -212,7 +217,8 @@ def api_match():
         results = search_video_file(path=path)[:top_n]
         return jsonify(results)
     else:  # 空
-        abort(400)
+        logger.warning(f"search_type不正确：{search_type}")
+        abort(500)
     sorted_list = sorted_list[:top_n]
     return jsonify(sorted_list)
 
@@ -255,7 +261,6 @@ def api_get_video(video_path):
 def api_download_video_clip(video_path, start_time, end_time):
     """
     下载视频片段
-    TODO: 自动清理剪出来的视频片段，避免占用临时目录太多空间
     :param video_path: string, 经过base64.urlsafe_b64encode的字符串，解码后可以得到视频在服务器上的绝对路径
     :param start_time: int, 视频开始秒数
     :param end_time: int, 视频结束秒数
@@ -272,7 +277,7 @@ def api_download_video_clip(video_path, start_time, end_time):
     if start_time < 0:
         start_time = 0
     # 调用ffmpeg截取视频片段
-    output_path = f"{TEMP_PATH}/{start_time}_{end_time}_" + os.path.basename(path)
+    output_path = f"{TEMP_PATH}/video_clips/{start_time}_{end_time}_" + os.path.basename(path)
     if not os.path.exists(output_path):  # 如果存在说明已经剪过，直接返回，如果不存在则剪
         crop_video(path, output_path, start_time, end_time)
     return send_file(output_path)
@@ -285,19 +290,17 @@ def api_upload():
     上传文件。首先删除旧的文件，保存新文件，计算hash，重命名文件。
     :return: 200
     """
-    global upload_file_path
     logger.debug(request.files)
     # 删除旧文件
-    if os.path.exists(upload_file_path):
+    upload_file_path = session.get('upload_file_path', '')
+    if upload_file_path and os.path.exists(upload_file_path):
         os.remove(upload_file_path)
     # 保存文件
-    temp_path = f"{TEMP_PATH}/upload.tmp"
     f = request.files["file"]
-    f.save(temp_path)
-    # 计算hash并重命名文件
-    new_filename = get_file_hash(temp_path)
-    upload_file_path = f"{TEMP_PATH}/{new_filename}"
-    os.rename(temp_path, upload_file_path)
+    filehash = get_hash(f.stream)
+    upload_file_path = f"{TEMP_PATH}/upload/{filehash}"
+    f.save(upload_file_path)
+    session['upload_file_path'] = upload_file_path
     return "file uploaded successfully"
 
 

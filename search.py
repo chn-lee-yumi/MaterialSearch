@@ -108,18 +108,16 @@ def search_image_by_image(img_id_or_path, threshold=IMAGE_THRESHOLD):
     :param threshold: int/float, 搜索阈值
     :return: list[dict], 搜索结果列表
     """
+    features = b""
     try:
         img_id = int(img_id_or_path)
-    except ValueError as e:
-        img_path = img_id_or_path
-    if img_id:
-        features = b""
         with SessionLocal() as session:
             features = crud.get_image_features_by_id(session, img_id)
         if not features:
             return []
         features = np.frombuffer(features, dtype=np.float32).reshape(1, -1)
-    elif img_path:
+    except ValueError:
+        img_path = img_id_or_path
         features = process_image(img_path)
     return search_image_by_feature(features, None, threshold)
 
@@ -251,20 +249,18 @@ def search_video_by_image(img_id_or_path, threshold=IMAGE_THRESHOLD):
     :param threshold: int/float, 搜索阈值
     :return: list[dict], 搜索结果列表
     """
+    features = b""
     try:
         img_id = int(img_id_or_path)
-    except ValueError as e:
-        img_path = img_id_or_path
-    if img_id:
-        feature = b""
         with SessionLocal() as session:
-            feature = crud.get_image_features_by_id(session, img_id)
-        if not feature:
+            features = crud.get_image_features_by_id(session, img_id)
+        if not features:
             return []
-        feature = np.frombuffer(feature, dtype=np.float32).reshape(1, -1)
-    elif img_path:
-        feature = process_image(img_path)
-    return search_video_by_feature(feature, None, threshold)
+        features = np.frombuffer(features, dtype=np.float32).reshape(1, -1)
+    except ValueError:
+        img_path = img_id_or_path
+        features = process_image(img_path)
+    return search_video_by_feature(features, None, threshold)
 
 
 @lru_cache(maxsize=CACHE_SIZE)
