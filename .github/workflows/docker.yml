@@ -17,7 +17,7 @@ jobs:
       uses: actions/checkout@v4
     
     - name: Set up QEMU
-      uses: docker/setup-qemu-action@v2
+      uses: docker/setup-qemu-action@v3
       
     # https://dev.to/cloudx/multi-arch-docker-images-the-easy-way-with-github-actions-4k54
     - name: Set up Docker Buildx
