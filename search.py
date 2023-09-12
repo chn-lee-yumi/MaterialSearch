@@ -68,8 +68,8 @@ def search_image_by_feature(
         {
             "url": "api/get_image/%d" % id,
             "path": path,
-            "score": score.max(),  # XXX: 使用 max 为了避免强转导致的 Warning
-            "softmax_score": softmax_score.max(),  # 同上
+            "score": float(score.max()),  # XXX: 使用 max 为了避免强转导致的 Warning
+            "softmax_score": float(softmax_score.max()),  # 同上
         }
         for (id, path, score), softmax_score in zip(data_list, softmax_scores)
     ]
@@ -205,10 +205,10 @@ def search_video_by_feature(
             "url": "api/get_video/%s" % base64.urlsafe_b64encode(path.encode()).decode()
             + "#t=%.1f,%.1f" % (start_time, end_time),
             "path": path,
-            "score": score.max(),  # XXX: 使用 max 为了避免强转导致的 Warning
+            "score": float(score.max()),  # XXX: 使用 max 为了避免强转导致的 Warning
             "start_time": start_time,
             "end_time": end_time,
-            "softmax_score": softmax_score.max(),  # 同上
+            "softmax_score": float(softmax_score.max()),  # 同上
         }
         for (path, score, start_time, end_time), softmax_score in zip(
             data_list, softmax_scores

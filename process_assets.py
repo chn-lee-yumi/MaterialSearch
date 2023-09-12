@@ -32,6 +32,29 @@ if MODEL_LANGUAGE == "Chinese":
 logger.info("Model loaded.")
 
 
+def get_image_data(path: str, ignore_small_images: bool):
+    """
+    获取图片像素数据，如果出错返回 None
+    :param path: string, 图片路径
+    :param ignore_small_images: bool, 是否忽略尺寸过小的图片
+    :return: <class 'numpy.nparray'>, 图片数据，如果出错返回 None
+    """
+    try:
+        image = Image.open(path)
+        if ignore_small_images:
+            width, height = image.size
+            if width < IMAGE_MIN_WIDTH or height < IMAGE_MIN_HEIGHT:
+                return None 
+        # processor 中也会这样预处理 Image
+        # 在这里提前转为 np.array 避免到时候抛出异常
+        image = image.convert('RGB')
+        image = np.array(image)
+        return image
+    except Exception as e:
+        logger.warning(f"打开图片报错：{path} {repr(e)}")
+        return None
+
+
 def process_image(path, ignore_small_images=True):
     """
     处理图片，返回图片特征
@@ -39,21 +62,35 @@ def process_image(path, ignore_small_images=True):
     :param ignore_small_images: bool, 是否忽略尺寸过小的图片
     :return: <class 'numpy.nparray'>, 图片特征
     """
-    try:
-        image = Image.open(path)
-        # 忽略小图片
-        if ignore_small_images:
-            width, height = image.size
-            if width < IMAGE_MIN_WIDTH or height < IMAGE_MIN_HEIGHT:
-                return None
-        inputs = processor(images=image, return_tensors="pt", padding=True)[
-            "pixel_values"
-        ].to(torch.device(DEVICE))
-    except Exception as e:
-        logger.warning(f"处理图片报错：{path} {repr(e)}")
+    image = get_image_data(path, ignore_small_images)
+    if image is None:
         return None
+    inputs = processor(images=image, return_tensors="pt", padding=True)[
+        "pixel_values"
+    ].to(torch.device(DEVICE))
     feature = model.get_image_features(inputs).detach().cpu().numpy()
     return feature
+
+
+def process_images(paths: list[str], ignore_small_images=True):
+    """
+    批量处理多个图片，返回路径与图片特征（避免路径中有无效图片）
+    :param path: string, 图片路径
+    :param ignore_small_images: bool, 是否忽略尺寸过小的图片
+    :return: (list[str], list[<class 'numpy.nparray'>]), (路径，图片特征)
+    """
+    new_paths, images = [], []
+    for path in paths:
+        image = get_image_data(path)
+        if image is None:
+            continue
+        new_paths.append(path)
+        images.append(image)
+    inputs = processor(images=images, return_tensors="pt", padding=True)[
+        "pixel_values"
+    ].to(torch.device(DEVICE))
+    features = model.get_image_features(inputs).detach().cpu().numpy().reshape(len(features), -1)
+    return new_paths, features
 
 
 def get_frames(video: cv2.VideoCapture):
