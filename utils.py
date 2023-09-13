@@ -14,10 +14,13 @@ logger = logging.getLogger(__name__)
 def get_hash(bytesio):
     """
     计算字节流的 hash
-    :param bytesio: 字节流
+    :param bytesio: 字节 / 字节流
     :return: string, 十六进制字符串
     """
     _hash = hashlib.sha1()
+    if type(bytesio) is bytes:
+        _hash.update(bytesio)
+        return _hash.hexdigest()
     try:
         while True:
             data = bytesio.read(1048576)

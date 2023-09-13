@@ -3,7 +3,7 @@ import time
 import pytest
 import requests
 
-from utils import get_file_hash
+from utils import get_hash
 
 upload_file = 'test.png'
 
@@ -101,22 +101,22 @@ def test_api_match():
     # [{"path":"/home/runner/work/MaterialSearch/MaterialSearch/test.png","score":"11.53","softmax_score":"100.00%","url":"api/get_image/9"}]
     assert len(data) == 1
     assert data[0]["path"] == "/home/runner/work/MaterialSearch/MaterialSearch/test.png"
-    assert data[0]["softmax_score"] == "100.00%"
+    assert data[0]["softmax_score"] == 1.0
     # 以图搜图
     payload["search_type"] = 1
     response = requests.post('http://127.0.0.1:8085/api/match', json=payload)
     data = response.json()
     assert len(data) == 1
     assert data[0]["path"] == "/home/runner/work/MaterialSearch/MaterialSearch/test.png"
-    assert data[0]["softmax_score"] == "100.00%"
+    assert data[0]["softmax_score"] == 1.0
     # 测试下载图片
     image_url = data[0]["url"]
     response = requests.get('http://127.0.0.1:8085/' + image_url)
     assert response.status_code == 200
-    with open("test.tmp", "wb") as f:
-        f.write(response.content)
-    hash_origin = get_file_hash(upload_file)
-    hash_download = get_file_hash("test.tmp")
+    hash_origin = ""
+    with open(upload_file, "rb") as f:
+        hash_origin = get_hash(f)
+    hash_download = get_hash(response.content)
     assert hash_origin == hash_download
     # TODO：以数据库的图搜图和视频
     # TODO：文字搜视频
