@@ -9,7 +9,7 @@ upload_file = 'test.png'
 
 
 def read_file(path):
-    with open(path, 'r') as f:
+    with open(path, 'r', encoding='utf-8') as f:
         return f.read()
 
 
@@ -70,12 +70,6 @@ def test_api_status():
     assert data["status"] is False
 
 
-def test_api_upload():
-    files = {'file': ('test.png', open(upload_file, 'rb'), 'image/png')}
-    response = requests.post('http://127.0.0.1:8085/api/upload', files=files)
-    assert response.status_code == 200
-
-
 def test_api_clean_cache():
     response = requests.get('http://127.0.0.1:8085/api/clean_cache')
     assert response.status_code == 204
@@ -103,12 +97,18 @@ def test_api_match():
     assert data[0]["path"] == "/home/runner/work/MaterialSearch/MaterialSearch/test.png"
     assert data[0]["softmax_score"] == 1.0
     # 以图搜图
-    payload["search_type"] = 1
-    response = requests.post('http://127.0.0.1:8085/api/match', json=payload)
-    data = response.json()
-    assert len(data) == 1
-    assert data[0]["path"] == "/home/runner/work/MaterialSearch/MaterialSearch/test.png"
-    assert data[0]["softmax_score"] == 1.0
+    with requests.session() as sess:
+        # 测试上传图片
+        files = {'file': ('test.png', open(upload_file, 'rb'), 'image/png')}
+        response = sess.post('http://127.0.0.1:8085/api/upload', files=files)
+        assert response.status_code == 200
+        # 测试以图搜图
+        payload["search_type"] = 1
+        response = sess.post('http://127.0.0.1:8085/api/match', json=payload)
+        data = response.json()
+        assert len(data) == 1
+        assert data[0]["path"] == "/home/runner/work/MaterialSearch/MaterialSearch/test.png"
+        assert data[0]["softmax_score"] == 1.0
     # 测试下载图片
     image_url = data[0]["url"]
     response = requests.get('http://127.0.0.1:8085/' + image_url)

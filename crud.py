@@ -207,9 +207,11 @@ def get_image_id_path_features(session: Session) -> tuple[list[int], list[str], 
     session.query(Image).filter(Image.features.is_(None)).delete()
     session.commit()
     query = session.query(Image.id, Image.path, Image.features)
-    id_list, path_list, features_list = zip(*query)
-    return id_list, path_list, features_list
-
+    try:
+        id_list, path_list, features_list = zip(*query)
+        return id_list, path_list, features_list
+    except ValueError:  # 解包失败
+        return [], [], []
 
 def search_image_by_path(session: Session, path: str) -> list[tuple[int, str]]:
     """

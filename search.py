@@ -44,11 +44,11 @@ def search_image_by_feature(
     t0 = time.time()
     with SessionLocal() as session:
         ids, paths, features = crud.get_image_id_path_features(session)
+    if len(ids) == 0:  # 没有素材，直接返回空
+        return []
     features = np.frombuffer(b"".join(features), dtype=np.float32).reshape(
         len(features), -1
     )
-    if len(ids) == 0:  # 没有素材，直接返回空
-        return []
     scores = match_batch(
         positive_feature,
         negative_feature,
