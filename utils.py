@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 def get_hash(bytesio):
     """
     计算字节流的 hash
-    :param bytesio: 字节 / 字节流
+    :param bytesio: bytes 或 BytesIO
     :return: string, 十六进制字符串
     """
     _hash = hashlib.sha1()
