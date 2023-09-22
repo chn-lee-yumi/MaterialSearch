@@ -58,6 +58,7 @@ ENABLE_LOGIN = os.getenv('ENABLE_LOGIN', 'False').lower() == 'true'  # 是否启
 USERNAME = os.getenv('USERNAME', 'admin')  # 登录用户名
 PASSWORD = os.getenv('PASSWORD', 'MaterialSearch')  # 登录密码
 FLASK_DEBUG = os.getenv('FLASK_DEBUG', 'False').lower() == 'true'  # flask 调试开关（热重载）
+
 # *****打印配置内容*****
 print("********** 运行配置 / RUNNING CONFIGURATIONS **********")
 global_vars = globals().copy()
