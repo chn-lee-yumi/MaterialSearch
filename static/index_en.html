@@ -172,7 +172,7 @@
                        :src="file.url" controls></video>
                 <div>
                     <el-tooltip content="Material's matching probability and similarity" placement="bottom">
-                        <el-tag size="mini" effect="dark">{{file.softmax_score}} | {{file.score}}</el-tag>
+                        <el-tag size="mini" effect="dark">{{(file.softmax_score * 100).toFixed(1)}} % | {{(file.score * 100).toFixed(1)}} %</el-tag>
                     </el-tooltip>
                     <el-tooltip :content="file.path" placement="bottom">
                         <el-tag size="mini" type="info" effect="dark" class="copy" :data-clipboard-text="file.path">{{file.path.split('/').pop()}}
