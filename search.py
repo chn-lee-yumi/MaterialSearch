@@ -5,9 +5,16 @@ from functools import lru_cache
 
 import numpy as np
 
-import crud
 from config import *
-from database import SessionLocal
+from database import (
+    get_image_id_path_features,
+    get_image_features_by_id,
+    get_video_paths,
+    get_frame_times_features_by_path,
+    search_image_by_path,
+    search_video_by_path,
+)
+from models import DatabaseSession
 from process_assets import match_batch, process_image, process_text
 from utils import softmax
 
@@ -17,7 +24,6 @@ logger = logging.getLogger(__name__)
 def clean_cache():
     """
     清空搜索缓存
-    :return: None
     """
     search_image_by_text.cache_clear()
     search_image_by_image.cache_clear()
@@ -28,10 +34,10 @@ def clean_cache():
 
 
 def search_image_by_feature(
-    positive_feature,
-    negative_feature=None,
-    positive_threshold=POSITIVE_THRESHOLD,
-    negative_threshold=NEGATIVE_THRESHOLD,
+        positive_feature,
+        negative_feature=None,
+        positive_threshold=POSITIVE_THRESHOLD,
+        negative_threshold=NEGATIVE_THRESHOLD,
 ):
     """
     通过特征搜索图片
@@ -42,8 +48,8 @@ def search_image_by_feature(
     :return: list[dict], 搜索结果列表
     """
     t0 = time.time()
-    with SessionLocal() as session:
-        ids, paths, features = crud.get_image_id_path_features(session)
+    with DatabaseSession() as session:
+        ids, paths, features = get_image_id_path_features(session)
     if len(ids) == 0:  # 没有素材，直接返回空
         return []
     features = np.frombuffer(b"".join(features), dtype=np.float32).reshape(
@@ -80,10 +86,10 @@ def search_image_by_feature(
 
 @lru_cache(maxsize=CACHE_SIZE)
 def search_image_by_text(
-    positive_prompt="",
-    negative_prompt="",
-    positive_threshold=POSITIVE_THRESHOLD,
-    negative_threshold=NEGATIVE_THRESHOLD,
+        positive_prompt="",
+        negative_prompt="",
+        positive_threshold=POSITIVE_THRESHOLD,
+        negative_threshold=NEGATIVE_THRESHOLD,
 ):
     """
     使用文字搜图片
@@ -108,11 +114,10 @@ def search_image_by_image(img_id_or_path, threshold=IMAGE_THRESHOLD):
     :param threshold: int/float, 搜索阈值
     :return: list[dict], 搜索结果列表
     """
-    features = b""
     try:
         img_id = int(img_id_or_path)
-        with SessionLocal() as session:
-            features = crud.get_image_features_by_id(session, img_id)
+        with DatabaseSession() as session:
+            features = get_image_features_by_id(session, img_id)
         if not features:
             return []
         features = np.frombuffer(features, dtype=np.float32).reshape(1, -1)
@@ -162,10 +167,10 @@ def get_video_range(start_index, end_index, scores, frame_times):
 
 
 def search_video_by_feature(
-    positive_feature,
-    negative_feature=None,
-    positive_threshold=POSITIVE_THRESHOLD,
-    negative_threshold=NEGATIVE_THRESHOLD,
+        positive_feature,
+        negative_feature=None,
+        positive_threshold=POSITIVE_THRESHOLD,
+        negative_threshold=NEGATIVE_THRESHOLD,
 ):
     """
     通过特征搜索视频
@@ -178,9 +183,9 @@ def search_video_by_feature(
     t0 = time.time()
     scores_list = []
     data_list = []
-    with SessionLocal() as session:
-        for path in crud.get_video_paths(session):  # 逐个视频比对
-            frame_times, features = crud.get_frame_times_features_by_path(session, path)
+    with DatabaseSession() as session:
+        for path in get_video_paths(session):  # 逐个视频比对
+            frame_times, features = get_frame_times_features_by_path(session, path)
             features = np.frombuffer(b"".join(features), dtype=np.float32).reshape(
                 len(features), -1
             )
@@ -193,7 +198,7 @@ def search_video_by_feature(
             )
             index_pairs = get_index_pairs(scores)
             for start_index, end_index in index_pairs:
-                score = max(scores[start_index : end_index + 1])
+                score = max(scores[start_index: end_index + 1])
                 start_time, end_time = get_video_range(
                     start_index, end_index, scores, frame_times
                 )
@@ -203,7 +208,7 @@ def search_video_by_feature(
     return_list = [
         {
             "url": "api/get_video/%s" % base64.urlsafe_b64encode(path.encode()).decode()
-            + "#t=%.1f,%.1f" % (start_time, end_time),
+                   + "#t=%.1f,%.1f" % (start_time, end_time),
             "path": path,
             "score": float(score.max()),  # XXX: 使用 max 为了避免强转导致的 Warning
             "start_time": start_time,
@@ -221,10 +226,10 @@ def search_video_by_feature(
 
 @lru_cache(maxsize=CACHE_SIZE)
 def search_video_by_text(
-    positive_prompt="",
-    negative_prompt="",
-    positive_threshold=POSITIVE_THRESHOLD,
-    negative_threshold=NEGATIVE_THRESHOLD,
+        positive_prompt="",
+        negative_prompt="",
+        positive_threshold=POSITIVE_THRESHOLD,
+        negative_threshold=NEGATIVE_THRESHOLD,
 ):
     """
     使用文字搜视频
@@ -252,8 +257,8 @@ def search_video_by_image(img_id_or_path, threshold=IMAGE_THRESHOLD):
     features = b""
     try:
         img_id = int(img_id_or_path)
-        with SessionLocal() as session:
-            features = crud.get_image_features_by_id(session, img_id)
+        with DatabaseSession() as session:
+            features = get_image_features_by_id(session, img_id)
         if not features:
             return []
         features = np.frombuffer(features, dtype=np.float32).reshape(1, -1)
@@ -271,8 +276,8 @@ def search_image_file(path: str):
     :return:
     """
     file_list = []
-    with SessionLocal() as session:
-        id_paths = crud.search_image_by_path(session, path)
+    with DatabaseSession() as session:
+        id_paths = search_image_by_path(session, path)
         file_list = [
             {
                 "url": "api/get_image/%d" % id,
@@ -290,12 +295,12 @@ def search_video_file(path: str):
     :param path: 路径
     :return:
     """
-    with SessionLocal() as session:
-        paths = crud.search_video_by_path(session, path)
+    with DatabaseSession() as session:
+        paths = search_video_by_path(session, path)
         file_list = [
             {
                 "url": "api/get_video/%s"
-                % base64.urlsafe_b64encode(path.encode()).decode(),
+                       % base64.urlsafe_b64encode(path.encode()).decode(),
                 "path": path,
             }
             for path, in paths
@@ -306,6 +311,7 @@ def search_video_file(path: str):
 if __name__ == '__main__':
     import argparse
     from utils import format_seconds
+
     parser = argparse.ArgumentParser(description='Search local photos and videos through natural language.')
     parser.add_argument('search_type', metavar='<type>', choices=['image', 'video'], help='search type (image or video).')
     parser.add_argument('positive_prompt', metavar='<positive_prompt>')

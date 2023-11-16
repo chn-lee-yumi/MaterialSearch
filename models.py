@@ -1,21 +1,29 @@
 from sqlalchemy import BINARY, Column, DateTime, Integer, String
+from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import sessionmaker
 
-from database import engine
+from config import SQLALCHEMY_DATABASE_URL
 
 BaseModel = declarative_base()
+
+engine = create_engine(
+    SQLALCHEMY_DATABASE_URL,
+    connect_args={"check_same_thread": False}
+)
+
+DatabaseSession = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 
 def create_tables():
     """
     创建数据库表
-    :return: None
     """
     BaseModel.metadata.create_all(bind=engine)
 
 
 class Image(BaseModel):
-    __tablename__ = "image"  # 兼容flask_sqlalchemy创建的表名
+    __tablename__ = "image"
     id = Column(Integer, primary_key=True)
     path = Column(String(4096), index=True)  # 文件路径
     modify_time = Column(DateTime)  # 文件修改时间
@@ -23,7 +31,7 @@ class Image(BaseModel):
 
 
 class Video(BaseModel):
-    __tablename__ = "video"  # 兼容flask_sqlalchemy创建的表名
+    __tablename__ = "video"
     id = Column(Integer, primary_key=True)
     path = Column(String(4096), index=True)  # 文件路径
     frame_time = Column(Integer, index=True)  # 这一帧所在的时间

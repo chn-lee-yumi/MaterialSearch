@@ -4,10 +4,18 @@ import pickle
 import time
 from pathlib import Path
 
-import crud
 from config import *
-from database import SessionLocal
-from models import create_tables
+from database import (
+    get_image_count,
+    get_video_count,
+    get_video_frame_count,
+    delete_record_if_not_exist,
+    delete_image_if_outdated,
+    delete_video_if_outdated,
+    add_image,
+    add_video,
+)
+from models import create_tables, DatabaseSession
 from process_assets import process_image, process_video
 from search import clean_cache
 
@@ -43,10 +51,10 @@ class Scanner:
 
     def init(self):
         create_tables()
-        with SessionLocal() as session:
-            self.total_images = crud.get_image_count(session)
-            self.total_videos = crud.get_video_count(session)
-            self.total_video_frames = crud.get_video_frame_count(session)
+        with DatabaseSession() as session:
+            self.total_images = get_image_count(session)
+            self.total_videos = get_video_count(session)
+            self.total_video_frames = get_video_frame_count(session)
 
     def get_status(self):
         """
@@ -55,9 +63,9 @@ class Scanner:
         """
         if self.scanned_files:
             remain_time = (
-                (time.time() - self.scan_start_time)
-                / self.scanned_files
-                * self.scanning_files
+                    (time.time() - self.scan_start_time)
+                    / self.scanned_files
+                    * self.scanning_files
             )
         else:
             remain_time = 0
@@ -118,7 +126,7 @@ class Scanner:
         """
         current_time = datetime.datetime.now().time()
         is_in_range = (
-            self.start_time <= current_time < self.end_time
+                self.start_time <= current_time < self.end_time
         )  # 当前时间是否在 start_time 与 end_time 区间内
         return self.is_cross_day ^ is_in_range  # 跨日期与在区间内异或时，在自动扫描时间内
 
@@ -137,7 +145,6 @@ class Scanner:
     def scan_dir(self):
         """
         遍历文件并将符合条件的文件加入 assets 集合
-        :return: None
         """
         self.assets = set()
         paths = [Path(i) for i in ASSETS_PATH if i]
@@ -151,22 +158,19 @@ class Scanner:
         扫描资源。如果存在assets.pickle，则直接读取并开始扫描。如果不存在，则先读取所有文件路径，并写入assets.pickle，然后开始扫描。
         每100个文件重新保存一次assets.pickle，如果程序被中断，下次可以从断点处继续扫描。扫描完成后删除assets.pickle并清缓存。
         :param auto: 是否由AUTO_SCAN触发的
-        :return: None
         """
         self.logger.info("开始扫描")
         self.is_scanning = True
         self.scan_start_time = time.time()
         self.generate_or_load_assets()
-        with SessionLocal() as session:
+        with DatabaseSession() as session:
             # 删除不存在的文件记录
             if not self.is_continue_scan:  # 非断点恢复的情况下才删除
-                crud.delete_record_if_not_exist(session, self.assets)
+                delete_record_if_not_exist(session, self.assets)
             # 扫描文件
             for path in self.assets.copy():
                 self.scanned_files += 1
-                if (
-                    self.scanned_files % AUTO_SAVE_INTERVAL == 0
-                ):  # 每扫描 AUTO_SAVE_INTERVAL 个文件重新save一下
+                if self.scanned_files % AUTO_SAVE_INTERVAL == 0:  # 每扫描 AUTO_SAVE_INTERVAL 个文件重新save一下
                     self.save_assets()
                 if auto and not self.is_current_auto_scan_time():  # 如果是自动扫描，判断时间自动停止
                     self.logger.info(f"超出自动扫描时间，停止扫描")
@@ -178,9 +182,7 @@ class Scanner:
                 modify_time = datetime.datetime.fromtimestamp(modify_time)
                 # 如果数据库里有这个文件，并且修改时间一致，则跳过，否则进行预处理并入库
                 if path.lower().endswith(IMAGE_EXTENSIONS):  # 图片
-                    not_modified = crud.delete_image_if_outdated(
-                        session, path, modify_time
-                    )
+                    not_modified = delete_image_if_outdated(session, path)
                     if not_modified:
                         self.assets.remove(path)
                         continue
@@ -190,23 +192,21 @@ class Scanner:
                         continue
                     # 写入数据库
                     features = features.tobytes()
-                    crud.add_image(session, path, modify_time, features)
-                    self.total_images = crud.get_image_count(session)
+                    add_image(session, path, modify_time, features)
+                    self.total_images = get_image_count(session)
                 elif path.lower().endswith(VIDEO_EXTENSIONS):  # 视频
-                    not_modified = crud.delete_video_if_outdated(
-                        session, path, modify_time
-                    )
+                    not_modified = delete_video_if_outdated(session, path)
                     if not_modified:
                         self.assets.remove(path)
                         continue
-                    crud.add_video(session, path, modify_time, process_video(path))
-                    self.total_video_frames = crud.get_video_frame_count(session)
-                    self.total_videos = crud.get_video_count(session)
+                    add_video(session, path, modify_time, process_video(path))
+                    self.total_video_frames = get_video_frame_count(session)
+                    self.total_videos = get_video_count(session)
                 self.assets.remove(path)
             # 最后重新统计一下数量
-            self.total_images = crud.get_image_count(session)
-            self.total_videos = crud.get_video_count(session)
-            self.total_video_frames = crud.get_video_frame_count(session)
+            self.total_images = get_image_count(session)
+            self.total_videos = get_video_count(session)
+            self.total_video_frames = get_video_frame_count(session)
         self.scanning_files = 0
         self.scanned_files = 0
         os.remove(self.temp_file)

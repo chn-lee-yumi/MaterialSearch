@@ -1,7 +1,6 @@
 # 预处理图片和视频，建立索引，加快搜索速度
 import concurrent.futures
 import logging
-import os
 
 import cv2
 import numpy as np
@@ -32,7 +31,7 @@ if MODEL_LANGUAGE == "Chinese":
 logger.info("Model loaded.")
 
 
-def get_image_data(path: str, ignore_small_images: bool):
+def get_image_data(path: str, ignore_small_images: bool = True):
     """
     获取图片像素数据，如果出错返回 None
     :param path: string, 图片路径
@@ -44,8 +43,8 @@ def get_image_data(path: str, ignore_small_images: bool):
         if ignore_small_images:
             width, height = image.size
             if width < IMAGE_MIN_WIDTH or height < IMAGE_MIN_HEIGHT:
-                return None 
-        # processor 中也会这样预处理 Image
+                return None
+                # processor 中也会这样预处理 Image
         # 在这里提前转为 np.array 避免到时候抛出异常
         image = image.convert('RGB')
         image = np.array(image)
@@ -65,32 +64,9 @@ def process_image(path, ignore_small_images=True):
     image = get_image_data(path, ignore_small_images)
     if image is None:
         return None
-    inputs = processor(images=image, return_tensors="pt", padding=True)[
-        "pixel_values"
-    ].to(torch.device(DEVICE))
+    inputs = processor(images=image, return_tensors="pt", padding=True)["pixel_values"].to(torch.device(DEVICE))
     feature = model.get_image_features(inputs).detach().cpu().numpy()
     return feature
-
-
-def process_images(paths: list[str], ignore_small_images=True):
-    """
-    批量处理多个图片，返回路径与图片特征（避免路径中有无效图片）
-    :param path: string, 图片路径
-    :param ignore_small_images: bool, 是否忽略尺寸过小的图片
-    :return: (list[str], list[<class 'numpy.nparray'>]), (路径，图片特征)
-    """
-    new_paths, images = [], []
-    for path in paths:
-        image = get_image_data(path)
-        if image is None:
-            continue
-        new_paths.append(path)
-        images.append(image)
-    inputs = processor(images=images, return_tensors="pt", padding=True)[
-        "pixel_values"
-    ].to(torch.device(DEVICE))
-    features = model.get_image_features(inputs).detach().cpu().numpy().reshape(len(features), -1)
-    return new_paths, features
 
 
 def get_frames(video: cv2.VideoCapture):
@@ -103,7 +79,7 @@ def get_frames(video: cv2.VideoCapture):
     logger.debug(f"fps: {frame_rate} total: {total_frames}")
     ids, frames = [], []
     for current_frame in trange(
-        0, total_frames, FRAME_INTERVAL * frame_rate, desc="当前进度", unit="frame"
+            0, total_frames, FRAME_INTERVAL * frame_rate, desc="当前进度", unit="frame"
     ):
         # 在 FRAME_INTERVAL 为 2（默认值），frame_rate 为 24
         # 即 FRAME_INTERVAL * frame_rate == 48 时测试
@@ -115,7 +91,7 @@ def get_frames(video: cv2.VideoCapture):
             break
         ids.append(current_frame // frame_rate)
         frames.append(frame)
-        if  len(frames) == SCAN_PROCESS_BATCH_SIZE:
+        if len(frames) == SCAN_PROCESS_BATCH_SIZE:
             yield ids, frames
             ids = []
             frames = []
@@ -135,15 +111,13 @@ def process_video(path):
     try:
         video = cv2.VideoCapture(path)
         for ids, frames in get_frames(video):
-            inputs = processor(images=frames, return_tensors="pt", padding=True)[
-                "pixel_values"
-            ].to(torch.device(DEVICE))
+            inputs = processor(images=frames, return_tensors="pt", padding=True)["pixel_values"].to(torch.device(DEVICE))
             features = model.get_image_features(inputs).detach().cpu().numpy()
             if features is None:
                 logger.warning("features is None")
                 continue
             for id, feature in zip(ids, features):
-                yield id, feature 
+                yield id, feature
     except Exception as e:
         logger.warning(f"处理视频出错：{path} {repr(e)}")
         return
@@ -178,7 +152,7 @@ def match_text_and_image(text_feature, image_feature):
     :return: <class 'numpy.nparray'>, 文字和图片的余弦相似度，shape=(1, 1)
     """
     score = (image_feature @ text_feature.T) / (
-        np.linalg.norm(image_feature) * np.linalg.norm(text_feature)
+            np.linalg.norm(image_feature) * np.linalg.norm(text_feature)
     )
     # 上面的计算等价于下面三步：
     # new_image_feature = image_feature / np.linalg.norm(image_feature)
@@ -207,7 +181,7 @@ def multithread_normalize(features):
         # 将图像特征分成等分，每个线程处理一部分
         chunk_size = len(features) // num_threads
         chunks = [
-            features[i : i + chunk_size] for i in range(0, len(features), chunk_size)
+            features[i: i + chunk_size] for i in range(0, len(features), chunk_size)
         ]
         # 并发执行特征归一化
         normalized_chunks = executor.map(normalize_features, chunks)
@@ -216,11 +190,11 @@ def multithread_normalize(features):
 
 
 def match_batch(
-    positive_feature,
-    negative_feature,
-    image_features,
-    positive_threshold,
-    negative_threshold,
+        positive_feature,
+        negative_feature,
+        image_features,
+        positive_threshold,
+        negative_threshold,
 ):
     """
     匹配image_feature列表并返回余弦相似度
