@@ -1,4 +1,4 @@
-numpy~=1.20.3
+numpy>=1.20.3
 Flask>=2.2.2
 SQLAlchemy>=2.0.20
 torch>=1.13.1
@@ -7,7 +7,4 @@ transformers>=4.28.1
 opencv-python-headless>=4.7.0.68
 python-dotenv>=0.19.2
 tqdm>=4.66.1
-argparse~=1.4.0
-pytest~=7.3.1
-requests~=2.31.0
-opencv-python~=4.5.5.64
+requests>=2.31.0
