@@ -1,3 +1,5 @@
+import os
+
 from sqlalchemy import BINARY, Column, DateTime, Integer, String
 from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
@@ -5,6 +7,10 @@ from sqlalchemy.orm import sessionmaker
 
 from config import SQLALCHEMY_DATABASE_URL
 
+# 数据库目录不存在的时候自动创建目录。TODO：如果是mysql之类的数据库，这里的代码估计是不兼容的
+folder_path = os.path.dirname(SQLALCHEMY_DATABASE_URL.replace("sqlite:///", ""))
+if not os.path.exists(folder_path):
+    os.makedirs(folder_path)
 BaseModel = declarative_base()
 
 engine = create_engine(
