@@ -20,7 +20,9 @@ def wait_server_ready():
         except:
             time.sleep(5)
             continue
-        break
+        return
+    print("Server is not ready!")
+    exit(1)
 
 
 def setup_function():
