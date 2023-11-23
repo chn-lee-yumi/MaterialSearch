@@ -9,6 +9,7 @@ from database import (
     get_image_count,
     get_video_count,
     get_video_frame_count,
+    get_pexels_video_count,
     delete_record_if_not_exist,
     delete_image_if_outdated,
     delete_video_if_outdated,
@@ -55,6 +56,7 @@ class Scanner:
             self.total_images = get_image_count(session)
             self.total_videos = get_video_count(session)
             self.total_video_frames = get_video_frame_count(session)
+            self.total_pexels_videos = get_pexels_video_count(session)
 
     def get_status(self):
         """
@@ -78,6 +80,7 @@ class Scanner:
             "total_images": self.total_images,
             "total_videos": self.total_videos,
             "total_video_frames": self.total_video_frames,
+            "total_pexels_videos": self.total_pexels_videos,
             "scanning_files": self.scanning_files,
             "remain_files": self.scanning_files - self.scanned_files,
             "progress": progress,

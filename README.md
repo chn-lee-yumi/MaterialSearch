@@ -11,8 +11,9 @@
 - 文字搜视频（会给出符合描述的视频片段）
 - 以图搜视频（通过视频截图搜索所在片段）
 - 图文相似度计算（只是给出一个分数，用处不大）
+- pexels视频搜索
 
-## 使用说明
+## 部署说明
 
 ### 通过源码部署
 
@@ -67,6 +68,16 @@ DEVICE_TEXT=cuda
 如果你发现某些格式的图片或视频没有被扫描到，可以尝试在`IMAGE_EXTENSIONS`和`VIDEO_EXTENSIONS`增加对应的后缀。如果你发现一些支持的后缀没有被添加到代码中，欢迎提issue或pr增加。
 
 小图片没被扫描到的话，可以调低`IMAGE_MIN_WIDTH`和`IMAGE_MIN_HEIGHT`重试。
+
+## pexels视频搜索功能说明
+
+**测试功能**。首先下载pexels的sitemap，目前总共有10个，测试的话下最后一个就可以了：[video-sitemap10.xml.gz](https://www.pexels.com/sitemaps/en-US/video-sitemap10.xml.gz)。
+
+下载完成后解压，然后修改`process_pexels.py`的`video_sitemap_xml`，将路径改为你的sitemap文件所在路径。
+
+最后执行`process_pexels.py`即可。
+
+后续或许会提供处理好的数据。
 
 ## 问题解答
 

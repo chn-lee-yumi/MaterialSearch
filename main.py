@@ -19,8 +19,9 @@ from search import (
     search_video_by_image,
     search_video_by_text,
     search_video_file,
+    search_pexels_video_by_text,
 )
-from utils import crop_video, get_hash
+from utils import crop_video, get_hash, softmax
 
 logging.basicConfig(
     level=LOG_LEVEL, format="%(asctime)s %(name)s %(levelname)s %(message)s"
@@ -183,11 +184,36 @@ def api_match():
     elif search_type == 8:  # 路径搜视频
         results = search_video_file(path=path)[:top_n]
         return jsonify(results)
+    elif search_type == 9:  # 文字搜pexels视频
+        results = search_pexels_video_by_text(data["positive"], positive_threshold)
     else:  # 空
         logger.warning(f"search_type不正确：{search_type}")
         abort(400)
-    sorted_list = sorted_list[:top_n]
-    return jsonify(sorted_list)
+    if search_type in (0, 1, 5):
+        sorted_list = sorted_list[:top_n]
+        scores = [item["score"] for item in sorted_list]
+        softmax_scores = softmax(scores)
+        new_sorted_list = [{
+            "url": item["url"], "path": item["path"], "score": item["score"], "softmax_score": score
+        } for item, score in zip(sorted_list, softmax_scores)]
+    elif search_type in (2, 3, 6):
+        sorted_list = sorted_list[:top_n]
+        scores = [item["score"] for item in sorted_list]
+        softmax_scores = softmax(scores)
+        new_sorted_list = [{
+            "url": item["url"], "path": item["path"], "score": item["score"], "softmax_score": score,
+            "start_time": item["start_time"], "end_time": item["end_time"]
+        } for item, score in zip(sorted_list, softmax_scores)]
+    else:  # search_type == 9
+        new_results = {}
+        for key in results:
+            new_results[key] = results[key][:top_n]
+            scores = [item["score"] for item in new_results[key]]
+            softmax_scores = softmax(scores)
+            for i in range(len(softmax_scores)):
+                new_results[key][i]["softmax_score"] = softmax_scores[i]
+        return new_results
+    return jsonify(new_sorted_list)
 
 
 @app.route("/api/get_image/<int:image_id>", methods=["GET"])

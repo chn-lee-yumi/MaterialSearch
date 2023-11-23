@@ -6,7 +6,7 @@ from sqlalchemy import asc
 from sqlalchemy.orm import Session
 
 from config import MAX_RESULT_NUM
-from models import Image, Video
+from models import Image, Video, PexelsVideo
 
 logger = logging.getLogger(__name__)
 
@@ -104,6 +104,11 @@ def get_video_count(session: Session):
     return session.query(Video.path).distinct().count()
 
 
+def get_pexels_video_count(session: Session):
+    """获取视频总数"""
+    return session.query(PexelsVideo).count()
+
+
 def get_video_frame_count(session: Session):
     """获取视频帧总数"""
     return session.query(Video).count()
@@ -141,6 +146,17 @@ def add_video(session: Session, path: str, modify_time, frame_time_features_gene
     session.commit()
 
 
+def add_pexels_video(session: Session, content_loc: str, duration: int, view_count: int, thumbnail_loc: str, title: str, description: str,
+                     thumbnail_feature: bytes, title_feature: bytes, description_feature: bytes):
+    """添加pexels视频到数据库"""
+    pexels_video = PexelsVideo(
+        content_loc=content_loc, duration=duration, view_count=view_count, thumbnail_loc=thumbnail_loc, title=title, description=description,
+        thumbnail_feature=thumbnail_feature, title_feature=title_feature, description_feature=description_feature
+    )
+    session.add(pexels_video)
+    session.commit()
+
+
 def delete_record_if_not_exist(session: Session, assets: set):
     """
     删除不存在于 assets 集合中的图片 / 视频的数据库记录
@@ -160,6 +176,14 @@ def delete_record_if_not_exist(session: Session, assets: set):
 def is_video_exist(session: Session, path: str):
     """判断视频是否存在"""
     video = session.query(Video).filter_by(path=path).first()
+    if video:
+        return True
+    return False
+
+
+def is_pexels_video_exist(session: Session, thumbnail_loc: str):
+    """判断pexels视频是否存在"""
+    video = session.query(PexelsVideo).filter_by(thumbnail_loc=thumbnail_loc).first()
     if video:
         return True
     return False
@@ -205,3 +229,18 @@ def search_video_by_path(session: Session, path: str):
         .limit(MAX_RESULT_NUM)
         .all()
     )
+
+
+def get_pexels_video_features(session: Session):
+    """返回所有pexels视频"""
+    query = session.query(PexelsVideo.id, PexelsVideo.thumbnail_feature, PexelsVideo.title_feature, PexelsVideo.description_feature).all()
+    try:
+        id_list, thumbnail_feature_list, title_feature_list, description_feature_list = zip(*query)
+        return id_list, thumbnail_feature_list, title_feature_list, description_feature_list
+    except ValueError:  # 解包失败
+        return [], [], [], []
+
+
+def get_pexels_video_by_id(session: Session, uuid: str):
+    """根据id搜索单个pexels视频"""
+    return session.query(PexelsVideo).filter_by(id=uuid).first()

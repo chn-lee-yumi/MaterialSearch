@@ -4,6 +4,7 @@ import logging
 
 import cv2
 import numpy as np
+import requests
 import torch
 from PIL import Image
 from tqdm import trange
@@ -63,6 +64,22 @@ def process_image(path, ignore_small_images=True):
     """
     image = get_image_data(path, ignore_small_images)
     if image is None:
+        return None
+    inputs = processor(images=image, return_tensors="pt", padding=True)["pixel_values"].to(torch.device(DEVICE))
+    feature = model.get_image_features(inputs).detach().cpu().numpy()
+    return feature
+
+
+def process_web_image(url):
+    """
+    处理网络图片，返回图片特征
+    :param url: string, 图片URL
+    :return: <class 'numpy.nparray'>, 图片特征
+    """
+    try:
+        image = Image.open(requests.get(url, stream=True).raw)
+    except Exception as e:
+        logger.warning("获取图片报错：%s %s" % (url, repr(e)))
         return None
     inputs = processor(images=image, return_tensors="pt", padding=True)["pixel_values"].to(torch.device(DEVICE))
     feature = model.get_image_features(inputs).detach().cpu().numpy()

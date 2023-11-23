@@ -17,6 +17,7 @@
         <el-tag :key="status.file" type="success" effect="dark">图片总数：{{ status.total_images }}</el-tag>
         <el-tag :key="status.file" type="success" effect="dark">视频总数：{{ status.total_videos }}</el-tag>
         <el-tag :key="status.file" type="success" effect="dark">视频帧总数：{{ status.total_video_frames }}</el-tag>
+        <el-tag :key="status.file" type="success" effect="dark">pexels视频总数：{{ status.total_pexels_videos }}</el-tag>
         <el-tag v-if="isScanning" :key="status.remain_files" type="info" effect="dark">本次扫描文件数：{{ status.scanning_files }}</el-tag>
         <el-tag v-if="isScanning" :key="status.remain_files" type="info" effect="dark">待扫描文件数：{{ status.remain_files }}</el-tag>
         <el-tag v-if="isScanning" :key="status.remain_time" type="info" effect="dark">预估剩余时间：{{ status.remain_time }}</el-tag>
@@ -39,6 +40,7 @@
 
     <el-row>
         <el-tabs type="border-card" style="margin-top:5px;">
+
             <el-tab-pane label="文字搜图">
                 <el-form ref="form" :model="form" :inline="true">
                     <el-input placeholder="搜索内容（不能为空）" v-model="form.positive" class="input-with-select"
@@ -159,18 +161,37 @@
                     <el-button type="success" icon="el-icon-search" @click="search(4)">计算匹配分数</el-button>
                 </el-row>
             </el-tab-pane>
+
+            <el-tab-pane label="pexels视频">
+                <el-form ref="form" :model="form" :inline="true">
+                    <el-input placeholder="搜索内容（不能为空）" v-model="form.positive" class="input-with-select"
+                              @keyup.enter.native="search(9)"></el-input>
+                    <el-form-item label="搜索阈值（高于此分数才显示）" style="margin-bottom: 0px;">
+                        <el-slider style="width:200px" v-model="form.positive_threshold"></el-slider>
+                    </el-form-item>
+                    <el-select v-model="form.top_n" placeholder="查看前n个结果" style="width:100px">
+                        <el-option label="Top 6" value="6"></el-option>
+                        <el-option label="Top 12" value="12"></el-option>
+                        <el-option label="Top 30" value="30"></el-option>
+                        <el-option label="Top 150" value="150"></el-option>
+                    </el-select>
+                    <el-button type="success" icon="el-icon-search" @click="search(9)">搜索</el-button>
+                </el-form>
+            </el-tab-pane>
+
         </el-tabs>
     </el-row>
 
+    <!--TODO: 代码优化，播放量显示优化（数字过大的时候看不清位数）-->
     <el-row :gutter="5"
             v-if="form.search_type === 0 || form.search_type === 1 || form.search_type === 2 || form.search_type === 3 || form.search_type === 5 || form.search_type === 6 || form.search_type === 7 || form.search_type === 8">
         <el-col :span="8" v-for="file in files">
             <el-card style="margin-top: 5px;">
                 <el-image v-if="form.search_type === 0 || form.search_type === 1 || form.search_type === 5 || form.search_type === 7"
-                          style="width: 100%; height: 240px;"
+                          style="width: 100%; max-height: 240px;"
                           fit="contain" :src="file.url" :preview-src-list="image_url_list"></el-image>
                 <video v-if="form.search_type === 2 || form.search_type === 3 || form.search_type === 6 || form.search_type === 8"
-                       style="width: 100%; height: 240px;"
+                       style="width: 100%; max-height: 240px;"
                        :src="file.url" controls></video>
                 <div>
                     <el-tooltip content="素材的匹配概率和相似度" placement="bottom" v-if="file.softmax_score">
@@ -197,6 +218,66 @@
                 </div>
             </el-card>
         </el-col>
+    </el-row>
+
+    <el-row :gutter="5" v-if="form.search_type === 9">
+        <el-row><h3>根据缩略图匹配</h3></el-row>
+        <el-row :gutter="5">
+            <el-col :span="8" v-for="video in pexels_videos.thumbnail">
+                <el-card style="margin-top: 5px;">
+                    <el-row style="text-align: center"><strong>{{video.title}}</strong></el-row>
+                    <video style="width: 100%; max-height: 240px;" :src="video.content_loc" :poster="video.thumbnail_loc" controls></video>
+                    <el-row>
+                        <el-tooltip content="素材的匹配概率和相似度" placement="bottom" v-if="video.softmax_score">
+                            <el-tag size="mini" effect="dark">{{(video.softmax_score * 100).toFixed(1)}} % | {{(video.score * 100).toFixed(1)}} %
+                            </el-tag>
+                        </el-tooltip>
+                        <el-tag size="mini" type="success" effect="dark">播放量: {{video.view_count}}</el-tag>
+                        <el-link :href="'https://www.pexels.com/video/' + video.thumbnail_loc.split('/')[4]" type="info" target="_blank">来源页面
+                        </el-link>
+                    </el-row>
+                    <el-row>{{video.description}}</el-row>
+                </el-card>
+            </el-col>
+        </el-row>
+        <el-row><h3>根据标题匹配</h3></el-row>
+        <el-row :gutter="5">
+            <el-col :span="8" v-for="video in pexels_videos.title">
+                <el-card style="margin-top: 5px;">
+                    <el-row style="text-align: center"><strong>{{video.title}}</strong></el-row>
+                    <video style="width: 100%; max-height: 240px;" :src="video.content_loc" :poster="video.thumbnail_loc" controls></video>
+                    <el-row>
+                        <el-tooltip content="素材的匹配概率和相似度" placement="bottom" v-if="video.softmax_score">
+                            <el-tag size="mini" effect="dark">{{(video.softmax_score * 100).toFixed(1)}} % | {{(video.score * 100).toFixed(1)}} %
+                            </el-tag>
+                        </el-tooltip>
+                        <el-tag size="mini" type="success" effect="dark">播放量: {{video.view_count}}</el-tag>
+                        <el-link :href="'https://www.pexels.com/video/' + video.thumbnail_loc.split('/')[4]" type="info" target="_blank">来源页面
+                        </el-link>
+                    </el-row>
+                    <el-row>{{video.description}}</el-row>
+                </el-card>
+            </el-col>
+        </el-row>
+        <el-row><h3>根据描述匹配</h3></el-row>
+        <el-row :gutter="5">
+            <el-col :span="8" v-for="video in pexels_videos.description">
+                <el-card style="margin-top: 5px;">
+                    <el-row style="text-align: center"><strong>{{video.title}}</strong></el-row>
+                    <video style="width: 100%; max-height: 240px;" :src="video.content_loc" :poster="video.thumbnail_loc" controls></video>
+                    <el-row>
+                        <el-tooltip content="素材的匹配概率和相似度" placement="bottom" v-if="video.softmax_score">
+                            <el-tag size="mini" effect="dark">{{(video.softmax_score * 100).toFixed(1)}} % | {{(video.score * 100).toFixed(1)}} %
+                            </el-tag>
+                        </el-tooltip>
+                        <el-tag size="mini" type="success" effect="dark">播放量: {{video.view_count}}</el-tag>
+                        <el-link :href="'https://www.pexels.com/video/' + video.thumbnail_loc.split('/')[4]" type="info" target="_blank">来源页面
+                        </el-link>
+                    </el-row>
+                    <el-row>{{video.description}}</el-row>
+                </el-card>
+            </el-col>
+        </el-row>
     </el-row>
 
 </el-main>
@@ -255,6 +336,7 @@ new Vue({
         },
         files: [],
         image_url_list: [],
+        pexels_videos: null,
         timer: null,
     },
     mounted: function() {
@@ -328,6 +410,10 @@ new Vue({
                     if (search_type === 2 || search_type === 3 || search_type === 6 || search_type === 8) {
                         that.files = response["data"];
                         that.$message.info("共搜索出来" + that.files.length + "条视频");
+                        return;
+                    }
+                    if (search_type === 9) {
+                        that.pexels_videos = response["data"];
                         return;
                     }
                     if (search_type === 4) {
