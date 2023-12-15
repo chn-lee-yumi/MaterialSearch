@@ -73,12 +73,8 @@ def login_required(view_func):
 @app.route("/", methods=["GET"])
 @login_required
 def index_page():
-    """主页，根据浏览器的语言自动返回中文页面或英文页面"""
-    language = request.accept_languages.best_match(["zh", "en"])
-    if language == "zh":
-        return app.send_static_file("index.html")
-    else:
-        return app.send_static_file("index_en.html")
+    """主页"""
+    return app.send_static_file("index.html")
 
 
 @app.route("/login", methods=["GET", "POST"])

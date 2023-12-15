@@ -17,7 +17,7 @@
         <el-tag :key="status.file" type="success" effect="dark">图片总数：{{ status.total_images }}</el-tag>
         <el-tag :key="status.file" type="success" effect="dark">视频总数：{{ status.total_videos }}</el-tag>
         <el-tag :key="status.file" type="success" effect="dark">视频帧总数：{{ status.total_video_frames }}</el-tag>
-        <el-tag :key="status.file" type="success" effect="dark">pexels视频总数：{{ status.total_pexels_videos }}</el-tag>
+        <el-tag v-if="status.total_pexels_videos != 0" :key="status.file" type="success" effect="dark">pexels视频总数：{{ status.total_pexels_videos }}</el-tag>
         <el-tag v-if="isScanning" :key="status.remain_files" type="info" effect="dark">本次扫描文件数：{{ status.scanning_files }}</el-tag>
         <el-tag v-if="isScanning" :key="status.remain_files" type="info" effect="dark">待扫描文件数：{{ status.remain_files }}</el-tag>
         <el-tag v-if="isScanning" :key="status.remain_time" type="info" effect="dark">预估剩余时间：{{ status.remain_time }}</el-tag>
