@@ -16,8 +16,10 @@ def handel_xml():
     # 找到所有的video元素
     video_elements = root.findall(".//{http://www.google.com/schemas/sitemap-video/1.1}video")
     print("Total videos:", len(video_elements))
+    i = 0
     # 遍历每个video元素并提取元数据
     for video_element in video_elements:
+        i += 1
         content_loc = video_element.find("{http://www.google.com/schemas/sitemap-video/1.1}content_loc").text
         duration = video_element.find("{http://www.google.com/schemas/sitemap-video/1.1}duration").text
         view_count = video_element.find("{http://www.google.com/schemas/sitemap-video/1.1}view_count").text
@@ -27,6 +29,14 @@ def handel_xml():
         # 在这里可以使用提取到的元数据进行处理
         duration = int(duration)
         view_count = int(view_count)
+        title = title.strip()
+        description = description.strip()
+        if title.startswith("Video Of "):
+            title = title[len("Video Of "):]
+        if title.endswith(" · Free Stock Video"):
+            title = title[:-len(" · Free Stock Video")]
+        if description.startswith("One of many great free stock videos from Pexels. This video is about "):
+            description = description[len("One of many great free stock videos from Pexels. This video is about "):]
         # print("Content Location:", content_loc)
         # print("Duration:", duration)
         # print("View Count:", view_count)
@@ -38,11 +48,11 @@ def handel_xml():
             if is_pexels_video_exist(session, thumbnail_loc):
                 # print(f"视频已存在：{thumbnail_loc}")
                 continue
-            thumbnail_feature = process_web_image(thumbnail_loc)
+            thumbnail_feature = process_web_image(thumbnail_loc + "?fm=webp&fit=corp&min-w=224&h=224")
             if thumbnail_feature is None:
                 print("获取视频缩略图特征失败，跳过该视频")
                 continue
-            print(f"新增视频：{thumbnail_loc}")
+            print(f"[{i}/{len(video_elements)}]新增视频：{thumbnail_loc}", end="      \r")
             add_pexels_video(
                 session,
                 content_loc=content_loc,
