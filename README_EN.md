@@ -11,8 +11,9 @@ Search local photos and videos through natural language.
 - Text-based video search (provides matching video clips based on descriptions)
 - Image-based video search (searches for video segments based on screenshots)
 - Calculation of image-text similarity (provides a score, not very useful)
+- Pexels video search
 
-## Usage Instructions
+## Deploy Instructions
 
 ### Deployment via Source Code
 
@@ -56,7 +57,7 @@ It is recommended to modify the configuration through environment variables or b
 
 Example `.env` file configuration:
 
-```
+```conf
 ASSETS_PATH=C:/Users/Administrator/Pictures,C:/Users/Administrator/Videos
 DEVICE=cuda
 DEVICE_TEXT=cuda
@@ -67,6 +68,23 @@ The functionality is still being iterated upon, so the configuration may change 
 If you find that certain formats of images or videos are not being scanned, you can try adding the corresponding file extensions to `IMAGE_EXTENSIONS` and `VIDEO_EXTENSIONS`. If you find that some supported extensions have not been added to the code, please feel free to open an issue or submit a pull request to add them.
 
 If small images are not being scanned, you can try reducing `IMAGE_MIN_WIDTH` and `IMAGE_MIN_HEIGHT` and try again.
+
+If you want to use proxy, you can use `http_proxy` and `https_proxy`. For example: 
+
+```conf
+http_proxy=http://127.0.0.1:7070
+https_proxy=http://127.0.0.1:7070
+```
+
+## Pexels Video Search Functionality Instructions
+
+**This is a testing feature**. Begin by downloading Pexels' sitemap; currently, there are a total of 10. For testing purposes, you can download the latest one: [video-sitemap10.xml.gz](https://www.pexels.com/sitemaps/en-US/video-sitemap10.xml.gz)。
+
+After completing the download, unzip the file. Next, modify the `video_sitemap_xml` in the `process_pexels.py` script, changing the path to the location of your sitemap file.
+
+Finally, execute `process_pexels.py`.
+
+In the future, pre-processed data may be provided.
 
 ## Troubleshooting
 

@@ -57,7 +57,7 @@
 
 `.env`文件配置示例：
 
-```
+```conf
 ASSETS_PATH=C:/Users/Administrator/Pictures,C:/Users/Administrator/Videos
 DEVICE=cuda
 DEVICE_TEXT=cuda
@@ -68,6 +68,13 @@ DEVICE_TEXT=cuda
 如果你发现某些格式的图片或视频没有被扫描到，可以尝试在`IMAGE_EXTENSIONS`和`VIDEO_EXTENSIONS`增加对应的后缀。如果你发现一些支持的后缀没有被添加到代码中，欢迎提issue或pr增加。
 
 小图片没被扫描到的话，可以调低`IMAGE_MIN_WIDTH`和`IMAGE_MIN_HEIGHT`重试。
+
+如果想使用代理，可以添加`http_proxy`和`https_proxy`，如：
+
+```conf
+http_proxy=http://127.0.0.1:7070
+https_proxy=http://127.0.0.1:7070
+```
 
 ## pexels视频搜索功能说明
 
