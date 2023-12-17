@@ -47,7 +47,9 @@ Please refer to the `docker-compose.yml` file for details, as it contains detail
 
 Finally, execute `docker-compose up -d` to start the container.
 
-Note: It is not recommended to set memory limits for the container, as it may cause strange issues. For example, refer to [this issue](https://github.com/chn-lee-yumi/MaterialSearch/issues/6).
+Note:
+- It is not recommended to set memory limits for the container, as it may cause strange issues. For example, refer to [this issue](https://github.com/chn-lee-yumi/MaterialSearch/issues/6).
+- Docker image has the default environment variables `TRANSFORMERS_OFFLINE=1`, which means it won't connect to huggingface to check the model version. If you want to change the default model in the container, you have to modify `.env` and set `TRANSFORMERS_OFFLINE=0`.
 
 ## Configuration Instructions
 
