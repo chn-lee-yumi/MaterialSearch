@@ -2,191 +2,201 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>本地素材搜索器</title>
+    <title>Material Search Engine</title>
     <!--<link rel="stylesheet" href="https://unpkg.com/element-plus@2.4.4/dist/index.css"/>-->
-    <link rel="stylesheet" href="static/index.css"/>
+    <link rel="stylesheet" href="static/assets/index.css"/>
     <!--<script src="https://unpkg.com/vue@3.3.12/dist/vue.global.js"></script>-->
-    <script src="static/vue.global.js"></script>
+    <script src="static/assets/vue.global.js"></script>
+    <!--<script src="https://unpkg.com/vue-i18n@9.8.0/dist/vue-i18n.global.js"></script>-->
+    <script src="static/assets/vue-i18n.global.js"></script>
     <!--<script src="https://unpkg.com/element-plus@2.4.4/dist/index.full.min.js"></script>-->
-    <script src="static/index.full.min.js"></script>
+    <script src="static/assets/index.full.min.js"></script>
     <!--<script src="https://unpkg.com/@element-plus/icons-vue@2.3.1/dist/index.iife.min.js"></script>-->
-    <script src="static/index.iife.min.js"></script>
+    <script src="static/assets/index.iife.min.js"></script>
     <!--<script src="https://unpkg.com/clipboard@2.0.11/dist/clipboard.min.js"></script>-->
-    <script src="static/clipboard.min.js"></script>
+    <script src="static/assets/clipboard.min.js"></script>
     <!--<script src="https://unpkg.com/axios@1.6.2/dist/axios.min.js"></script>-->
-    <script src="static/axios.min.js"></script>
+    <script src="static/assets/axios.min.js"></script>
 </head>
 <body>
 <el-main id="app" v-loading="loading">
     <el-row>
-        <h1 style="margin:0;">本地素材搜索器</h1>
+        <h1 style="margin:0;">{{ $t("title") }}</h1>
+        <!-- TODO: 可以手动切换语言
+        <el-select v-model="locale" @change="changeLocale">
+            <el-option label="English" value="en"></el-option>
+            <el-option label="中文" value="zh"></el-option>
+        </el-select>
+        -->
     </el-row>
 
     <el-row>
-        <el-tag size="large" effect="dark">扫描状态：{{ isScanning ? "扫描中" : "扫描完成" }}</el-tag>
-        <el-tag size="large" type="success" effect="dark">图片总数：{{ status.total_images }}</el-tag>
-        <el-tag size="large" type="success" effect="dark">视频总数：{{ status.total_videos }}</el-tag>
-        <el-tag size="large" type="success" effect="dark">视频帧总数：{{ status.total_video_frames }}</el-tag>
-        <el-tag size="large" v-if="status.total_pexels_videos != 0" type="success" effect="dark">pexels视频总数：{{ status.total_pexels_videos }}
+        <el-tag size="large" effect="dark">{{ $t("scanStatus." + (isScanning ? "scanning" : "scanComplete")) }}</el-tag>
+        <el-tag size="large" type="success" effect="dark">{{ $t("statusLabels.totalImages") }}: {{ status.total_images }}</el-tag>
+        <el-tag size="large" type="success" effect="dark">{{ $t("statusLabels.totalVideos") }}: {{ status.total_videos }}</el-tag>
+        <el-tag size="large" type="success" effect="dark">{{ $t("statusLabels.totalVideoFrames") }}: {{ status.total_video_frames }}</el-tag>
+        <el-tag size="large" v-if="status.total_pexels_videos != 0" type="success" effect="dark">
+            {{ $t("statusLabels.totalPexelsVideos") }}: {{status.total_pexels_videos }}
         </el-tag>
-        <el-tag size="large" v-if="isScanning" type="info" effect="dark">本次扫描文件数：{{ status.scanning_files }}</el-tag>
-        <el-tag size="large" v-if="isScanning" type="info" effect="dark">待扫描文件数：{{ status.remain_files }}</el-tag>
-        <el-tag size="large" v-if="isScanning" type="info" effect="dark">预估剩余时间：{{ status.remain_time }}</el-tag>
+        <el-tag size="large" v-if="isScanning" type="info" effect="dark">{{ $t("statusLabels.scanningFiles") }}: {{ status.scanning_files }}</el-tag>
+        <el-tag size="large" v-if="isScanning" type="info" effect="dark">{{ $t("statusLabels.remainFiles") }}: {{ status.remain_files }}</el-tag>
+        <el-tag size="large" v-if="isScanning" type="info" effect="dark">{{ $t("statusLabels.remainTime") }}: {{ status.remain_time }}</el-tag>
         <el-tag size="large" v-if="isScanning" type="danger" effect="dark">
-            扫描进度：{{ Math.trunc(status.progress*100) }}%
+            {{ $t("statusLabels.scanProgress") }}: {{ Math.trunc(status.progress * 100) }}%
         </el-tag>
         <el-button-group v-if="!isScanning">
-            <el-button round :loading="isScanning" type="primary" size="default" @click="scan">扫描</el-button>
+            <el-button round :loading="isScanning" type="primary" size="default" @click="scan">{{ $t("buttons.scan") }}</el-button>
         </el-button-group>
         <!--<el-button-group>-->
-        <!--    <el-button round type="warning" size="small" @click="cleanCache">清除缓存</el-button>-->
+        <!--    <el-button round type="warning" size="small" @click="cleanCache">{{ $t("buttons.cleanCache") }}</el-button>-->
         <!--</el-button-group>-->
         <el-button-group v-if="enableLogin">
             <a href="/logout">
-                <el-button round type="danger" size="default">注销</el-button>
+                <el-button round type="danger" size="default">{{ $t("buttons.logout") }}</el-button>
             </a>
         </el-button-group>
         <el-progress style="width:100%" v-if="isScanning" :percentage="Math.trunc(status.progress*100)" :stroke-width="10"></el-progress>
     </el-row>
 
     <el-row>
-        <el-tabs type="border-card">
+        <el-tabs type="border-card" v-model="currentTab">
 
-            <el-tab-pane label="文字搜图">
+            <el-tab-pane :label="$t('searchTabs.textSearch')" name="0">
                 <el-form ref="form" :model="form" :inline="true">
-                    <el-input placeholder="搜索内容（不能为空）" v-model="form.positive" class="input-with-select"
+                    <el-input :placeholder="$t('formPlaceholders.positiveSearch')" v-model="form.positive" class="input-with-select"
                               @keyup.enter.native="search(0)"></el-input>
-                    <el-input placeholder="过滤内容（可以留空）" v-model="form.negative" class="input-with-select"
+                    <el-input :placeholder="$t('formPlaceholders.negativeSearch')" v-model="form.negative" class="input-with-select"
                               @keyup.enter.native="search(0)"></el-input>
-                    <el-form-item label="搜索阈值（高于该相似度才显示）" style="margin-bottom: 0px;" @keyup.enter.native="search(0)">
+                    <el-form-item :label="$t('formPlaceholders.positiveThreshold')" style="margin-bottom: 0px;" @keyup.enter.native="search(0)">
                         <el-slider style="width:200px" v-model="form.positive_threshold"></el-slider>
                     </el-form-item>
-                    <el-form-item label="过滤阈值（低于该相似度才显示）" style="margin-bottom: 0px;" @keyup.enter.native="search(0)">
+                    <el-form-item :label="$t('formPlaceholders.negativeThreshold')" style="margin-bottom: 0px;" @keyup.enter.native="search(0)">
                         <el-slider style="width:200px" v-model="form.negative_threshold"></el-slider>
                     </el-form-item>
-                    <el-select v-model="form.top_n" placeholder="查看前n个结果" style="width:100px">
+                    <el-select v-model="form.top_n" :placeholder="$t('formPlaceholders.topNResults')" style="width:100px">
                         <el-option label="Top 6" value="6"></el-option>
                         <el-option label="Top 12" value="12"></el-option>
                         <el-option label="Top 30" value="30"></el-option>
                         <el-option label="Top 150" value="150"></el-option>
                     </el-select>
-                    <el-button type="success" icon="Search" @click="search(0)">搜索</el-button>
+                    <el-button type="success" icon="Search" @click="search(0)">{{ $t('searchButtons.search') }}</el-button>
                 </el-form>
             </el-tab-pane>
 
-            <el-tab-pane label="以图搜图">
+            <el-tab-pane :label="$t('searchTabs.imageSearch')" name="1">
                 <el-upload ref="upload" drag action="api/upload" :multiple=false :limit="1" :on-exceed="handleExceed" :on-success="handleSuccess">
                     <i class="el-icon-upload"></i>
-                    <div class="el-upload__text">将文件拖到此处，或<em>点击上传</em></div>
+                    <div class="el-upload__text">{{ $t('uploader.drag') }}<em>{{ $t('uploader.click') }}</em></div>
                 </el-upload>
                 <el-form ref="form" :model="form" :inline="true" style="margin-top:5px;">
-                    <el-form-item label="匹配阈值（高于该相似度才显示）" style="margin-bottom: 0px;" @keyup.enter.native="search(1)">
+                    <el-form-item :label="$t('formPlaceholders.positiveThreshold')" style="margin-bottom: 0px;" @keyup.enter.native="search(1)">
                         <el-slider style="width:200px" v-model="form.image_threshold"></el-slider>
                     </el-form-item>
-                    <el-select v-model="form.top_n" placeholder="查看前n个结果" style="width:100px" @keyup.enter.native="search(1)">
+                    <el-select v-model="form.top_n" :placeholder="$t('formPlaceholders.topNResults')" style="width:100px"
+                               @keyup.enter.native="search(1)">
                         <el-option label="Top 6" value="6"></el-option>
                         <el-option label="Top 12" value="12"></el-option>
                         <el-option label="Top 30" value="30"></el-option>
                         <el-option label="Top 150" value="150"></el-option>
                     </el-select>
-                    <el-button type="success" icon="Search" @click="search(1)">搜索</el-button>
+                    <el-button type="success" icon="Search" @click="search(1)">{{ $t('searchButtons.search') }}</el-button>
                 </el-form>
             </el-tab-pane>
 
-            <el-tab-pane label="文字搜视频">
+            <el-tab-pane :label="$t('searchTabs.textVideoSearch')" name="2">
                 <el-form ref="form" :model="form" :inline="true">
-                    <el-input placeholder="搜索内容（不能为空）" v-model="form.positive" class="input-with-select"
+                    <el-input :placeholder="$t('formPlaceholders.positiveSearch')" v-model="form.positive" class="input-with-select"
                               @keyup.enter.native="search(2)"></el-input>
-                    <el-input placeholder="过滤内容（可以留空）" v-model="form.negative" class="input-with-select"
+                    <el-input :placeholder="$t('formPlaceholders.negativeSearch')" v-model="form.negative" class="input-with-select"
                               @keyup.enter.native="search(2)"></el-input>
-                    <el-form-item label="搜索阈值（高于此相似度才显示）" style="margin-bottom: 0px;" @keyup.enter.native="search(2)">
+                    <el-form-item :label="$t('formPlaceholders.positiveThreshold')" style="margin-bottom: 0px;" @keyup.enter.native="search(2)">
                         <el-slider style="width:200px" v-model="form.positive_threshold"></el-slider>
                     </el-form-item>
-                    <el-form-item label="过滤阈值（低于此相似度才显示）" style="margin-bottom: 0px;" @keyup.enter.native="search(2)">
+                    <el-form-item :label="$t('formPlaceholders.negativeThreshold')" style="margin-bottom: 0px;" @keyup.enter.native="search(2)">
                         <el-slider style="width:200px" v-model="form.negative_threshold"></el-slider>
                     </el-form-item>
-                    <el-select v-model="form.top_n" placeholder="查看前n个结果" style="width:100px">
+                    <el-select v-model="form.top_n" :placeholder="$t('formPlaceholders.topNResults')" style="width:100px">
                         <el-option label="Top 6" value="6"></el-option>
                         <el-option label="Top 12" value="12"></el-option>
                         <el-option label="Top 30" value="30"></el-option>
                         <el-option label="Top 150" value="150"></el-option>
                     </el-select>
-                    <el-button type="success" icon="Search" @click="search(2)">搜索</el-button>
+                    <el-button type="success" icon="Search" @click="search(2)">{{ $t('searchButtons.search') }}</el-button>
                 </el-form>
             </el-tab-pane>
 
-            <el-tab-pane label="以图搜视频">
+            <el-tab-pane :label="$t('searchTabs.imageVideoSearch')" name="3">
                 <el-upload ref="upload" drag action="api/upload" :multiple=false :limit="1" :on-exceed="handleExceed" :on-success="handleSuccess">
                     <i class="el-icon-upload"></i>
-                    <div class="el-upload__text">将文件拖到此处，或<em>点击上传</em></div>
+                    <div class="el-upload__text">{{ $t('uploader.drag') }}<em>{{ $t('uploader.click') }}</em></div>
                 </el-upload>
                 <el-form ref="form" :model="form" :inline="true" style="margin-top:10px;">
-                    <el-form-item label="匹配阈值（高于此相似度才显示）" style="margin-bottom: 0px;" @keyup.enter.native="search(3)">
+                    <el-form-item :label="$t('formPlaceholders.positiveThreshold')" style="margin-bottom: 0px;" @keyup.enter.native="search(3)">
                         <el-slider style="width:200px" v-model="form.image_threshold"></el-slider>
                     </el-form-item>
-                    <el-select v-model="form.top_n" placeholder="查看前n个结果" style="width:100px">
+                    <el-select v-model="form.top_n" :placeholder="$t('formPlaceholders.topNResults')" style="width:100px">
                         <el-option label="Top 6" value="6"></el-option>
                         <el-option label="Top 12" value="12"></el-option>
                         <el-option label="Top 30" value="30"></el-option>
                         <el-option label="Top 150" value="150"></el-option>
                     </el-select>
-                    <el-button type="success" icon="Search" @click="search(3)">搜索</el-button>
+                    <el-button type="success" icon="Search" @click="search(3)">{{ $t('searchButtons.search') }}</el-button>
                 </el-form>
             </el-tab-pane>
 
-            <el-tab-pane label="路径搜图">
+            <el-tab-pane :label="$t('searchTabs.pathImageSearch')" name="4">
                 <el-form ref="form" :model="form" :inline="true">
-                    <el-input placeholder="图片路径（不能为空）" v-model="form.path" class="input-with-select"
+                    <el-input :placeholder="$t('formPlaceholders.imagePath')" v-model="form.path" class="input-with-select"
                               @keyup.enter.native="search(7)"></el-input>
-                    <el-select v-model="form.top_n" placeholder="查看前n个结果" style="width:100px">
+                    <el-select v-model="form.top_n" :placeholder="$t('formPlaceholders.topNResults')" style="width:100px">
                         <el-option label="Top 6" value="6"></el-option>
                         <el-option label="Top 12" value="12"></el-option>
                         <el-option label="Top 30" value="30"></el-option>
                         <el-option label="Top 150" value="150"></el-option>
                     </el-select>
-                    <el-button type="success" icon="Search" @click="search(7)">搜索</el-button>
+                    <el-button type="success" icon="Search" @click="search(7)">{{ $t('searchButtons.search') }}</el-button>
                 </el-form>
             </el-tab-pane>
 
-            <el-tab-pane label="路径搜视频">
+            <el-tab-pane :label="$t('searchTabs.pathVideoSearch')" name="5">
                 <el-form ref="form" :model="form" :inline="true">
-                    <el-input placeholder="视频路径（不能为空）" v-model="form.path" class="input-with-select"
+                    <el-input :placeholder="$t('formPlaceholders.videoPath')" v-model="form.path" class="input-with-select"
                               @keyup.enter.native="search(8)"></el-input>
-                    <el-select v-model="form.top_n" placeholder="查看前n个结果" style="width:100px">
+                    <el-select v-model="form.top_n" :placeholder="$t('formPlaceholders.topNResults')" style="width:100px">
                         <el-option label="Top 6" value="6"></el-option>
                         <el-option label="Top 12" value="12"></el-option>
                         <el-option label="Top 30" value="30"></el-option>
                         <el-option label="Top 150" value="150"></el-option>
                     </el-select>
-                    <el-button type="success" icon="Search" @click="search(8)">搜索</el-button>
+                    <el-button type="success" icon="Search" @click="search(8)">{{ $t('searchButtons.search') }}</el-button>
                 </el-form>
             </el-tab-pane>
 
-            <el-tab-pane label="图文相似度匹配">
-                <el-input placeholder="文字内容（不能为空）" v-model="form.text" class="input-with-select"></el-input>
+            <el-tab-pane :label="$t('searchTabs.textImageSimilarity')" name="6">
+                <el-input :placeholder="$t('formPlaceholders.textMatch')" v-model="form.text" class="input-with-select"></el-input>
                 <el-upload ref="upload" drag action="api/upload" :multiple=false :limit="1" :on-exceed="handleExceed" :on-success="handleSuccess">
                     <i class="el-icon-upload"></i>
-                    <div class="el-upload__text">将文件拖到此处，或<em>点击上传</em></div>
+                    <div class="el-upload__text">{{ $t('uploader.drag') }}<em>{{ $t('uploader.click') }}</em></div>
                 </el-upload>
                 <el-row style="margin-top:10px;">
-                    <el-button type="success" icon="Search" @click="search(4)">计算相似度</el-button>
+                    <el-button type="success" icon="Search" @click="search(4)">{{ $t('searchButtons.calculateSimilarity') }}</el-button>
                 </el-row>
             </el-tab-pane>
 
-            <el-tab-pane v-if="status.total_pexels_videos != 0" label="pexels视频">
+            <el-tab-pane v-if="status.total_pexels_videos != 0" :label="$t('searchTabs.pexelsVideos')" name="7">
                 <el-form ref="form" :model="form" :inline="true">
-                    <el-input placeholder="搜索内容（不能为空）" v-model="form.positive" class="input-with-select"
+                    <el-input :placeholder="$t('formPlaceholders.positiveSearch')" v-model="form.positive" class="input-with-select"
                               @keyup.enter.native="search(9)"></el-input>
-                    <el-form-item label="搜索阈值（高于此相似度才显示）" style="margin-bottom: 0px;" @keyup.enter.native="search(9)">
+                    <el-form-item :label="$t('formPlaceholders.positiveThreshold')" style="margin-bottom: 0px;" @keyup.enter.native="search(9)">
                         <el-slider style="width:200px" v-model="form.positive_threshold"></el-slider>
                     </el-form-item>
-                    <el-select v-model="form.top_n" placeholder="查看前n个结果" style="width:100px">
+                    <el-select v-model="form.top_n" :placeholder="$t('formPlaceholders.topNResults')" style="width:100px">
                         <el-option label="Top 6" value="6"></el-option>
                         <el-option label="Top 12" value="12"></el-option>
                         <el-option label="Top 30" value="30"></el-option>
                         <el-option label="Top 150" value="150"></el-option>
                     </el-select>
-                    <el-button type="success" icon="Search" @click="search(9)">搜索</el-button>
+                    <el-button type="success" icon="Search" @click="search(9)">{{ $t('searchButtons.search') }}</el-button>
                 </el-form>
             </el-tab-pane>
 
@@ -201,31 +211,31 @@
                 <el-row>
                     <el-image v-if="form.search_type === 0 || form.search_type === 1 || form.search_type === 5 || form.search_type === 7"
                               fit="contain" :src="file.url" :preview-src-list="image_url_list" :initial-index="index"
-                              hide-on-click-modal="true"></el-image>
+                              :hide-on-click-modal="true"></el-image>
                     <video v-if="form.search_type === 2 || form.search_type === 3 || form.search_type === 6 || form.search_type === 8"
                            :src="file.url" controls></video>
                 </el-row>
                 <el-row>
-                    <el-tooltip content="素材的匹配概率和相似度" placement="bottom" v-if="file.softmax_score">
+                    <el-tooltip :content="$t('fileResults.matchingProbability')" placement="bottom" v-if="file.softmax_score">
                         <el-tag size="default" effect="dark">{{(file.softmax_score * 100).toFixed(1)}}% | {{(file.score * 100).toFixed(1)}}%</el-tag>
                     </el-tooltip>
                     <el-tooltip :content="file.path" placement="bottom">
                         <el-tag size="default" type="info" effect="dark" class="copy" :data-clipboard-text="file.path">{{file.path.split('/').pop()}}
                         </el-tag>
                     </el-tooltip>
-                    <el-tooltip v-if="file.end_time" content="匹配的时间段范围" placement="bottom">
-                        <el-tag size="default" type="warning" effect="dark">{{file.start_time}} ~ {{file.end_time}} 秒</el-tag>
+                    <el-tooltip v-if="file.end_time" :content="$t('fileResults.matchingTimeRange')" placement="bottom">
+                        <el-tag size="default" type="warning" effect="dark">{{file.start_time}} ~ {{file.end_time}}</el-tag>
                     </el-tooltip>
                     <el-button size="small" round type="success"
                                v-if="form.search_type === 0 || form.search_type === 1 || form.search_type === 5 || form.search_type === 7"
-                               @click="searchFromImage(5,file.url)">以图搜图
+                               @click="searchFromImage(5,file.url)">{{ $t('fileResults.imageSearch') }}
                     </el-button>
                     <el-button size="small" round type="success"
                                v-if="form.search_type === 0 || form.search_type === 1 || form.search_type === 5 || form.search_type === 7"
-                               @click="searchFromImage(6,file.url)">以图搜视频
+                               @click="searchFromImage(6,file.url)">{{ $t('fileResults.imageVideoSearch') }}
                     </el-button>
                     <el-button size="small" round type="success" v-if="form.search_type === 2 || form.search_type === 3 || form.search_type === 6"
-                               @click="downloadVideoClip(file.url,file.start_time,file.end_time)">下载视频片段
+                               @click="downloadVideoClip(file.url,file.start_time,file.end_time)">{{ $t('fileResults.downloadVideoClip') }}
                     </el-button>
                 </el-row>
             </el-card>
@@ -233,57 +243,60 @@
     </el-row>
 
     <el-row :gutter="5" v-if="form.search_type === 9">
-        <el-row><h3>根据缩略图匹配</h3></el-row>
+        <el-row><h3>{{ $t('pexelsResults.thumbnailMatch') }}</h3></el-row>
         <el-row :gutter="5">
             <el-col :span="8" v-for="video in pexels_videos.thumbnail">
                 <el-card style="margin-top: 5px;">
                     <el-row style="text-align: center"><strong>{{video.title}}</strong></el-row>
                     <video :src="video.content_loc" :poster="video.thumbnail_loc" controls></video>
                     <el-row>
-                        <el-tooltip content="素材的匹配概率和相似度" placement="bottom" v-if="video.softmax_score">
+                        <el-tooltip :content="$t('fileResults.matchingProbability')" placement="bottom" v-if="video.softmax_score">
                             <el-tag size="small" effect="dark">{{(video.softmax_score * 100).toFixed(1)}}% | {{(video.score * 100).toFixed(1)}}%
                             </el-tag>
                         </el-tooltip>
-                        <el-tag size="small" type="success" effect="dark">播放量: {{video.view_count}}</el-tag>
-                        <el-link :href="'https://www.pexels.com/video/' + video.thumbnail_loc.split('/')[4]" type="info" target="_blank">来源页面
+                        <el-tag size="small" type="success" effect="dark">{{ $t('pexelsResults.viewCount') }}: {{video.view_count}}</el-tag>
+                        <el-link :href="'https://www.pexels.com/video/' + video.thumbnail_loc.split('/')[4]" type="info" target="_blank">
+                            {{ $t('pexelsResults.sourcePage') }}
                         </el-link>
                     </el-row>
                     <el-row>{{video.description}}</el-row>
                 </el-card>
             </el-col>
         </el-row>
-        <el-row><h3>根据标题匹配</h3></el-row>
+        <el-row><h3>{{ $t('pexelsResults.titleMatch') }}</h3></el-row>
         <el-row :gutter="5">
             <el-col :span="8" v-for="video in pexels_videos.title">
                 <el-card style="margin-top: 5px;">
                     <el-row style="text-align: center"><strong>{{video.title}}</strong></el-row>
                     <video :src="video.content_loc" :poster="video.thumbnail_loc" controls></video>
                     <el-row>
-                        <el-tooltip content="素材的匹配概率和相似度" placement="bottom" v-if="video.softmax_score">
+                        <el-tooltip :content="$t('fileResults.matchingProbability')" placement="bottom" v-if="video.softmax_score">
                             <el-tag size="small" effect="dark">{{(video.softmax_score * 100).toFixed(1)}}% | {{(video.score * 100).toFixed(1)}}%
                             </el-tag>
                         </el-tooltip>
-                        <el-tag size="small" type="success" effect="dark">播放量: {{video.view_count}}</el-tag>
-                        <el-link :href="'https://www.pexels.com/video/' + video.thumbnail_loc.split('/')[4]" type="info" target="_blank">来源页面
+                        <el-tag size="small" type="success" effect="dark">{{ $t('pexelsResults.viewCount') }}: {{video.view_count}}</el-tag>
+                        <el-link :href="'https://www.pexels.com/video/' + video.thumbnail_loc.split('/')[4]" type="info" target="_blank">
+                            {{ $t('pexelsResults.sourcePage') }}
                         </el-link>
                     </el-row>
                     <el-row>{{video.description}}</el-row>
                 </el-card>
             </el-col>
         </el-row>
-        <el-row><h3>根据描述匹配</h3></el-row>
+        <el-row><h3>{{ $t('pexelsResults.descriptionMatch') }}</h3></el-row>
         <el-row :gutter="5">
             <el-col :span="8" v-for="video in pexels_videos.description">
                 <el-card style="margin-top: 5px;">
                     <el-row style="text-align: center"><strong>{{video.title}}</strong></el-row>
                     <video :src="video.content_loc" :poster="video.thumbnail_loc" controls></video>
                     <el-row>
-                        <el-tooltip content="素材的匹配概率和相似度" placement="bottom" v-if="video.softmax_score">
+                        <el-tooltip :content="$t('fileResults.matchingProbability')" placement="bottom" v-if="video.softmax_score">
                             <el-tag size="small" effect="dark">{{(video.softmax_score * 100).toFixed(1)}}% | {{(video.score * 100).toFixed(1)}}%
                             </el-tag>
                         </el-tooltip>
-                        <el-tag size="small" type="success" effect="dark">播放量: {{video.view_count}}</el-tag>
-                        <el-link :href="'https://www.pexels.com/video/' + video.thumbnail_loc.split('/')[4]" type="info" target="_blank">来源页面
+                        <el-tag size="small" type="success" effect="dark">{{ $t('pexelsResults.viewCount') }}: {{video.view_count}}</el-tag>
+                        <el-link :href="'https://www.pexels.com/video/' + video.thumbnail_loc.split('/')[4]" type="info" target="_blank">
+                            {{ $t('pexelsResults.sourcePage') }}
                         </el-link>
                     </el-row>
                     <el-row>{{video.description}}</el-row>
@@ -296,7 +309,6 @@
 </body>
 <script>
 function formatTime(seconds) {
-    // 计算天、小时、分钟和秒数
     const days = Math.floor(seconds / (3600 * 24));
     seconds -= days * 3600 * 24;
     const hours = Math.floor(seconds / 3600);
@@ -304,24 +316,19 @@ function formatTime(seconds) {
     const minutes = Math.floor(seconds / 60);
     seconds -= minutes * 60;
 
-    // 格式化时间部分
-    const formattedDays = days > 0 ? days + '天' : '';
-    const formattedHours = hours.toString()
-        .padStart(2, '0') + '时';
-    const formattedMinutes = minutes.toString()
-        .padStart(2, '0') + '分';
-    const formattedSeconds = seconds.toString()
-        .padStart(2, '0') + '秒';
+    const formattedDays = days > 0 ? days + ':' : '';
+    const formattedHours = hours.toString().padStart(2, '0') + ':';
+    const formattedMinutes = minutes.toString().padStart(2, '0') + ':';
+    const formattedSeconds = seconds.toString().padStart(2, '0') + '';
 
-    // 拼接结果字符串
     let result = formattedDays + formattedHours + formattedMinutes + formattedSeconds;
     return result;
 }
 
 const app = Vue.createApp({
-
     data() {
         return {
+            currentTab: "0",
             loading: false,
             isScanning: false,
             status: {
@@ -348,150 +355,187 @@ const app = Vue.createApp({
             timer: null,
         }
     },
-
     mounted: function() {
         this.loadData();
         this.timer = setInterval(this.loadData, 5000);
     },
-
     created() {
         var that = this
         let clipboard = new ClipboardJS(".copy");
         clipboard.on("success", function(e) {
-            that.$message.success("路径已复制到剪贴板");
+            ElementPlus.ElMessage.success(that.$t('messages.clipboardCopySuccess'));
             e.clearSelection();
         })
     },
-
+    methods: {
+        changeLocale(locale) {
+            this.$i18n.locale = locale
+        },
+        cleanCache() {
+            var that = this;
+            axios.get('api/clean_cache')
+                .then(function(response) {
+                    ElementPlus.ElMessage.info(response.data);
+                })
+                .catch(function(error) {
+                    console.log(error);
+                    ElementPlus.ElMessage.error(error.response.data);
+                })
+        },
+        downloadVideoClip(url, start_time, end_time) {
+            var parts = url.split('/');
+            var lastPart = parts[parts.length - 1];
+            var hashPart = lastPart.split('#')[0];
+            window.open(`/api/download_video_clip/${hashPart}/${start_time}/${end_time}`, "_blank");
+        },
+        loadData() {
+            var that = this;
+            axios.get('api/status')
+                .then(function(response) {
+                    console.log(response);
+                    that.status = response["data"];
+                    that.status.remain_time = formatTime(that.status.remain_time);
+                    that.isScanning = response["data"]["status"];
+                    that.enableLogin = response["data"]["enable_login"];
+                })
+                .catch(function(error) {
+                    console.log(error);
+                    ElementPlus.ElMessage.error(error);
+                })
+        },
+        scan() {
+            var that = this;
+            axios.get('api/scan')
+                .then(function(response) {
+                    console.log(response);
+                    that.loadData();
+                })
+                .catch(function(error) {
+                    console.log(error);
+                    ElementPlus.ElMessage.error(error.response.data);
+                })
+        },
+        search(search_type) {
+            this.upload.clearFiles();
+            var that = this;
+            that.loading = true;
+            that.form.search_type = search_type;
+            if ((search_type === 0 || search_type === 2) && that.form.positive == "") {
+                ElementPlus.ElMessage.error(that.$t('messages.searchContentEmpty'));
+                that.loading = false;
+                return;
+            }
+            if (search_type === 5 && that.form.text == "") {
+                ElementPlus.ElMessage.error(that.$t('messages.textContentEmpty'));
+                that.loading = false;
+                return;
+            }
+            axios.post('/api/match', that.form)
+                .then(function(response) {
+                    console.log(response);
+                    that.loading = false;
+                    if (search_type === 0 || search_type === 1 || search_type === 5 || search_type === 7) {
+                        that.files = response["data"];
+                        that.image_url_list = [];
+                        that.files.forEach(function(element) {
+                            that.image_url_list.push(element.url);
+                        });
+                        ElementPlus.ElMessage.info(that.$t('messages.totalSearchResult') + that.files.length + that.$t('messages.photos'));
+                        return;
+                    }
+                    if (search_type === 2 || search_type === 3 || search_type === 6 || search_type === 8) {
+                        that.files = response["data"];
+                        ElementPlus.ElMessage.info(that.$t('messages.totalSearchResult') + that.files.length + that.$t('messages.videos'));
+                        return;
+                    }
+                    if (search_type === 9) {
+                        that.pexels_videos = response["data"];
+                        return;
+                    }
+                    if (search_type === 4) {
+                        ElementPlus.ElMessage.info(that.$t('messages.matchingSimilarityInfo') + response["data"]["score"] + "%");
+                        return;
+                    }
+                })
+                .catch(function(error) {
+                    console.log(error);
+                    that.loading = false;
+                    ElementPlus.ElMessage.error(error.response.data);
+                })
+        },
+        searchFromImage(search_type, img_url) {
+            console.log(this.currentTab);
+            if (search_type === 5) {
+                this.currentTab = "1";
+            } else if (search_type === 6) {
+                this.currentTab = "3";
+            }
+            this.form.search_type = search_type;
+            this.form.positive = '';
+            this.form.negative = '';
+            var id_str = img_url.match(/(\d+)$/);
+            if (id_str) {
+                var id_num = parseInt(id_str[1], 10);
+                this.form.img_id = id_num;
+                this.search(search_type);
+            } else {
+                ElementPlus.ElMessage.error(that.$t('messages.imgIdNotFound'));
+            }
+        }
+    },
     setup() {
         const upload = Vue.ref();
-        const methods = {
-            loadData: function() {
-                var that = this;
-                axios.get('api/status')
-                    .then(function(response) {
-                        console.log(response);
-                        that.status = response["data"];
-                        that.status.remain_time = formatTime(that.status.remain_time);
-                        that.isScanning = response["data"]["status"];
-                        that.enableLogin = response["data"]["enable_login"];
-                    })
-                    .catch(function(error) {
-                        console.log(error);
-                        that.$message.error(error);
-                    })
-            },
-            scan: function() {
-                var that = this;
-                axios.get('api/scan')
-                    .then(function(response) {
-                        console.log(response);
-                        that.loadData();
-                    })
-                    .catch(function(error) {
-                        console.log(error);
-                        that.$message.error(error.response.data);
-                    })
-            },
-            search: function(search_type) {
-                upload.value.clearFiles();
-                var that = this;
-                that.loading = true;
-                that.form.search_type = search_type;
-                if ((search_type === 0 || search_type === 2) && that.form.positive == "") {
-                    that.$message.error("搜索内容不能为空");
-                    that.loading = false;
-                    return;
-                }
-                if (search_type === 5 && that.form.text == "") {
-                    that.$message.error("文字内容不能为空");
-                    that.loading = false;
-                    return;
-                }
-                axios.post('/api/match', that.form)
-                    .then(function(response) {
-                        console.log(response);
-                        that.loading = false;
-                        if (search_type === 0 || search_type === 1 || search_type === 5 || search_type === 7) {
-                            that.files = response["data"];
-                            that.image_url_list = [];
-                            that.files.forEach(function(element) {
-                                that.image_url_list.push(element.url);
-                            });
-                            that.$message.info("共搜索出来" + that.files.length + "张图片");
-                            return;
-                        }
-                        if (search_type === 2 || search_type === 3 || search_type === 6 || search_type === 8) {
-                            that.files = response["data"];
-                            that.$message.info("共搜索出来" + that.files.length + "条视频");
-                            return;
-                        }
-                        if (search_type === 9) {
-                            that.pexels_videos = response["data"];
-                            return;
-                        }
-                        if (search_type === 4) {
-                            that.$message.info("相似度为" + response["data"]["score"] + "%");
-                            return;
-                        }
-                    })
-                    .catch(function(error) {
-                        console.log(error);
-                        that.loading = false;
-                        that.$message.error(error.response.data);
-                    })
-            },
-            searchFromImage: function(search_type, img_url) {
-                this.form.search_type = search_type;
-                this.form.positive = '';
-                this.form.negative = '';
-                var id_str = img_url.match(/(\d+)$/);
-                if (id_str) {
-                    var id_num = parseInt(id_str[1], 10);
-                    this.form.img_id = id_num;
-                    this.search(search_type);
-                } else {
-                    this.$message.error("无法从img_url取得图片id，这个情况不应该出现");
-                }
-            },
-            handleExceed: (files, fileList) => {
-                upload.value.clearFiles();
-                upload.value.handleStart(files[0]);
-                upload.value.submit();
-            },
-            handleSuccess: () => {
-                ElementPlus.ElMessage.success("上传成功");
-            },
-            cleanCache() {
-                var that = this;
-                axios.get('api/clean_cache')
-                    .then(function(response) {
-                        that.$message.info(response.data);
-                    })
-                    .catch(function(error) {
-                        console.log(error);
-                        that.$message.error(error.response.data);
-                    })
-            },
-            downloadVideoClip(url, start_time, end_time) {
-                var parts = url.split('/'); // 使用 '/' 进行拆分，返回一个数组
-                var lastPart = parts[parts.length - 1]; // 取数组中的最后一项
-                var hashPart = lastPart.split('#')[0]; // 使用 '#' 进行拆分，取第一项
-                window.open(`/api/download_video_clip/${hashPart}/${start_time}/${end_time}`, "_blank");
-            },
+        const { t } = VueI18n.useI18n({ useScope: "global" });
+        function handleExceed(files, fileList) {
+            upload.value.clearFiles();
+            upload.value.handleStart(files[0]);
+            upload.value.submit();
+        }
+        function handleSuccess() {
+            ElementPlus.ElMessage.success(t('messages.uploadSuccess'));
         }
         return {
-            // Return upload as a part of the setup return
             upload,
-            ...methods,
+            handleExceed,
+            handleSuccess,
         };
     }
 })
+
+// use ElementPlus and ElementPlusIconsVue
 app.use(ElementPlus)
 for (const [key, component] of Object.entries(ElementPlusIconsVue)) {
     app.component(key, component)
 }
-app.mount('#app')
+
+// use VueI18n
+const browserLanguage = navigator.language || navigator.userLanguage; // zh-CN en-US
+const languageTag = browserLanguage.split('-')[0]; // zh en
+const i18n = VueI18n.createI18n({
+    legacy: false, // you must set `false`, to use Composition API
+    locale: languageTag, // set locale
+    fallbackLocale: 'en', // set fallback locale
+    messages: {},
+})
+app.use(i18n)
+function loadLocaleMessages(locale) {
+    return axios.get(`static/locales/${locale}.json`).then(response => {
+        return response.data;
+    });
+}
+async function loadLocales() {
+    const locales = ['en', 'zh'];
+    await Promise.all(
+        locales.map(async (locale) => {
+            const messages = await loadLocaleMessages(locale);
+            i18n.global.setLocaleMessage(locale, messages);
+        })
+    );
+}
+loadLocales().then(() => {
+    app.mount('#app');
+});
+
 </script>
 <style scoped>
 .el-tag {
@@ -536,5 +580,6 @@ video {
     max-height: 240px;
     margin-bottom: 2px;
 }
+
 </style>
 </html>

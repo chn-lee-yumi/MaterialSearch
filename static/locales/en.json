@@ -1,0 +1,75 @@
+{
+  "title": "Local Material Search Engine",
+  "scanStatus": {
+    "scanning": "Scanning in Progress",
+    "scanComplete": "Scanning Complete"
+  },
+  "statusLabels": {
+    "totalImages": "Total Images",
+    "totalVideos": "Total Videos",
+    "totalVideoFrames": "Total Video Frames",
+    "totalPexelsVideos": "Total Pexels Videos",
+    "scanningFiles": "Scanning Files",
+    "remainFiles": "Remaining Files",
+    "remainTime": "Estimated Remaining Time",
+    "scanProgress": "Scanning Progress"
+  },
+  "buttons": {
+    "scan": "Scan",
+    "cleanCache": "Clean Cache",
+    "logout": "Logout"
+  },
+  "searchTabs": {
+    "textSearch": "Text Search",
+    "imageSearch": "Image Search",
+    "textVideoSearch": "Text Video Search",
+    "imageVideoSearch": "Image Video Search",
+    "pathImageSearch": "Path Image Search",
+    "pathVideoSearch": "Path Video Search",
+    "textImageSimilarity": "Text-Image Similarity Matching",
+    "pexelsVideos": "Pexels Videos"
+  },
+  "uploader": {
+    "drag": "Drag file to here, or ",
+    "click": "click here to upload"
+  },
+  "formPlaceholders": {
+    "positiveSearch": "Search Content (cannot be empty)",
+    "negativeSearch": "Filter Content (can be empty)",
+    "positiveThreshold": "Search Threshold (display when similarity is above)",
+    "negativeThreshold": "Filter Threshold (display when similarity is below)",
+    "topNResults": "Show Top N Results",
+    "imagePath": "Image Path (cannot be empty)",
+    "videoPath": "Video Path (cannot be empty)",
+    "textMatch": "Text Content (cannot be empty)"
+  },
+  "searchButtons": {
+    "search": "Search",
+    "calculateSimilarity": "Calculate Similarity"
+  },
+  "fileResults": {
+    "matchingProbability": "Matching Probability and Similarity",
+    "matchingTimeRange": "Matching Time Range (seconds)",
+    "downloadVideoClip": "Download Video Clip",
+    "imageSearch": "Search Images",
+    "imageVideoSearch": "Search Videos"
+  },
+  "pexelsResults": {
+    "thumbnailMatch": "Thumbnail Match",
+    "titleMatch": "Title Match",
+    "descriptionMatch": "Description Match",
+    "viewCount": "View Count",
+    "sourcePage": "Source Page"
+  },
+  "messages": {
+    "searchContentEmpty": "Search content cannot be empty",
+    "textContentEmpty": "Text content cannot be empty",
+    "clipboardCopySuccess": "Path copied to clipboard",
+    "totalSearchResult": "Total search results: ",
+    "photos": " photos",
+    "videos": " videos",
+    "matchingSimilarityInfo": "Similarity: ",
+    "uploadSuccess": "Upload successful",
+    "imgIdNotFound": "Unable to extract image ID from img_url. This should not happen. Please report to the developer."
+  }
+}

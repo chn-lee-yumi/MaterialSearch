@@ -1,0 +1,75 @@
+{
+  "title": "本地素材搜索引擎",
+  "scanStatus": {
+    "scanning": "扫描中",
+    "scanComplete": "扫描完成"
+  },
+  "statusLabels": {
+    "totalImages": "图片总数",
+    "totalVideos": "视频总数",
+    "totalVideoFrames": "视频帧总数",
+    "totalPexelsVideos": "pexels视频总数",
+    "scanningFiles": "本次扫描文件数",
+    "remainFiles": "待扫描文件数",
+    "remainTime": "预估剩余时间",
+    "scanProgress": "扫描进度"
+  },
+  "buttons": {
+    "scan": "扫描",
+    "cleanCache": "清除缓存",
+    "logout": "注销"
+  },
+  "searchTabs": {
+    "textSearch": "文字搜图",
+    "imageSearch": "以图搜图",
+    "textVideoSearch": "文字搜视频",
+    "imageVideoSearch": "以图搜视频",
+    "pathImageSearch": "路径搜图",
+    "pathVideoSearch": "路径搜视频",
+    "textImageSimilarity": "图文相似度匹配",
+    "pexelsVideos": "pexels视频"
+  },
+  "uploader": {
+    "drag": "将文件拖到此处，或",
+    "click": "点击上传"
+  },
+  "formPlaceholders": {
+    "positiveSearch": "搜索内容（不能为空）",
+    "negativeSearch": "过滤内容（可以留空）",
+    "positiveThreshold": "搜索阈值（高于该相似度才显示）",
+    "negativeThreshold": "过滤阈值（低于该相似度才显示）",
+    "topNResults": "查看前n个结果",
+    "imagePath": "图片路径（不能为空）",
+    "videoPath": "视频路径（不能为空）",
+    "textMatch": "文字内容（不能为空）"
+  },
+  "searchButtons": {
+    "search": "搜索",
+    "calculateSimilarity": "计算相似度"
+  },
+  "fileResults": {
+    "matchingProbability": "素材的匹配概率和相似度",
+    "matchingTimeRange": "匹配的时间段范围（秒）",
+    "downloadVideoClip": "下载视频片段",
+    "imageSearch": "以图搜图",
+    "imageVideoSearch": "以图搜视频"
+  },
+  "pexelsResults": {
+    "thumbnailMatch": "根据缩略图匹配",
+    "titleMatch": "根据标题匹配",
+    "descriptionMatch": "根据描述匹配",
+    "viewCount": "播放量",
+    "sourcePage": "来源页面"
+  },
+  "messages": {
+    "searchContentEmpty": "搜索内容不能为空",
+    "textContentEmpty": "文字内容不能为空",
+    "clipboardCopySuccess": "路径已复制到剪贴板",
+    "totalSearchResult": "共搜索出来",
+    "photos": "张图片",
+    "videos": "条视频",
+    "matchingSimilarityInfo": "相似度为",
+    "uploadSuccess": "上传成功",
+    "imgIdNotFound": "无法从img_url取得图片id，这个情况不应该出现，请报告给开发者"
+  }
+}
