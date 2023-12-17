@@ -11,4 +11,5 @@ RUN pip install --no-cache-dir -r requirements.txt
 RUN python -c 'from transformers import CLIPProcessor, CLIPModel, BertTokenizer, BertForSequenceClassification; CLIPModel.from_pretrained("openai/clip-vit-base-patch32"); CLIPProcessor.from_pretrained("openai/clip-vit-base-patch32"); BertTokenizer.from_pretrained("IDEA-CCNL/Taiyi-CLIP-Roberta-102M-Chinese"); BertForSequenceClassification.from_pretrained("IDEA-CCNL/Taiyi-CLIP-Roberta-102M-Chinese")'
 COPY *.py ./
 COPY static/ ./static/
+ENV TRANSFORMERS_OFFLINE=1
 ENTRYPOINT ["python", "main.py"]
