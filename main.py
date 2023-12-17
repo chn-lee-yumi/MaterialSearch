@@ -169,7 +169,7 @@ def api_match():
         sorted_list = search_video_by_image(upload_file_path, image_threshold)[:MAX_RESULT_NUM]
     elif search_type == 4:  # 图文相似度匹配
         score = match_text_and_image(process_text(data["text"]), process_image(upload_file_path)) * 100
-        return jsonify({"score": f"{score:.2f}"})
+        return jsonify({"score": "%.2f" % score})
     elif search_type == 5:  # 以图搜图(图片是数据库中的)
         sorted_list = search_image_by_image(img_id, image_threshold)[:MAX_RESULT_NUM]
     elif search_type == 6:  # 以图搜视频(图片是数据库中的)
