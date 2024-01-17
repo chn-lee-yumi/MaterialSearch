@@ -106,7 +106,9 @@ If you are using an AMD GPU, GPU acceleration is only supported on Linux. Please
 
 ## Search Speed
 
-On a J3455 CPU, approximately 17,000 image matches can be performed in 1 second (video matching may be slightly slower).
+On a J3455 CPU, when search threshold is 0, approximately 18,000 image matches or 5,200 video frame matches can be performed in 1 second.
+
+Increasing the search threshold can speed up searching speed. On a J3455 CPU, when search threshold is 10, approximately 30,000 image matches or 6,100 video frame matches can be performed in 1 second.
 
 ## Known Issues
 
