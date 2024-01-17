@@ -98,7 +98,7 @@ class Scanner:
         """
         if type(path) == str:
             path = Path(path)
-        wrong_ext = path.suffix not in self.extensions
+        wrong_ext = path.suffix.lower() not in self.extensions
         skip = any((path.is_relative_to(p) for p in self.skip_paths))
         ignore = any((keyword in str(path).lower() for keyword in self.ignore_keywords))
         self.logger.debug(f"{path} 不匹配后缀：{wrong_ext} 跳过：{skip} 忽略： {ignore}")
