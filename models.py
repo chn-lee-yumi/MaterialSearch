@@ -55,5 +55,3 @@ class PexelsVideo(BaseModel):
     thumbnail_loc = Column(String(256), index=True)  # 视频缩略图链接
     content_loc = Column(String(256))  # 视频链接
     thumbnail_feature = Column(BINARY)  # 视频缩略图特征
-    title_feature = Column(BINARY)  # 标题特征
-    description_feature = Column(BINARY)  # 视频描述特征

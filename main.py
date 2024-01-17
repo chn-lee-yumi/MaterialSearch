@@ -181,10 +181,11 @@ def api_match():
         results = search_video_file(path=path)[:top_n]
         return jsonify(results)
     elif search_type == 9:  # 文字搜pexels视频
-        results = search_pexels_video_by_text(data["positive"], positive_threshold)
+        sorted_list = search_pexels_video_by_text(data["positive"], positive_threshold)
     else:  # 空
         logger.warning(f"search_type不正确：{search_type}")
         abort(400)
+    # 匹配后进行softmax计算
     if search_type in (0, 1, 5):
         sorted_list = sorted_list[:top_n]
         scores = [item["score"] for item in sorted_list]
@@ -201,14 +202,11 @@ def api_match():
             "start_time": item["start_time"], "end_time": item["end_time"]
         } for item, score in zip(sorted_list, softmax_scores)]
     else:  # search_type == 9
-        new_results = {}
-        for key in results:
-            new_results[key] = results[key][:top_n]
-            scores = [item["score"] for item in new_results[key]]
-            softmax_scores = softmax(scores)
-            for i in range(len(softmax_scores)):
-                new_results[key][i]["softmax_score"] = softmax_scores[i]
-        return new_results
+        new_sorted_list = sorted_list[:top_n]
+        scores = [item["score"] for item in new_sorted_list]
+        softmax_scores = softmax(scores)
+        for i in range(len(softmax_scores)):
+            new_sorted_list[i]["softmax_score"] = softmax_scores[i]
     return jsonify(new_sorted_list)
 
 

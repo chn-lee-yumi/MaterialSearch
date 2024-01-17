@@ -14,7 +14,6 @@ from database import (
     search_image_by_path,
     search_video_by_path,
     get_pexels_video_features,
-    get_pexels_video_by_id,
 )
 from models import DatabaseSession
 from process_assets import match_batch, process_image, process_text
@@ -65,12 +64,10 @@ def search_image_by_feature(
         negative_threshold,
     )
     data_list = []
-    scores_list = []
     for id, path, score in zip(ids, paths, scores):
         if not score:
             continue
         data_list.append((id, path, score))
-        scores_list.append(score)
     return_list = [
         {
             "url": "api/get_image/%d" % id,
@@ -181,7 +178,6 @@ def search_video_by_feature(
     :return: list[dict], 搜索结果列表
     """
     t0 = time.time()
-    scores_list = []
     data_list = []
     with DatabaseSession() as session:
         for path in get_video_paths(session):  # 逐个视频比对
@@ -203,7 +199,6 @@ def search_video_by_feature(
                     start_index, end_index, scores, frame_times
                 )
                 data_list.append((path, score, start_time, end_time))
-                scores_list.append(score)
     return_list = [
         {
             "url": "api/get_video/%s" % base64.urlsafe_b64encode(path.encode()).decode()
@@ -313,28 +308,20 @@ def search_pexels_video_by_feature(positive_feature, positive_threshold=POSITIVE
     """
     t0 = time.time()
     with DatabaseSession() as session:
-        id_list, thumbnail_feature_list, title_feature_list, description_feature_list = get_pexels_video_features(session)
+        id_list, thumbnail_feature_list, thumbnail_loc_list, content_loc_list, title_list, description_list, duration_list, view_count_list = get_pexels_video_features(
+            session)
     if len(id_list) == 0:  # 没有素材，直接返回空
         return []
     thumbnail_features = np.frombuffer(b"".join(thumbnail_feature_list), dtype=np.float32).reshape(len(thumbnail_feature_list), -1)
-    title_features = np.frombuffer(b"".join(title_feature_list), dtype=np.float32).reshape(len(title_feature_list), -1)
-    description_features = np.frombuffer(b"".join(description_feature_list), dtype=np.float32).reshape(len(description_feature_list), -1)
     thumbnail_scores = match_batch(positive_feature, None, thumbnail_features, positive_threshold, None)
-    title_scores = match_batch(positive_feature, None, title_features, positive_threshold, None)
-    description_scores = match_batch(positive_feature, None, description_features, positive_threshold, None)
 
-    return_dict = {"thumbnail": [], "title": [], "description": []}
-
-    data_list = []
-    scores_list = []
-    for id, path, score in zip(id_list, thumbnail_feature_list, thumbnail_scores):
+    return_list = []
+    for id, score, thumbnail_loc, content_loc, title, description, duration, view_count in zip(id_list, thumbnail_scores, thumbnail_loc_list,
+                                                                                               content_loc_list, title_list, description_list,
+                                                                                               duration_list, view_count_list):
         if not score:
             continue
-        video = get_pexels_video_by_id(session, id)
-        data_list.append((path, score, video.title, video.description, video.duration, video.view_count, video.thumbnail_loc, video.content_loc))
-        scores_list.append(score)
-    return_list = [
-        {
+        return_list.append({
             "thumbnail_loc": thumbnail_loc,
             "content_loc": content_loc,
             "title": title,
@@ -342,60 +329,11 @@ def search_pexels_video_by_feature(positive_feature, positive_threshold=POSITIVE
             "duration": duration,
             "view_count": view_count,
             "score": float(score.max()),  # 使用 max 可以避免强转导致的 Warning
-        }
-        for path, score, title, description, duration, view_count, thumbnail_loc, content_loc in data_list
-    ]
+        })
     return_list = sorted(return_list, key=lambda x: x["score"], reverse=True)
-    return_dict["thumbnail"] = return_list
-
-    data_list = []
-    scores_list = []
-    for id, path, score in zip(id_list, title_feature_list, title_scores):
-        if not score:
-            continue
-        video = get_pexels_video_by_id(session, id)
-        data_list.append((path, score, video.title, video.description, video.duration, video.view_count, video.thumbnail_loc, video.content_loc))
-        scores_list.append(score)
-    return_list = [
-        {
-            "thumbnail_loc": thumbnail_loc,
-            "content_loc": content_loc,
-            "title": title,
-            "description": description,
-            "duration": duration,
-            "view_count": view_count,
-            "score": float(score.max()),  # 使用 max 可以避免强转导致的 Warning
-        }
-        for path, score, title, description, duration, view_count, thumbnail_loc, content_loc in data_list
-    ]
-    return_list = sorted(return_list, key=lambda x: x["score"], reverse=True)
-    return_dict["title"] = return_list
-
-    data_list = []
-    scores_list = []
-    for id, path, score in zip(id_list, description_feature_list, description_scores):
-        if not score:
-            continue
-        video = get_pexels_video_by_id(session, id)
-        data_list.append((path, score, video.title, video.description, video.duration, video.view_count, video.thumbnail_loc, video.content_loc))
-        scores_list.append(score)
-    return_list = [
-        {
-            "thumbnail_loc": thumbnail_loc,
-            "content_loc": content_loc,
-            "title": title,
-            "description": description,
-            "duration": duration,
-            "view_count": view_count,
-            "score": float(score.max()),  # 使用 max 可以避免强转导致的 Warning
-        }
-        for path, score, title, description, duration, view_count, thumbnail_loc, content_loc in data_list
-    ]
-    return_list = sorted(return_list, key=lambda x: x["score"], reverse=True)
-    return_dict["description"] = return_list
 
     logger.info("查询使用时间：%.2f" % (time.time() - t0))
-    return return_dict
+    return return_list
 
 
 @lru_cache(maxsize=CACHE_SIZE)

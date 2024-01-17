@@ -55,9 +55,6 @@
     "imageVideoSearch": "以图搜视频"
   },
   "pexelsResults": {
-    "thumbnailMatch": "根据缩略图匹配",
-    "titleMatch": "根据标题匹配",
-    "descriptionMatch": "根据描述匹配",
     "viewCount": "播放量",
     "sourcePage": "来源页面"
   },

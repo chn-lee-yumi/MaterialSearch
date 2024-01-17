@@ -55,9 +55,6 @@
     "imageVideoSearch": "Search Videos"
   },
   "pexelsResults": {
-    "thumbnailMatch": "Thumbnail Match",
-    "titleMatch": "Title Match",
-    "descriptionMatch": "Description Match",
     "viewCount": "View Count",
     "sourcePage": "Source Page"
   },

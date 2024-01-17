@@ -243,49 +243,8 @@
     </el-row>
 
     <el-row :gutter="5" v-if="form.search_type === 9">
-        <el-row><h3>{{ $t('pexelsResults.thumbnailMatch') }}</h3></el-row>
         <el-row :gutter="5">
-            <el-col :span="8" v-for="video in pexels_videos.thumbnail">
-                <el-card style="margin-top: 5px;">
-                    <el-row style="text-align: center"><strong>{{video.title}}</strong></el-row>
-                    <video :src="video.content_loc" :poster="video.thumbnail_loc" controls></video>
-                    <el-row>
-                        <el-tooltip :content="$t('fileResults.matchingProbability')" placement="bottom" v-if="video.softmax_score">
-                            <el-tag size="small" effect="dark">{{(video.softmax_score * 100).toFixed(1)}}% | {{(video.score * 100).toFixed(1)}}%
-                            </el-tag>
-                        </el-tooltip>
-                        <el-tag size="small" type="success" effect="dark">{{ $t('pexelsResults.viewCount') }}: {{video.view_count}}</el-tag>
-                        <el-link :href="'https://www.pexels.com/video/' + video.thumbnail_loc.split('/')[4]" type="info" target="_blank">
-                            {{ $t('pexelsResults.sourcePage') }}
-                        </el-link>
-                    </el-row>
-                    <el-row>{{video.description}}</el-row>
-                </el-card>
-            </el-col>
-        </el-row>
-        <el-row><h3>{{ $t('pexelsResults.titleMatch') }}</h3></el-row>
-        <el-row :gutter="5">
-            <el-col :span="8" v-for="video in pexels_videos.title">
-                <el-card style="margin-top: 5px;">
-                    <el-row style="text-align: center"><strong>{{video.title}}</strong></el-row>
-                    <video :src="video.content_loc" :poster="video.thumbnail_loc" controls></video>
-                    <el-row>
-                        <el-tooltip :content="$t('fileResults.matchingProbability')" placement="bottom" v-if="video.softmax_score">
-                            <el-tag size="small" effect="dark">{{(video.softmax_score * 100).toFixed(1)}}% | {{(video.score * 100).toFixed(1)}}%
-                            </el-tag>
-                        </el-tooltip>
-                        <el-tag size="small" type="success" effect="dark">{{ $t('pexelsResults.viewCount') }}: {{video.view_count}}</el-tag>
-                        <el-link :href="'https://www.pexels.com/video/' + video.thumbnail_loc.split('/')[4]" type="info" target="_blank">
-                            {{ $t('pexelsResults.sourcePage') }}
-                        </el-link>
-                    </el-row>
-                    <el-row>{{video.description}}</el-row>
-                </el-card>
-            </el-col>
-        </el-row>
-        <el-row><h3>{{ $t('pexelsResults.descriptionMatch') }}</h3></el-row>
-        <el-row :gutter="5">
-            <el-col :span="8" v-for="video in pexels_videos.description">
+            <el-col :span="8" v-for="video in pexels_videos">
                 <el-card style="margin-top: 5px;">
                     <el-row style="text-align: center"><strong>{{video.title}}</strong></el-row>
                     <video :src="video.content_loc" :poster="video.thumbnail_loc" controls></video>
@@ -351,7 +310,7 @@ const app = Vue.createApp({
             },
             files: [],
             image_url_list: [],
-            pexels_videos: null,
+            pexels_videos: [],
             timer: null,
         }
     },

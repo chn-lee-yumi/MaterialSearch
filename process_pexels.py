@@ -3,7 +3,7 @@ import xml.etree.ElementTree as ET
 
 from database import add_pexels_video, is_pexels_video_exist
 from models import DatabaseSession, create_tables
-from process_assets import process_text, process_web_image
+from process_assets import process_web_image
 
 video_sitemap_xml = "video-sitemap10.xml"
 
@@ -61,8 +61,6 @@ def handel_xml():
                 thumbnail_loc=thumbnail_loc,
                 title=title,
                 description=description,
-                title_feature=process_text(title).tobytes(),
-                description_feature=process_text(description).tobytes(),
                 thumbnail_feature=thumbnail_feature.tobytes(),
             )
 

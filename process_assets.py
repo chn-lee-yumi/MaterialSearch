@@ -149,14 +149,10 @@ def process_text(input_text):
     if not input_text:
         return None
     if MODEL_LANGUAGE == "Chinese":
-        text = text_tokenizer(input_text, return_tensors="pt", padding=True)[
-            "input_ids"
-        ].to(torch.device(DEVICE_TEXT))
+        text = text_tokenizer(input_text, return_tensors="pt", padding=True)["input_ids"].to(torch.device(DEVICE_TEXT))
         text_features = text_encoder(text).logits.detach().cpu().numpy()
     else:
-        text = processor(text=input_text, return_tensors="pt", padding=True)[
-            "input_ids"
-        ].to(torch.device(DEVICE))
+        text = processor(text=input_text, return_tensors="pt", padding=True)["input_ids"].to(torch.device(DEVICE))
         text_features = model.get_text_features(text).detach().cpu().numpy()
     return text_features
 

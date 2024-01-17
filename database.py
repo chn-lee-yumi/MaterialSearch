@@ -147,11 +147,11 @@ def add_video(session: Session, path: str, modify_time, frame_time_features_gene
 
 
 def add_pexels_video(session: Session, content_loc: str, duration: int, view_count: int, thumbnail_loc: str, title: str, description: str,
-                     thumbnail_feature: bytes, title_feature: bytes, description_feature: bytes):
+                     thumbnail_feature: bytes):
     """添加pexels视频到数据库"""
     pexels_video = PexelsVideo(
         content_loc=content_loc, duration=duration, view_count=view_count, thumbnail_loc=thumbnail_loc, title=title, description=description,
-        thumbnail_feature=thumbnail_feature, title_feature=title_feature, description_feature=description_feature
+        thumbnail_feature=thumbnail_feature
     )
     session.add(pexels_video)
     session.commit()
@@ -233,12 +233,18 @@ def search_video_by_path(session: Session, path: str):
 
 def get_pexels_video_features(session: Session):
     """返回所有pexels视频"""
-    query = session.query(PexelsVideo.id, PexelsVideo.thumbnail_feature, PexelsVideo.title_feature, PexelsVideo.description_feature).all()
+    query = session.query(
+        PexelsVideo.id, PexelsVideo.thumbnail_feature,
+        PexelsVideo.thumbnail_loc, PexelsVideo.content_loc,
+        PexelsVideo.title, PexelsVideo.description,
+        PexelsVideo.duration, PexelsVideo.view_count
+    ).all()
     try:
-        id_list, thumbnail_feature_list, title_feature_list, description_feature_list = zip(*query)
-        return id_list, thumbnail_feature_list, title_feature_list, description_feature_list
+        id_list, thumbnail_feature_list, thumbnail_loc_list, content_loc_list, title_list, description_list, duration_list, view_count_list = zip(
+            *query)
+        return id_list, thumbnail_feature_list, thumbnail_loc_list, content_loc_list, title_list, description_list, duration_list, view_count_list
     except ValueError:  # 解包失败
-        return [], [], [], []
+        return [], [], [], [], [], [], [], []
 
 
 def get_pexels_video_by_id(session: Session, uuid: str):
