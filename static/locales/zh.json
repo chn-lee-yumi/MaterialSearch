@@ -67,6 +67,7 @@
     "videos": "条视频",
     "matchingSimilarityInfo": "相似度为",
     "uploadSuccess": "上传成功",
-    "imgIdNotFound": "无法从img_url取得图片id，这个情况不应该出现，请报告给开发者"
+    "imgIdNotFound": "无法从img_url取得图片id，这个情况不应该出现，请报告给开发者",
+    "searching": "搜索中……"
   }
 }

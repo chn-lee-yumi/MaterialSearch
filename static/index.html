@@ -19,7 +19,7 @@
     <script src="static/assets/axios.min.js"></script>
 </head>
 <body>
-<el-main id="app" v-loading="loading">
+<el-main id="app">
     <el-row>
         <h1 style="margin:0;">{{ $t("title") }}</h1>
         <!-- TODO: 可以手动切换语言
@@ -45,7 +45,7 @@
             {{ $t("statusLabels.scanProgress") }}: {{ Math.trunc(status.progress * 100) }}%
         </el-tag>
         <el-button-group v-if="!isScanning">
-            <el-button round :loading="isScanning" type="primary" size="default" @click="scan">{{ $t("buttons.scan") }}</el-button>
+            <el-button round type="primary" size="default" @click="scan">{{ $t("buttons.scan") }}</el-button>
         </el-button-group>
         <!--<el-button-group>-->
         <!--    <el-button round type="warning" size="small" @click="cleanCache">{{ $t("buttons.cleanCache") }}</el-button>-->
@@ -288,7 +288,6 @@ const app = Vue.createApp({
     data() {
         return {
             currentTab: "0",
-            loading: false,
             isScanning: false,
             status: {
                 total_images: 0,
@@ -377,22 +376,22 @@ const app = Vue.createApp({
         search(search_type) {
             this.upload.clearFiles();
             var that = this;
-            that.loading = true;
+            const loadingInstance = ElementPlus.ElLoading.service({ fullscreen: true, text: that.$t('messages.searching') });
             that.form.search_type = search_type;
             if ((search_type === 0 || search_type === 2) && that.form.positive == "") {
                 ElementPlus.ElMessage.error(that.$t('messages.searchContentEmpty'));
-                that.loading = false;
+                loadingInstance.close();
                 return;
             }
             if (search_type === 5 && that.form.text == "") {
                 ElementPlus.ElMessage.error(that.$t('messages.textContentEmpty'));
-                that.loading = false;
+                loadingInstance.close();
                 return;
             }
             axios.post('/api/match', that.form)
                 .then(function(response) {
                     console.log(response);
-                    that.loading = false;
+                    loadingInstance.close();
                     if (search_type === 0 || search_type === 1 || search_type === 5 || search_type === 7) {
                         that.files = response["data"];
                         that.image_url_list = [];
@@ -418,7 +417,7 @@ const app = Vue.createApp({
                 })
                 .catch(function(error) {
                     console.log(error);
-                    that.loading = false;
+                    loadingInstance.close();
                     ElementPlus.ElMessage.error(error.response.data);
                 })
         },
