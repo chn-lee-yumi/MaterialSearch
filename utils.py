@@ -4,11 +4,14 @@ import platform
 import subprocess
 
 import numpy as np
+from PIL import Image
+from pillow_heif import register_heif_opener
 
 from config import LOG_LEVEL
 
 logging.basicConfig(level=LOG_LEVEL, format='%(asctime)s %(name)s %(levelname)s %(message)s')
 logger = logging.getLogger(__name__)
+register_heif_opener()
 
 
 def get_hash(bytesio):
@@ -89,3 +92,26 @@ def crop_video(input_file, output_file, start_time, end_time):
         output_file
     ]
     subprocess.run(command)
+
+
+def resize_image_with_aspect_ratio(image_path, target_size, convert_rgb=False):
+    image = Image.open(image_path)
+    if convert_rgb and image.mode in ("RGBA", "P"):
+        image = image.convert('RGB')
+    # 计算调整后图像的目标大小及长宽比
+    width, height = image.size
+    aspect_ratio = width / height
+    target_width, target_height = target_size
+    target_aspect_ratio = target_width / target_height
+    # 计算调整后图像的实际大小
+    if target_aspect_ratio < aspect_ratio:
+        # 以目标宽度为准进行调整
+        new_width = target_width
+        new_height = int(target_width / aspect_ratio)
+    else:
+        # 以目标高度为准进行调整
+        new_width = int(target_height * aspect_ratio)
+        new_height = target_height
+    # 调整图像的大小
+    resized_image = image.resize((new_width, new_height))
+    return resized_image

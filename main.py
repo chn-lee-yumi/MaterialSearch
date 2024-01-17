@@ -3,6 +3,7 @@ import logging
 import shutil
 import threading
 from functools import wraps
+from io import BytesIO
 
 from flask import Flask, abort, jsonify, redirect, request, send_file, session, url_for
 
@@ -21,7 +22,7 @@ from search import (
     search_video_file,
     search_pexels_video_by_text,
 )
-from utils import crop_video, get_hash, softmax
+from utils import crop_video, get_hash, softmax, resize_image_with_aspect_ratio
 
 logging.basicConfig(
     level=LOG_LEVEL, format="%(asctime)s %(name)s %(levelname)s %(message)s"
@@ -221,6 +222,13 @@ def api_get_image(image_id):
     with DatabaseSession() as session:
         path = get_image_path_by_id(session, image_id)
         logger.debug(path)
+    # 静态图片压缩返回
+    if request.args.get("thumbnail") and os.path.splitext(path)[-1] != "gif":
+        image = resize_image_with_aspect_ratio(path, (640, 480), convert_rgb=True)
+        image_io = BytesIO()
+        image.save(image_io, 'JPEG', quality=60)
+        image_io.seek(0)
+        return send_file(image_io, mimetype='image/jpeg')
     return send_file(path)
 
 

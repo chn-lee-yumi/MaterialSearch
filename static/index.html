@@ -210,7 +210,7 @@
             <el-card style="margin-top: 5px;">
                 <el-row>
                     <el-image v-if="form.search_type === 0 || form.search_type === 1 || form.search_type === 5 || form.search_type === 7"
-                              fit="contain" :src="file.url" :preview-src-list="image_url_list" :initial-index="index"
+                              fit="contain" :src="file.url + '?thumbnail=1'" :preview-src-list="image_url_list" :initial-index="index"
                               :hide-on-click-modal="true"></el-image>
                     <video v-if="form.search_type === 2 || form.search_type === 3 || form.search_type === 6 || form.search_type === 8"
                            :src="file.url" controls></video>
