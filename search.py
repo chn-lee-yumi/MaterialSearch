@@ -53,29 +53,17 @@ def search_image_by_feature(
         ids, paths, features = get_image_id_path_features(session)
     if len(ids) == 0:  # 没有素材，直接返回空
         return []
-    features = np.frombuffer(b"".join(features), dtype=np.float32).reshape(
-        len(features), -1
-    )
-    scores = match_batch(
-        positive_feature,
-        negative_feature,
-        features,
-        positive_threshold,
-        negative_threshold,
-    )
-    data_list = []
+    features = np.frombuffer(b"".join(features), dtype=np.float32).reshape(len(features), -1)
+    scores = match_batch(positive_feature, negative_feature, features, positive_threshold, negative_threshold)
+    return_list = []
     for id, path, score in zip(ids, paths, scores):
         if not score:
             continue
-        data_list.append((id, path, score))
-    return_list = [
-        {
+        return_list.append({
             "url": "api/get_image/%d" % id,
             "path": path,
             "score": float(score.max()),  # 使用 max 可以避免强转导致的 Warning
-        }
-        for id, path, score in data_list
-    ]
+        })
     return_list = sorted(return_list, key=lambda x: x["score"], reverse=True)
     logger.info("查询使用时间：%.2f" % (time.time() - t0))
     return return_list
@@ -98,9 +86,7 @@ def search_image_by_text(
     """
     positive_feature = process_text(positive_prompt)
     negative_feature = process_text(negative_prompt)
-    return search_image_by_feature(
-        positive_feature, negative_feature, positive_threshold, negative_threshold
-    )
+    return search_image_by_feature(positive_feature, negative_feature, positive_threshold, negative_threshold)
 
 
 @lru_cache(maxsize=CACHE_SIZE)
@@ -178,38 +164,24 @@ def search_video_by_feature(
     :return: list[dict], 搜索结果列表
     """
     t0 = time.time()
-    data_list = []
+    return_list = []
     with DatabaseSession() as session:
         for path in get_video_paths(session):  # 逐个视频比对
             frame_times, features = get_frame_times_features_by_path(session, path)
-            features = np.frombuffer(b"".join(features), dtype=np.float32).reshape(
-                len(features), -1
-            )
-            scores = match_batch(
-                positive_feature,
-                negative_feature,
-                features,
-                positive_threshold,
-                negative_threshold,
-            )
+            features = np.frombuffer(b"".join(features), dtype=np.float32).reshape(len(features), -1)
+            scores = match_batch(positive_feature, negative_feature, features, positive_threshold, negative_threshold)
             index_pairs = get_index_pairs(scores)
             for start_index, end_index in index_pairs:
                 score = max(scores[start_index: end_index + 1])
-                start_time, end_time = get_video_range(
-                    start_index, end_index, scores, frame_times
-                )
-                data_list.append((path, score, start_time, end_time))
-    return_list = [
-        {
-            "url": "api/get_video/%s" % base64.urlsafe_b64encode(path.encode()).decode()
-                   + "#t=%.1f,%.1f" % (start_time, end_time),
-            "path": path,
-            "score": float(score.max()),  # 使用 max 可以避免强转导致的 Warning
-            "start_time": start_time,
-            "end_time": end_time,
-        }
-        for path, score, start_time, end_time in data_list
-    ]
+                start_time, end_time = get_video_range(start_index, end_index, scores, frame_times)
+                return_list.append({
+                    "url": "api/get_video/%s" % base64.urlsafe_b64encode(path.encode()).decode()
+                           + "#t=%.1f,%.1f" % (start_time, end_time),
+                    "path": path,
+                    "score": float(score.max()),  # 使用 max 可以避免强转导致的 Warning
+                    "start_time": start_time,
+                    "end_time": end_time,
+                })
     logger.info("查询使用时间：%.2f" % (time.time() - t0))
     return_list = sorted(return_list, key=lambda x: x["score"], reverse=True)
     return return_list
@@ -232,9 +204,7 @@ def search_video_by_text(
     """
     positive_feature = process_text(positive_prompt)
     negative_feature = process_text(negative_prompt)
-    return search_video_by_feature(
-        positive_feature, negative_feature, positive_threshold, negative_threshold
-    )
+    return search_video_by_feature(positive_feature, negative_feature, positive_threshold, negative_threshold)
 
 
 @lru_cache(maxsize=CACHE_SIZE)
@@ -301,24 +271,24 @@ def search_video_file(path: str):
 
 def search_pexels_video_by_feature(positive_feature, positive_threshold=POSITIVE_THRESHOLD):
     """
-    通过特征搜索pexels视频 TODO：代码优化
+    通过特征搜索pexels视频
     :param positive_feature: np.array, 正向特征向量
     :param positive_threshold: int/float, 正向阈值
-    :return: {"thumbnail": [dict], "title": [dict], "description": [dict]}, 搜索结果字典
+    :return: list, 搜索结果列表
     """
     t0 = time.time()
     with DatabaseSession() as session:
-        id_list, thumbnail_feature_list, thumbnail_loc_list, content_loc_list, title_list, description_list, duration_list, view_count_list = get_pexels_video_features(
-            session)
-    if len(id_list) == 0:  # 没有素材，直接返回空
+        thumbnail_feature_list, thumbnail_loc_list, content_loc_list, \
+            title_list, description_list, duration_list, view_count_list = get_pexels_video_features(session)
+    if len(thumbnail_feature_list) == 0:  # 没有素材，直接返回空
         return []
     thumbnail_features = np.frombuffer(b"".join(thumbnail_feature_list), dtype=np.float32).reshape(len(thumbnail_feature_list), -1)
     thumbnail_scores = match_batch(positive_feature, None, thumbnail_features, positive_threshold, None)
-
     return_list = []
-    for id, score, thumbnail_loc, content_loc, title, description, duration, view_count in zip(id_list, thumbnail_scores, thumbnail_loc_list,
-                                                                                               content_loc_list, title_list, description_list,
-                                                                                               duration_list, view_count_list):
+    for score, thumbnail_loc, content_loc, title, description, duration, view_count in zip(
+            thumbnail_scores, thumbnail_loc_list, content_loc_list,
+            title_list, description_list, duration_list, view_count_list
+    ):
         if not score:
             continue
         return_list.append({
@@ -331,7 +301,6 @@ def search_pexels_video_by_feature(positive_feature, positive_threshold=POSITIVE
             "score": float(score.max()),  # 使用 max 可以避免强转导致的 Warning
         })
     return_list = sorted(return_list, key=lambda x: x["score"], reverse=True)
-
     logger.info("查询使用时间：%.2f" % (time.time() - t0))
     return return_list
 

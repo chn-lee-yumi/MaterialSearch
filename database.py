@@ -234,17 +234,14 @@ def search_video_by_path(session: Session, path: str):
 def get_pexels_video_features(session: Session):
     """返回所有pexels视频"""
     query = session.query(
-        PexelsVideo.id, PexelsVideo.thumbnail_feature,
-        PexelsVideo.thumbnail_loc, PexelsVideo.content_loc,
-        PexelsVideo.title, PexelsVideo.description,
-        PexelsVideo.duration, PexelsVideo.view_count
+        PexelsVideo.thumbnail_feature, PexelsVideo.thumbnail_loc, PexelsVideo.content_loc,
+        PexelsVideo.title, PexelsVideo.description, PexelsVideo.duration, PexelsVideo.view_count
     ).all()
     try:
-        id_list, thumbnail_feature_list, thumbnail_loc_list, content_loc_list, title_list, description_list, duration_list, view_count_list = zip(
-            *query)
-        return id_list, thumbnail_feature_list, thumbnail_loc_list, content_loc_list, title_list, description_list, duration_list, view_count_list
+        thumbnail_feature_list, thumbnail_loc_list, content_loc_list, title_list, description_list, duration_list, view_count_list = zip(*query)
+        return thumbnail_feature_list, thumbnail_loc_list, content_loc_list, title_list, description_list, duration_list, view_count_list
     except ValueError:  # 解包失败
-        return [], [], [], [], [], [], [], []
+        return [], [], [], [], [], [], []
 
 
 def get_pexels_video_by_id(session: Session, uuid: str):
