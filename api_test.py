@@ -88,7 +88,6 @@ def test_api_match():
     # 文字搜图
     response = requests.post('http://127.0.0.1:8085/api/match', json=payload)
     data = response.json()
-    # [{"path":"/home/runner/work/MaterialSearch/MaterialSearch/test.png","score":"11.53","softmax_score":"100.00%","url":"api/get_image/9"}]
     assert len(data) == 1
     assert data[0]["path"] == "/home/runner/work/MaterialSearch/MaterialSearch/test.png"
     assert data[0]["softmax_score"] == 1.0
@@ -109,7 +108,6 @@ def test_api_match():
     image_url = data[0]["url"]
     response = requests.get('http://127.0.0.1:8085/' + image_url)
     assert response.status_code == 200
-    hash_origin = ""
     with open(upload_file, "rb") as f:
         hash_origin = get_hash(f)
     hash_download = get_hash(response.content)

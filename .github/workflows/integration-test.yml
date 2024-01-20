@@ -20,7 +20,7 @@ jobs:
       run: pip install -r requirements.txt && pip install pytest
 
     - name: Run main.py
-      run: nohup python main.py &
+      run: ASSETS_PATH=./ nohup python main.py &
 
     - name: Test API
       run: pytest
