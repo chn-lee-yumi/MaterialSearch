@@ -17,7 +17,7 @@ IMAGE_EXTENSIONS = tuple(os.getenv('IMAGE_EXTENSIONS', '.jpg,.jpeg,.png,.gif,.he
 VIDEO_EXTENSIONS = tuple(os.getenv('VIDEO_EXTENSIONS', '.mp4,.flv,.mov,.mkv,.webm,.avi').split(','))  # 支持的视频拓展名，逗号分隔，请填小写
 IGNORE_STRINGS = tuple(os.getenv('IGNORE_STRINGS', 'thumb,avatar,__MACOSX,icons,cache').lower().split(','))  # 如果路径或文件名包含这些字符串，就跳过，逗号分隔，不区分大小写
 FRAME_INTERVAL = int(os.getenv('FRAME_INTERVAL', 2))  # 视频每隔多少秒取一帧，视频展示的时候，间隔小于等于2倍FRAME_INTERVAL的算为同一个素材，同时开始时间和结束时间各延长0.5个FRAME_INTERVAL
-SCAN_PROCESS_BATCH_SIZE = int(os.getenv('SCAN_PROCESS_BATCH_SIZE', 8))  # 等读取的帧数到这个数量后再一次性输入到模型中进行批量计算，从而提高效率。如果显存较大可以增加这个值
+SCAN_PROCESS_BATCH_SIZE = int(os.getenv('SCAN_PROCESS_BATCH_SIZE', 8))  # 等读取的帧数到这个数量后再一次性输入到模型中进行批量计算，从而提高效率。显存较大可以调高这个值。
 IMAGE_MIN_WIDTH = int(os.getenv('IMAGE_MIN_WIDTH', 64))  # 图片最小宽度，小于此宽度则忽略。不需要可以改成0。
 IMAGE_MIN_HEIGHT = int(os.getenv('IMAGE_MIN_HEIGHT', 64))  # 图片最小高度，小于此高度则忽略。不需要可以改成0。
 AUTO_SCAN = os.getenv('AUTO_SCAN', 'False').lower() == 'true'  # 是否自动扫描，如果开启，则会在指定时间内进行扫描
@@ -26,16 +26,19 @@ AUTO_SCAN_END_TIME = tuple(map(int, os.getenv('AUTO_SCAN_END_TIME', '8:00').spli
 AUTO_SAVE_INTERVAL = int(os.getenv('AUTO_SAVE_INTERVAL', 100))  # 扫描自动保存间隔，默认为每 100 个文件自动保存一次
 
 # *****模型配置*****
-# 目前支持中文或英文搜索，只能二选一。英文搜索速度会更快。中文搜索需要额外下载模型，而且搜索英文或NSFW内容的效果不好。
-# 更换模型需要删库重新扫描，否则搜索会报错。数据库名字为assets.db。切换语言或设备不需要删库，重启程序即可。
-# TEXT_MODEL_NAME 仅在中文搜索时需要，模型需要和 MODEL_NAME 配套。
-# 显存小于4G使用： "openai/clip-vit-base-patch32" 和 "IDEA-CCNL/Taiyi-CLIP-Roberta-102M-Chinese"
-# 显存大于等于4G使用："openai/clip-vit-large-patch14" 和 "IDEA-CCNL/Taiyi-CLIP-Roberta-large-326M-Chinese"
-MODEL_LANGUAGE = os.getenv('MODEL_LANGUAGE', 'Chinese')  # 模型搜索时用的语言，可选：Chinese/English
-MODEL_NAME = os.getenv('MODEL_NAME', 'openai/clip-vit-base-patch32')  # CLIP模型
-TEXT_MODEL_NAME = os.getenv('TEXT_MODEL_NAME', 'IDEA-CCNL/Taiyi-CLIP-Roberta-102M-Chinese')  # 中文模型，需要和CLIP模型配套使用，如果MODEL_LANGUAGE为English则忽略此项
+# 更换模型需要删库重新扫描！否则搜索会报错。数据库路径见下面SQLALCHEMY_DATABASE_URL参数。模型越大，扫描速度越慢，且占用的内存和显存越大。
+# 如果显存较小且用了较大的模型，并在扫描的时候出现了"CUDA out of memory"，请换成较小的模型。如果显存充足，可以调大上面的SCAN_PROCESS_BATCH_SIZE来提高扫描速度。
+# 4G显存推荐参数：小模型，SCAN_PROCESS_BATCH_SIZE=8
+# 8G显存推荐参数：小模型，SCAN_PROCESS_BATCH_SIZE=32
+# 超大模型最低显存要求是6G，且SCAN_PROCESS_BATCH_SIZE=1
+# 其余显存大小请自行摸索搭配。
+# 中文小模型： "OFA-Sys/chinese-clip-vit-base-patch16"
+# 中文大模型："OFA-Sys/chinese-clip-vit-large-patch14-336px"
+# 中文超大模型："OFA-Sys/chinese-clip-vit-huge-patch14"
+# 英文小模型： "openai/clip-vit-base-patch16"
+# 英文大模型："openai/clip-vit-large-patch14-336"
+MODEL_NAME = os.getenv('MODEL_NAME', "OFA-Sys/chinese-clip-vit-base-patch16")  # CLIP模型
 DEVICE = os.getenv('DEVICE', 'cpu')  # 推理设备，cpu/cuda/mps，建议先跑benchmark.py看看cpu还是显卡速度更快。因为数据搬运也需要时间，所以不一定是GPU更快。
-DEVICE_TEXT = os.getenv('DEVICE_TEXT', 'cpu')  # text_encoder使用的设备，如果MODEL_LANGUAGE为English则忽略此项。
 
 # *****搜索配置*****
 # 不知道为什么中文模型搜索出来的分数比较低，如果使用英文模型，则POSITIVE_THRESHOLD和NEGATIVE_THRESHOLD可以上调到30。

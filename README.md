@@ -23,7 +23,7 @@
 
 1. 首次使用前需要安装依赖：`pip install -U -r requirements.txt`，Windows系统可以双击`install.bat`（NVIDIA GPU加速）或`install_cpu.bat`（纯CPU）。
 2. 如果你打算使用GPU加速，则执行基准测试判断是CPU快还是GPU快：`python benchmark.py`，Windows系统可以双击`benchmark.bat`。GPU不一定比CPU快，在我的Mac上CPU更快。
-3. 如果不是CPU最快，则修改配置中的`DEVICE`和`DEVICE_TEXT`，改为对应设备（配置修改方法请参考后面的配置说明）。
+3. 如果不是CPU最快，则修改配置中的`DEVICE`，改为对应设备（配置修改方法请参考后面的配置说明）。
 4. 启动程序：`python main.py`，Windows系统可以双击`run.bat`。
 
 如遇到`requirements.txt`版本依赖问题（比如某个库版本过新会导致运行报错），请提issue反馈，我会添加版本范围限制。
@@ -34,7 +34,7 @@
 
 ### 通过Docker部署
 
-目前只有一个Docker镜像，支持`amd64`和`arm64`，打包了默认模型（`openai/clip-vit-base-patch32`和`IDEA-CCNL/Taiyi-CLIP-Roberta-102M-Chinese`）并且支持GPU（仅`amd64`架构的镜像支持）。 如有更多需求欢迎提issue。
+目前只有一个Docker镜像，支持`amd64`和`arm64`，打包了默认模型（`OFA-Sys/chinese-clip-vit-base-patch16`）并且支持GPU（仅`amd64`架构的镜像支持）。 如有更多需求欢迎提issue。
 
 启动镜像前，你需要准备：
 
@@ -62,7 +62,6 @@
 ```conf
 ASSETS_PATH=C:/Users/Administrator/Pictures,C:/Users/Administrator/Videos
 DEVICE=cuda
-DEVICE_TEXT=cuda
 ```
 
 目前功能仍在迭代中，配置会经常变化。如果更新版本后发现无法启动，需要参考最新的配置文件手动改一下配置。
