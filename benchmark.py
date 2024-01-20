@@ -3,7 +3,7 @@ import time
 
 import torch
 from PIL import Image
-from transformers import AutoModelForZeroShotImageClassification, AutoImageProcessor
+from transformers import AutoModelForZeroShotImageClassification, AutoProcessor
 
 from config import *
 
@@ -14,7 +14,7 @@ test_times = 100  # 测试次数
 
 print("Loading models...")
 clip_model = AutoModelForZeroShotImageClassification.from_pretrained(MODEL_NAME)
-clip_processor = AutoImageProcessor.from_pretrained(MODEL_NAME)
+clip_processor = AutoProcessor.from_pretrained(MODEL_NAME)
 print("Models loaded.")
 
 # 图像处理性能基准测试

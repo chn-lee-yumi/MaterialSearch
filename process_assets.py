@@ -8,14 +8,14 @@ import requests
 import torch
 from PIL import Image
 from tqdm import trange
-from transformers import AutoModelForZeroShotImageClassification, AutoImageProcessor
+from transformers import AutoModelForZeroShotImageClassification, AutoProcessor
 from config import *
 
 logger = logging.getLogger(__name__)
 
 logger.info("Loading model...")
 model = AutoModelForZeroShotImageClassification.from_pretrained(MODEL_NAME).to(torch.device(DEVICE))
-processor = AutoImageProcessor.from_pretrained(MODEL_NAME)
+processor = AutoProcessor.from_pretrained(MODEL_NAME)
 logger.info("Model loaded.")
 
 
