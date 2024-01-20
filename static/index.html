@@ -247,7 +247,7 @@
             <el-col :span="8" v-for="video in pexels_videos">
                 <el-card style="margin-top: 5px;">
                     <el-row style="text-align: center"><strong>{{video.title}}</strong></el-row>
-                    <video :src="video.content_loc" :poster="video.thumbnail_loc" controls></video>
+                    <video :src="video.content_loc" :poster="video.thumbnail_loc + '?fm=webp&fit=corp&min-w=640&h=480'" controls></video>
                     <el-row>
                         <el-tooltip :content="$t('fileResults.matchingProbability')" placement="bottom" v-if="video.softmax_score">
                             <el-tag size="small" effect="dark">{{(video.softmax_score * 100).toFixed(1)}}% | {{(video.score * 100).toFixed(1)}}%
