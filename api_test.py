@@ -89,7 +89,7 @@ def test_api_match():
     response = requests.post('http://127.0.0.1:8085/api/match', json=payload)
     data = response.json()
     assert len(data) == 1
-    assert data[0]["path"] == "/home/runner/work/MaterialSearch/MaterialSearch/test.png"
+    assert data[0]["path"] == "test.png"
     assert data[0]["softmax_score"] == 1.0
     # 以图搜图
     with requests.session() as sess:
@@ -102,7 +102,7 @@ def test_api_match():
         response = sess.post('http://127.0.0.1:8085/api/match', json=payload)
         data = response.json()
         assert len(data) == 1
-        assert data[0]["path"] == "/home/runner/work/MaterialSearch/MaterialSearch/test.png"
+        assert data[0]["path"] == "test.png"
         assert data[0]["softmax_score"] == 1.0
     # 测试下载图片
     image_url = data[0]["url"]
@@ -122,7 +122,7 @@ def test_api_match():
     response = requests.post('http://127.0.0.1:8085/api/match', json=payload)
     data = response.json()
     assert len(data) == 1
-    assert data[0]["path"] == "/home/runner/work/MaterialSearch/MaterialSearch/test.png"
+    assert data[0]["path"] == "test.png"
     assert data[0]["url"] == image_url
     # TODO：路径搜视频
 
