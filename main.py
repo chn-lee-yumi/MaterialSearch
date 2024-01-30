@@ -8,8 +8,8 @@ from io import BytesIO
 from flask import Flask, abort, jsonify, redirect, request, send_file, session, url_for
 
 from config import *
-from database import get_image_path_by_id, is_video_exist
-from models import DatabaseSession
+from database import get_image_path_by_id, is_video_exist, get_pexels_video_count
+from models import DatabaseSession, DatabaseSessionPexelsVideo
 from process_assets import match_text_and_image, process_image, process_text
 from scan import Scanner
 from search import (
@@ -124,7 +124,10 @@ def api_scan():
 def api_status():
     """状态"""
     global scanner
-    return jsonify(scanner.get_status())
+    result = scanner.get_status()
+    with DatabaseSessionPexelsVideo() as session:
+        result["total_pexels_videos"] = get_pexels_video_count(session)
+    return jsonify(result)
 
 
 @app.route("/api/clean_cache", methods=["GET", "POST"])

@@ -11,21 +11,29 @@ from config import SQLALCHEMY_DATABASE_URL
 folder_path = os.path.dirname(SQLALCHEMY_DATABASE_URL.replace("sqlite:///", ""))
 if not os.path.exists(folder_path):
     os.makedirs(folder_path)
-BaseModel = declarative_base()
 
+# 本地扫描数据库
+BaseModel = declarative_base()
 engine = create_engine(
     SQLALCHEMY_DATABASE_URL,
     connect_args={"check_same_thread": False}
 )
-
 DatabaseSession = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
+# PexelsVideo数据库
+BaseModelPexelsVideo = declarative_base()
+engine_pexels_video = create_engine(
+    'sqlite:///./PexelsVideo.db',
+    connect_args={"check_same_thread": False}
+)
+DatabaseSessionPexelsVideo = sessionmaker(autocommit=False, autoflush=False, bind=engine_pexels_video)
 
 def create_tables():
     """
     创建数据库表
     """
     BaseModel.metadata.create_all(bind=engine)
+    BaseModelPexelsVideo.metadata.create_all(bind=engine_pexels_video)
 
 
 class Image(BaseModel):
@@ -45,7 +53,7 @@ class Video(BaseModel):
     features = Column(BINARY)  # 文件预处理后的二进制数据
 
 
-class PexelsVideo(BaseModel):
+class PexelsVideo(BaseModelPexelsVideo):
     __tablename__ = "PexelsVideo"
     id = Column(Integer, primary_key=True)
     title = Column(String(128))  # 标题

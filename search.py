@@ -15,7 +15,7 @@ from database import (
     search_video_by_path,
     get_pexels_video_features,
 )
-from models import DatabaseSession
+from models import DatabaseSession, DatabaseSessionPexelsVideo
 from process_assets import match_batch, process_image, process_text
 
 logger = logging.getLogger(__name__)
@@ -277,7 +277,7 @@ def search_pexels_video_by_feature(positive_feature, positive_threshold=POSITIVE
     :return: list, 搜索结果列表
     """
     t0 = time.time()
-    with DatabaseSession() as session:
+    with DatabaseSessionPexelsVideo() as session:
         thumbnail_feature_list, thumbnail_loc_list, content_loc_list, \
             title_list, description_list, duration_list, view_count_list = get_pexels_video_features(session)
     if len(thumbnail_feature_list) == 0:  # 没有素材，直接返回空

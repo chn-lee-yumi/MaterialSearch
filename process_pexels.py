@@ -1,16 +1,19 @@
-"""目前这个脚本是单独运行的"""
+"""
+目前这个脚本是单独运行的
+Sitemap下载：https://www.pexels.com/sitemaps/en-US/video-sitemap10.xml.gz 数字范围1~10
+下载完成后放到 sitemaps/pexels_video/ 目录下，再运行这个脚本
+"""
+import glob
 import xml.etree.ElementTree as ET
 
 from database import add_pexels_video, is_pexels_video_exist
-from models import DatabaseSession, create_tables
+from models import DatabaseSessionPexelsVideo, create_tables
 from process_assets import process_web_image
-
-video_sitemap_xml = "video-sitemap10.xml"
 
 
 # logger = logging.getLogger(__name__)
 
-def handel_xml():
+def handel_xml(video_sitemap_xml):
     tree = ET.parse(video_sitemap_xml)
     root = tree.getroot()
     # 找到所有的video元素
@@ -44,7 +47,7 @@ def handel_xml():
         # print("Title:", title)
         # print("Description:", description)
         # print("----")
-        with DatabaseSession() as session:
+        with DatabaseSessionPexelsVideo() as session:
             if is_pexels_video_exist(session, thumbnail_loc):
                 # print(f"视频已存在：{thumbnail_loc}")
                 continue
@@ -67,4 +70,6 @@ def handel_xml():
 
 if __name__ == '__main__':
     create_tables()
-    handel_xml()
+    for xml in glob.glob("sitemaps/pexels_video/*.xml"):
+        print(xml)
+        handel_xml(xml)
