@@ -1,5 +1,8 @@
 .idea/
 tmp/
+sitemaps/
+PexelsVideo.db
+PexelsPhoto.db
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
