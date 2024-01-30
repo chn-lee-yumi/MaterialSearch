@@ -2,7 +2,7 @@
 # MODEL_NAME = "OFA-Sys/chinese-clip-vit-base-patch16"
 FROM python:3.11
 WORKDIR /MaterialSearch/
-ENV TRANSFORMERS_CACHE=/MaterialSearch/transformers/
+ENV HF_HOME=/MaterialSearch/transformers/
 RUN apt update && apt install -y ffmpeg && apt clean
 COPY requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt
