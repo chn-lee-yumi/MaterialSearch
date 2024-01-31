@@ -4,6 +4,8 @@
 
 Search local photos and videos through natural language.
 
+Online Demo：https://chn-lee-yumi.github.io/MaterialSearchWebDemo/
+
 ## Features
 
 - Text-based image search
@@ -23,7 +25,7 @@ Note that the first run will automatically download the models. The download spe
 
 1. Install the dependencies before first use: `pip install -U -r requirements.txt`. For Windows systems, you can double-click on `install.bat` (for NVIDIA GPU acceleration) or `install_cpu.bat` (for pure CPU).
 2. If you plan to use GPU acceleration, run the benchmark to determine whether the CPU or GPU is faster: `python benchmark.py`. For Windows systems, you can double-click on `benchmark.bat`. Note that GPU is not necessarily faster than CPU; on my Mac, CPU is faster.
-3. If it is not the CPU that is fastest, modify the `DEVICE` and `DEVICE_TEXT` settings in the configuration file to correspond to the appropriate device (refer to the configuration instructions below for how to modify the configuration).
+3. If it is not the CPU that is fastest, modify the `DEVICE` settings in the configuration file to correspond to the appropriate device (refer to the configuration instructions below for how to modify the configuration).
 4. Start the program: `python main.py`. For Windows systems, you can double-click on `run.bat`.
 
 If you encounter any issues with the version dependencies in `requirements.txt` (for example, if a library version is too new and causes errors), please provide feedback by opening an issue. I will add version range restrictions.
@@ -34,7 +36,7 @@ To use the "Download Video Segments" feature, you need to install `ffmpeg`. If y
 
 ### Deployment via Docker
 
-Currently, there is only one Docker image available, which supports both `amd64` and `arm64` architectures. It includes the default models (`openai/clip-vit-base-patch32` and `IDEA-CCNL/Taiyi-CLIP-Roberta-102M-Chinese`) and supports GPU acceleration (only for `amd64` architecture). If you have additional requirements, please open an issue.
+Currently, there is only one Docker image available, which supports both `amd64` and `arm64` architectures. It includes the default models (`OFA-Sys/chinese-clip-vit-base-patch16`) and supports GPU acceleration (only for `amd64` architecture). If you have additional requirements, please open an issue.
 
 Before starting the image, you need to prepare:
 
@@ -62,7 +64,6 @@ Example `.env` file configuration:
 ```conf
 ASSETS_PATH=C:/Users/Administrator/Pictures,C:/Users/Administrator/Videos
 DEVICE=cuda
-DEVICE_TEXT=cuda
 ```
 
 The functionality is still being iterated upon, so the configuration may change frequently. If you find that the application fails to start after updating to a new version, please refer to the latest configuration file and manually modify the configuration accordingly.
@@ -80,13 +81,9 @@ https_proxy=http://127.0.0.1:7070
 
 ## Pexels Video Search Functionality Instructions
 
-**This is a testing feature**. Begin by downloading Pexels' sitemap; currently, there are a total of 10. For testing purposes, you can download the latest one: [video-sitemap10.xml.gz](https://www.pexels.com/sitemaps/en-US/video-sitemap10.xml.gz)。
+[Download the database](TODO) and unzip to the root directory of this repo, and then restart the program. Then you can search Pexels videos.
 
-After completing the download, unzip the file. Next, modify the `video_sitemap_xml` in the `process_pexels.py` script, changing the path to the location of your sitemap file.
-
-Finally, execute `process_pexels.py`.
-
-In the future, pre-processed data may be provided.
+Note: This database uses `OFA-Sys/chinese-clip-vit-base-patch16` model. If you use other models, this function will not work correctly.
 
 ## Troubleshooting
 

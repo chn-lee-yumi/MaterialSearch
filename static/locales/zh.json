@@ -1,5 +1,6 @@
 {
   "title": "本地素材搜索引擎",
+  "loadingModel": "加载模型中……",
   "scanStatus": {
     "scanning": "扫描中",
     "scanComplete": "扫描完成"
@@ -31,7 +32,8 @@
   },
   "uploader": {
     "drag": "将文件拖到此处，或",
-    "click": "点击上传"
+    "click": "点击上传",
+    "uploading": "上传中……"
   },
   "formPlaceholders": {
     "positiveSearch": "搜索内容（不能为空）",

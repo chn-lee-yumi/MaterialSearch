@@ -374,9 +374,9 @@ const app = Vue.createApp({
                 })
         },
         search(search_type) {
-            this.upload.clearFiles();
             var that = this;
             const loadingInstance = ElementPlus.ElLoading.service({ fullscreen: true, text: that.$t('messages.searching') });
+            this.upload.clearFiles();
             that.form.search_type = search_type;
             if ((search_type === 0 || search_type === 2) && that.form.positive == "") {
                 ElementPlus.ElMessage.error(that.$t('messages.searchContentEmpty'));
@@ -493,7 +493,6 @@ async function loadLocales() {
 loadLocales().then(() => {
     app.mount('#app');
 });
-
 </script>
 <style scoped>
 .el-tag {
@@ -538,6 +537,5 @@ video {
     max-height: 240px;
     margin-bottom: 2px;
 }
-
 </style>
 </html>

@@ -4,6 +4,8 @@
 
 扫描本地的图片以及视频，并且可以用自然语言进行查找。
 
+在线Demo：https://chn-lee-yumi.github.io/MaterialSearchWebDemo/
+
 ## 功能
 
 - 文字搜图
@@ -11,7 +13,7 @@
 - 文字搜视频（会给出符合描述的视频片段）
 - 以图搜视频（通过视频截图搜索所在片段）
 - 图文相似度计算（只是给出一个分数，用处不大）
-- pexels视频搜索
+- Pexels视频搜索
 
 ## 部署说明
 
@@ -77,15 +79,11 @@ http_proxy=http://127.0.0.1:7070
 https_proxy=http://127.0.0.1:7070
 ```
 
-## pexels视频搜索功能说明
+## Pexels视频搜索功能说明
 
-**测试功能**。首先下载pexels的sitemap，目前总共有10个，测试的话下最后一个就可以了：[video-sitemap10.xml.gz](https://www.pexels.com/sitemaps/en-US/video-sitemap10.xml.gz)。
+[下载数据库](TODO)并解压到仓库的根目录，然后重启程序。然后你就能搜索Pexels视频了。
 
-下载完成后解压，然后修改`process_pexels.py`的`video_sitemap_xml`，将路径改为你的sitemap文件所在路径。
-
-最后执行`process_pexels.py`即可。
-
-后续或许会提供处理好的数据。
+注意：该数据库用的是`OFA-Sys/chinese-clip-vit-base-patch16`模型，如果你用了其他模型，则无法使用该功能。
 
 ## 问题解答
 

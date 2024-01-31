@@ -1,5 +1,6 @@
 {
   "title": "Local Material Search Engine",
+  "loadingModel": "Loading model...",
   "scanStatus": {
     "scanning": "Scanning in Progress",
     "scanComplete": "Scanning Complete"
@@ -31,7 +32,8 @@
   },
   "uploader": {
     "drag": "Drag file to here, or ",
-    "click": "click here to upload"
+    "click": "click here to upload",
+    "uploading": "Uploading..."
   },
   "formPlaceholders": {
     "positiveSearch": "Search Content (cannot be empty)",

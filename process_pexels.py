@@ -51,7 +51,7 @@ def handel_xml(video_sitemap_xml):
             if is_pexels_video_exist(session, thumbnail_loc):
                 # print(f"视频已存在：{thumbnail_loc}")
                 continue
-            thumbnail_feature = process_web_image(thumbnail_loc + "?fm=webp&fit=corp&min-w=224&h=224")
+            thumbnail_feature = process_web_image(thumbnail_loc + "?fm=webp&fit=corp&min-w=640&h=480")
             if thumbnail_feature is None:
                 print("获取视频缩略图特征失败，跳过该视频")
                 continue
