@@ -31,6 +31,8 @@ def handel_xml(video_sitemap_xml):
         description = video_element.find("{http://www.google.com/schemas/sitemap-video/1.1}description").text
         # 在这里可以使用提取到的元数据进行处理
         duration = int(duration)
+        if not view_count:
+            continue
         view_count = int(view_count)
         title = title.strip()
         description = description.strip()
