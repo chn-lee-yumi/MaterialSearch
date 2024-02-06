@@ -81,7 +81,7 @@ https_proxy=http://127.0.0.1:7070
 
 ## Pexels Video Search Functionality Instructions
 
-[Download the database](TODO) and unzip to the root directory of this repo, and then restart the program. Then you can search Pexels videos.
+[Download the database](https://drive.google.com/file/d/1LZAI7QuTxiNgLzpp_6s5zIQdwb9AlxQ1/view?usp=sharing) and unzip to the root directory of this repo, and then restart the program. Then you can search Pexels videos.
 
 Note: This database uses `OFA-Sys/chinese-clip-vit-base-patch16` model. If you use other models, this function will not work correctly.
 
