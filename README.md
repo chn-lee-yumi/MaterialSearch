@@ -79,6 +79,8 @@ http_proxy=http://127.0.0.1:7070
 https_proxy=http://127.0.0.1:7070
 ```
 
+注意：`ASSETS_PATH`不推荐设置为远程目录（如SMB/NFS），可能会导致扫描速度变慢。
+
 ## Pexels视频搜索功能说明
 
 [下载数据库](https://pan.baidu.com/s/1eeJtLtLmMJ388CE0b25_DQ?pwd=CHNL)并解压到仓库的根目录，然后重启程序。然后你就能搜索Pexels视频了。
