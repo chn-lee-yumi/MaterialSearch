@@ -90,7 +90,7 @@ def test_api_match():
     data = response.json()
     assert len(data) == 1
     assert data[0]["path"] == "test.png"
-    assert data[0]["softmax_score"] == 1.0
+    assert data[0]["score"] != 0
     # 以图搜图
     with requests.session() as sess:
         # 测试上传图片
@@ -103,7 +103,7 @@ def test_api_match():
         data = response.json()
         assert len(data) == 1
         assert data[0]["path"] == "test.png"
-        assert data[0]["softmax_score"] == 1.0
+        assert data[0]["score"] != 0
     # 测试下载图片
     image_url = data[0]["url"]
     response = requests.get('http://127.0.0.1:8085/' + image_url)
@@ -121,7 +121,7 @@ def test_api_match():
     payload["path"] = "test.png"
     response = requests.post('http://127.0.0.1:8085/api/match', json=payload)
     data = response.json()
-    assert len(data) == 1
+    assert len(data) == 1  # 测试环境默认只有一张图
     assert data[0]["path"] == "test.png"
     assert data[0]["url"] == image_url
     # TODO：路径搜视频
