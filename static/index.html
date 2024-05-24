@@ -216,10 +216,10 @@
         <el-col :span="8" v-for="(file, index) in files">
             <el-card style="margin-top: 5px;">
                 <el-row>
-                    <el-image v-if="form.search_type === 0 || form.search_type === 1 || form.search_type === 5 || form.search_type === 7"
+                    <el-image loading="lazy" v-if="form.search_type === 0 || form.search_type === 1 || form.search_type === 5 || form.search_type === 7"
                               fit="contain" :src="file.url + '?thumbnail=1'" :preview-src-list="image_url_list" :initial-index="index"
                               :hide-on-click-modal="true"></el-image>
-                    <video v-if="form.search_type === 2 || form.search_type === 3 || form.search_type === 6 || form.search_type === 8"
+                    <video preload="metadata" v-if="form.search_type === 2 || form.search_type === 3 || form.search_type === 6 || form.search_type === 8"
                            :src="file.url" controls></video>
                 </el-row>
                 <el-row>
@@ -254,7 +254,7 @@
             <el-col :span="8" v-for="video in pexels_videos">
                 <el-card style="margin-top: 5px;">
                     <el-row style="text-align: center"><strong>{{video.title}}</strong></el-row>
-                    <video :src="video.content_loc" :poster="video.thumbnail_loc + '?fm=webp&fit=corp&min-w=640&h=480'" controls></video>
+                    <video preload="none" :src="video.content_loc" :poster="video.thumbnail_loc + '?fm=webp&fit=corp&min-w=640&h=480'" controls></video>
                     <el-row>
                         <el-tooltip :content="$t('fileResults.matchingProbability')" placement="bottom" v-if="video.score">
                             <el-tag size="small" effect="dark">{{(video.score * 100).toFixed(1)}}%
