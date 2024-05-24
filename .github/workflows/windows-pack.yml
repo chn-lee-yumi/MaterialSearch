@@ -4,6 +4,9 @@ on:
   push:
     branches: [ "windows_pack_test" ]
   workflow_call:
+  
+env:
+  TRANSFORMERS_CACHE: MaterialSearchWindows/huggingface
 
 jobs:
 
@@ -19,20 +22,49 @@ jobs:
 
     - name: Download pip
       run: Invoke-WebRequest "https://bootstrap.pypa.io/pip/pip.pyz" -OutFile pip.pyz
-      
-    - name: ls
-      run: ls
-
+    
     - name: Checkout
       uses: actions/checkout@v4
       with:
         path: MaterialSearchWindows/MaterialSearch
-      
-    - name: ls
-      run: ls MaterialSearchWindows
 
     - name: Install requirements
-      run: MaterialSearchWindows/python.exe pip.pyz install -r MaterialSearchWindows/MaterialSearch/requirements.txt
+      run: MaterialSearchWindows/python.exe pip.pyz install -r MaterialSearchWindows/MaterialSearch/requirements.txt --index-url=https://download.pytorch.org/whl/cu118 --extra-index-url=https://pypi.org/simple/
     
     - name: ls
       run: ls MaterialSearchWindows
+
+    - name: Download model
+      run: MaterialSearchWindows/python.exe -c 'from transformers import AutoModelForZeroShotImageClassification, AutoImageProcessor; AutoModelForZeroShotImageClassification.from_pretrained("OFA-Sys/chinese-clip-vit-base-patch16"); AutoImageProcessor.from_pretrained("OFA-Sys/chinese-clip-vit-base-patch16");'
+
+    - name: create 运行.bat
+      uses: DamianReeves/write-file-action@master
+      with:
+        path: MaterialSearchWindows/运行.bat
+        write-mode: overwrite
+        contents: |
+          :: 下面配置扫描路径，多个路径之间用逗号分隔
+          SET ASSETS_PATH=C:/Users/Administrator/Pictures,C:/Users/Administrator/Videos
+          :: 下面配置设备，cpu或cuda
+          SET DEVICE=cpu
+          SET DEVICE_TEXT=cpu
+          :: 下面的不要改
+          SET PATH=%PATH%;..\
+          SET TRANSFORMERS_OFFLINE=1
+          SET TRANSFORMERS_CACHE=..\huggingface
+          cd MaterialSearch
+          ..\python main.py
+
+    - name: Download FFMpeg
+      run: Invoke-WebRequest "https://github.com/GyanD/codexffmpeg/releases/download/7.0/ffmpeg-7.0-full_build.zip" -OutFile ffmpeg.zip
+    
+    - name: Unzip FFMpeg
+      run: Expand-Archive ffmpeg.zip -DestinationPath .
+
+    - name: ls
+      run: ls MaterialSearchWindows
+
+    - name: test
+      run: cd MaterialSearchWindows; ./运行.bat
+
+
