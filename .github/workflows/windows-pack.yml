@@ -68,12 +68,23 @@ jobs:
           SET TRANSFORMERS_OFFLINE=1
           SET HF_HOME=huggingface
           python.exe main.py
+
+    - name: Create 使用说明.txt
+      uses: DamianReeves/write-file-action@master
+      with:
+        path: MaterialSearchWindows/使用说明.txt
+        write-mode: overwrite
+        contents: |
+          首先右键“运行.bat”进行编辑，配置扫描路径和设备，然后保存。双击运行“运行.bat”即可。
+          本软件是开源软件，免费下载使用，不用付款购买，切勿上当受骗！
+          最新版本下载和详细使用说明请看：https://github.com/chn-lee-yumi/MaterialSearch
           
     - name: Compress
       run: Compress-Archive -LiteralPath MaterialSearchWindows -DestinationPath MaterialSearchWindows.zip
 
     - name: Release
       uses: softprops/action-gh-release@v2
+      if: startsWith(github.ref, 'refs/tags/')
       with:
         files: MaterialSearchWindows.zip
 
