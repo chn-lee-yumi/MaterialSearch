@@ -18,7 +18,7 @@ jobs:
       run: mkdir MaterialSearchWindows; Expand-Archive python.zip -DestinationPath MaterialSearchWindows
 
     - name: Download pip
-      run: Invoke-WebRequest "https://bootstrap.pypa.io/pip/pip.pyz"
+      run: Invoke-WebRequest "https://bootstrap.pypa.io/pip/pip.pyz" -OutFile pip.pyz
       
     - name: ls
       run: ls
