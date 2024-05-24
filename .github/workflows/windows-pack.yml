@@ -26,13 +26,13 @@ jobs:
     - name: Checkout
       uses: actions/checkout@v4
       with:
-        path: MaterialSearchWindows
+        path: MaterialSearchWindows/MaterialSearch
       
     - name: ls
       run: ls MaterialSearchWindows
 
     - name: Install requirements
-      run: MaterialSearchWindows/python3.exe pip.pyz install -r MaterialSearchWindows/requirements.txt
+      run: MaterialSearchWindows/python.exe pip.pyz install -r MaterialSearchWindows/MaterialSearch/requirements.txt
     
     - name: ls
       run: ls MaterialSearchWindows
