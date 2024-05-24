@@ -12,11 +12,11 @@ from database import (
     delete_record_if_not_exist,
     delete_image_if_outdated,
     delete_video_if_outdated,
-    add_image,
     add_video,
+    add_image,
 )
 from models import create_tables, DatabaseSession
-from process_assets import process_image, process_video
+from process_assets import process_images, process_video
 from search import clean_cache
 
 
@@ -98,7 +98,7 @@ class Scanner:
         wrong_ext = path.suffix.lower() not in self.extensions
         skip = any((path.is_relative_to(p) for p in self.skip_paths))
         ignore = any((keyword in str(path).lower() for keyword in self.ignore_keywords))
-        self.logger.debug(f"{path} 不匹配后缀：{wrong_ext} 跳过：{skip} 忽略： {ignore}")
+        self.logger.debug(f"{path} 不匹配后缀：{wrong_ext} 跳过：{skip} 忽略：{ignore}")
         return not any((wrong_ext, skip, ignore))
 
     def generate_or_load_assets(self):
@@ -153,6 +153,16 @@ class Scanner:
             for file in filter(self.filter_path, path.rglob("*")):
                 self.assets.add(str(file))
 
+    def handle_image_batch(self, session, image_batch_dict):
+        path_list, features_list = process_images(list(image_batch_dict.keys()))
+        for path, features in zip(path_list, features_list):
+            # 写入数据库
+            features = features.tobytes()
+            modify_time = image_batch_dict[path]
+            add_image(session, path, modify_time, features)
+            self.assets.remove(path)
+        self.total_images = get_image_count(session)
+
     def scan(self, auto=False):
         """
         扫描资源。如果存在assets.pickle，则直接读取并开始扫描。如果不存在，则先读取所有文件路径，并写入assets.pickle，然后开始扫描。
@@ -168,6 +178,7 @@ class Scanner:
             if not self.is_continue_scan:  # 非断点恢复的情况下才删除
                 delete_record_if_not_exist(session, self.assets)
             # 扫描文件
+            image_batch_dict = {}  # 批量处理文件的字典，用字典方便某个图片有问题的时候的处理
             for path in self.assets.copy():
                 self.scanned_files += 1
                 if self.scanned_files % AUTO_SAVE_INTERVAL == 0:  # 每扫描 AUTO_SAVE_INTERVAL 个文件重新save一下
@@ -186,14 +197,12 @@ class Scanner:
                     if not_modified:
                         self.assets.remove(path)
                         continue
-                    features = process_image(path)
-                    if features is None:
-                        self.assets.remove(path)
-                        continue
-                    # 写入数据库
-                    features = features.tobytes()
-                    add_image(session, path, modify_time, features)
-                    self.total_images = get_image_count(session)
+                    image_batch_dict[path] = modify_time
+                    # 达到SCAN_PROCESS_BATCH_SIZE再进行批量处理
+                    if len(image_batch_dict) == SCAN_PROCESS_BATCH_SIZE:
+                        self.handle_image_batch(session, image_batch_dict)
+                        image_batch_dict = {}
+                    continue
                 elif path.lower().endswith(VIDEO_EXTENSIONS):  # 视频
                     not_modified = delete_video_if_outdated(session, path)
                     if not_modified:
@@ -203,6 +212,8 @@ class Scanner:
                     self.total_video_frames = get_video_frame_count(session)
                     self.total_videos = get_video_count(session)
                 self.assets.remove(path)
+            if len(image_batch_dict) != 0:  # 最后如果图片数量没达到SCAN_PROCESS_BATCH_SIZE，也进行一次处理
+                self.handle_image_batch(session, image_batch_dict)
             # 最后重新统计一下数量
             self.total_images = get_image_count(session)
             self.total_videos = get_video_count(session)

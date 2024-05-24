@@ -9,6 +9,7 @@ import torch
 from PIL import Image
 from tqdm import trange
 from transformers import AutoModelForZeroShotImageClassification, AutoProcessor
+
 from config import *
 
 logger = logging.getLogger(__name__)
@@ -55,6 +56,25 @@ def process_image(path, ignore_small_images=True):
     inputs = processor(images=image, return_tensors="pt", padding=True)["pixel_values"].to(torch.device(DEVICE))
     feature = model.get_image_features(inputs).detach().cpu().numpy()
     return feature
+
+
+def process_images(path_list, ignore_small_images=True):
+    """
+    处理图片，返回图片特征
+    :param path_list: string, 图片路径列表
+    :param ignore_small_images: bool, 是否忽略尺寸过小的图片
+    :return: <class 'numpy.nparray'>, 图片特征
+    """
+    images = []
+    for path in path_list.copy():
+        image = get_image_data(path, ignore_small_images)
+        if image is None:
+            path_list.remove(path)
+            continue
+        images.append(image)
+    inputs = processor(images=images, return_tensors="pt", padding=True)["pixel_values"].to(torch.device(DEVICE))
+    features = model.get_image_features(inputs).detach().cpu().numpy()
+    return path_list, features
 
 
 def process_web_image(url):
