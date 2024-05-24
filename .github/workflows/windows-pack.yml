@@ -1,0 +1,21 @@
+name: Windows Pack
+
+on:
+  push:
+    branches: [ "windows_pack_test" ]
+  workflow_call:
+
+jobs:
+
+  build:
+    runs-on: ubuntu-latest
+    steps:
+
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Install requirements
+      run: wget https://www.python.org/ftp/python/3.10.11/python-3.10.11-embed-amd64.zip
+
+    - name: enable debug interface
+      uses: chn-lee-yumi/debugger-action@master
