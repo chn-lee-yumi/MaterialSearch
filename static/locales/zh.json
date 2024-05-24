@@ -43,14 +43,15 @@
     "topNResults": "查看前n个结果",
     "imagePath": "图片路径（不能为空）",
     "videoPath": "视频路径（不能为空）",
-    "textMatch": "文字内容（不能为空）"
+    "textMatch": "文字内容（不能为空）",
+    "topnAll": "全部"
   },
   "searchButtons": {
     "search": "搜索",
     "calculateSimilarity": "计算相似度"
   },
   "fileResults": {
-    "matchingProbability": "素材的匹配概率和相似度",
+    "matchingProbability": "相似度",
     "matchingTimeRange": "匹配的时间段范围（秒）",
     "downloadVideoClip": "下载视频片段",
     "imageSearch": "以图搜图",

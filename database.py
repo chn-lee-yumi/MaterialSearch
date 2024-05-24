@@ -5,7 +5,6 @@ import os
 from sqlalchemy import asc
 from sqlalchemy.orm import Session
 
-from config import MAX_RESULT_NUM
 from models import Image, Video, PexelsVideo
 
 logger = logging.getLogger(__name__)
@@ -205,28 +204,26 @@ def get_image_id_path_features(session: Session) -> tuple[list[int], list[str], 
 
 def search_image_by_path(session: Session, path: str):
     """
-    根据路径搜索图片，最多返回 MAX_RESULT_NUM 个数据
+    根据路径搜索图片
     :return: (图片id, 图片路径) 元组列表
     """
     return (
         session.query(Image.id, Image.path)
         .filter(Image.path.like("%" + path + "%"))
         .order_by(asc(Image.path))
-        .limit(MAX_RESULT_NUM)
         .all()
     )
 
 
 def search_video_by_path(session: Session, path: str):
     """
-    根据路径搜索视频，最多返回 MAX_RESULT_NUM 个数据
+    根据路径搜索视频
     """
     return (
         session.query(Video.path)
         .distinct()
         .filter(Video.path.like("%" + path + "%"))
         .order_by(asc(Video.path))
-        .limit(MAX_RESULT_NUM)
         .all()
     )
 

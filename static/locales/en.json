@@ -43,14 +43,15 @@
     "topNResults": "Show Top N Results",
     "imagePath": "Image Path (cannot be empty)",
     "videoPath": "Video Path (cannot be empty)",
-    "textMatch": "Text Content (cannot be empty)"
+    "textMatch": "Text Content (cannot be empty)",
+    "topnAll": "ALL"
   },
   "searchButtons": {
     "search": "Search",
     "calculateSimilarity": "Calculate Similarity"
   },
   "fileResults": {
-    "matchingProbability": "Matching Probability and Similarity",
+    "matchingProbability": "Similarity",
     "matchingTimeRange": "Matching Time Range (seconds)",
     "downloadVideoClip": "Download Video Clip",
     "imageSearch": "Search Images",

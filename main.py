@@ -22,7 +22,7 @@ from search import (
     search_video_file,
     search_pexels_video_by_text,
 )
-from utils import crop_video, get_hash, softmax, resize_image_with_aspect_ratio
+from utils import crop_video, get_hash, resize_image_with_aspect_ratio
 
 logging.basicConfig(
     level=LOG_LEVEL, format="%(asctime)s %(name)s %(levelname)s %(message)s"
@@ -164,54 +164,30 @@ def api_match():
     logger.debug(data)
     # 进行匹配
     if search_type == 0:  # 文字搜图
-        sorted_list = search_image_by_text(data["positive"], data["negative"], positive_threshold, negative_threshold)[:MAX_RESULT_NUM]
+        results = search_image_by_text(data["positive"], data["negative"], positive_threshold, negative_threshold)
     elif search_type == 1:  # 以图搜图
-        sorted_list = search_image_by_image(upload_file_path, image_threshold)[:MAX_RESULT_NUM]
+        results = search_image_by_image(upload_file_path, image_threshold)
     elif search_type == 2:  # 文字搜视频
-        sorted_list = search_video_by_text(data["positive"], data["negative"], positive_threshold, negative_threshold)[:MAX_RESULT_NUM]
+        results = search_video_by_text(data["positive"], data["negative"], positive_threshold, negative_threshold)
     elif search_type == 3:  # 以图搜视频
-        sorted_list = search_video_by_image(upload_file_path, image_threshold)[:MAX_RESULT_NUM]
+        results = search_video_by_image(upload_file_path, image_threshold)
     elif search_type == 4:  # 图文相似度匹配
         score = match_text_and_image(process_text(data["text"]), process_image(upload_file_path)) * 100
         return jsonify({"score": "%.2f" % score})
     elif search_type == 5:  # 以图搜图(图片是数据库中的)
-        sorted_list = search_image_by_image(img_id, image_threshold)[:MAX_RESULT_NUM]
+        results = search_image_by_image(img_id, image_threshold)
     elif search_type == 6:  # 以图搜视频(图片是数据库中的)
-        sorted_list = search_video_by_image(img_id, image_threshold)[:MAX_RESULT_NUM]
+        results = search_video_by_image(img_id, image_threshold)
     elif search_type == 7:  # 路径搜图
-        results = search_image_file(path)[:top_n]
-        return jsonify(results)
+        results = search_image_file(path)
     elif search_type == 8:  # 路径搜视频
-        results = search_video_file(path=path)[:top_n]
-        return jsonify(results)
+        results = search_video_file(path)
     elif search_type == 9:  # 文字搜pexels视频
-        sorted_list = search_pexels_video_by_text(data["positive"], positive_threshold)
+        results = search_pexels_video_by_text(data["positive"], positive_threshold)
     else:  # 空
         logger.warning(f"search_type不正确：{search_type}")
         abort(400)
-    # 匹配后进行softmax计算
-    if search_type in (0, 1, 5):
-        sorted_list = sorted_list[:top_n]
-        scores = [item["score"] for item in sorted_list]
-        softmax_scores = softmax(scores)
-        new_sorted_list = [{
-            "url": item["url"], "path": item["path"], "score": item["score"], "softmax_score": score
-        } for item, score in zip(sorted_list, softmax_scores)]
-    elif search_type in (2, 3, 6):
-        sorted_list = sorted_list[:top_n]
-        scores = [item["score"] for item in sorted_list]
-        softmax_scores = softmax(scores)
-        new_sorted_list = [{
-            "url": item["url"], "path": item["path"], "score": item["score"], "softmax_score": score,
-            "start_time": item["start_time"], "end_time": item["end_time"]
-        } for item, score in zip(sorted_list, softmax_scores)]
-    else:  # search_type == 9
-        new_sorted_list = sorted_list[:top_n]
-        scores = [item["score"] for item in new_sorted_list]
-        softmax_scores = softmax(scores)
-        for i in range(len(softmax_scores)):
-            new_sorted_list[i]["softmax_score"] = softmax_scores[i]
-    return jsonify(new_sorted_list)
+    return jsonify(results[:top_n])
 
 
 @app.route("/api/get_image/<int:image_id>", methods=["GET"])
