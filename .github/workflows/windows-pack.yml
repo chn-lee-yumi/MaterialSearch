@@ -20,5 +20,20 @@ jobs:
     - name: Unzip Python
       run: mkdir MaterialSearchWindows; Expand-Archive python.zip -DestinationPath MaterialSearchWindows
 
+    - name: Download pip
+      run: Invoke-WebRequest "https://bootstrap.pypa.io/get-pip.py"
+
+    - name: Install pip
+      run: MaterialSearchWindows/python3.exe get-pip.py
+      
     - name: ls
-      run: ls; ls MaterialSearchWindows
+      run: ls
+      
+    - name: ls
+      run: ls MaterialSearchWindows
+
+    - name: Install requirements
+      run: MaterialSearchWindows/python3.exe -m pip install -r MaterialSearchWindows/requirements.txt
+    
+    - name: ls
+      run: ls MaterialSearchWindows
