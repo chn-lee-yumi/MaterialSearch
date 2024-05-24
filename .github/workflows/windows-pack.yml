@@ -13,33 +13,21 @@ jobs:
   build:
     runs-on: windows-latest
     steps:
-      
+
     - name: Download Python
       run: Invoke-WebRequest "https://www.python.org/ftp/python/3.10.11/python-3.10.11-embed-amd64.zip" -OutFile python.zip
       
     - name: Unzip Python
       run: mkdir MaterialSearchWindows; Expand-Archive python.zip -DestinationPath MaterialSearchWindows
 
-    - name: fix _pth
+    - name: Fix python310._pth
       uses: DamianReeves/write-file-action@master
       with:
         path: MaterialSearchWindows/python310._pth
         write-mode: append
         contents: |
           import site
-          
-    - name: Download pip
-      run: Invoke-WebRequest "https://bootstrap.pypa.io/pip/pip.pyz" -OutFile pip.pyz
-    
-    - name: Checkout
-      uses: actions/checkout@v4
-      with:
-        path: MaterialSearchWindows/MaterialSearch
 
-    - name: Install requirements
-      run: MaterialSearchWindows/python.exe pip.pyz install -r MaterialSearchWindows/MaterialSearch/requirements.txt 
-      # --index-url=https://download.pytorch.org/whl/cu118 --extra-index-url=https://pypi.org/simple/
-    
     - name: Download FFMpeg
       run: Invoke-WebRequest "https://github.com/GyanD/codexffmpeg/releases/download/7.0/ffmpeg-7.0-full_build.zip" -OutFile ffmpeg.zip
     
@@ -49,10 +37,22 @@ jobs:
     - name: Copy FFMpeg
       run: cp ffmpeg-7.0-full_build/bin/ffmpeg.exe MaterialSearchWindows
       
+    - name: Checkout
+      uses: actions/checkout@v4
+      with:
+        path: MaterialSearchWindows
+
+    - name: Download pip
+      run: Invoke-WebRequest "https://bootstrap.pypa.io/pip/pip.pyz" -OutFile pip.pyz
+    
+    - name: Install requirements
+      run: MaterialSearchWindows/python.exe pip.pyz install -r MaterialSearchWindows/requirements.txt 
+      # --index-url=https://download.pytorch.org/whl/cu118 --extra-index-url=https://pypi.org/simple/
+      
     - name: Download model
       run: MaterialSearchWindows/python.exe -c 'from transformers import AutoModelForZeroShotImageClassification, AutoImageProcessor; AutoModelForZeroShotImageClassification.from_pretrained("OFA-Sys/chinese-clip-vit-base-patch16"); AutoImageProcessor.from_pretrained("OFA-Sys/chinese-clip-vit-base-patch16");'
       
-    - name: create 运行.bat
+    - name: Create 运行.bat
       uses: DamianReeves/write-file-action@master
       with:
         path: MaterialSearchWindows/运行.bat
@@ -69,10 +69,12 @@ jobs:
           SET HF_HOME=huggingface
           python.exe main.py
           
-    - name: ls
-      run: ls && ls MaterialSearchWindows
+    - name: Compress
+      run: Compress-Archive -LiteralPath MaterialSearchWindows -DestinationPath MaterialSearchWindows.zip
 
-    - name: test
-      run: cd MaterialSearchWindows; ./运行.bat
+    - name: Release
+      uses: softprops/action-gh-release@v2
+      with:
+        files: MaterialSearchWindows.zip
 
 
