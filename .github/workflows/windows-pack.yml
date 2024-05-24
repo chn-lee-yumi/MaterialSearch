@@ -1,0 +1,92 @@
+name: Windows Pack
+
+on:
+  push:
+    branches: [ "main" ]
+
+env:
+  HF_HOME: MaterialSearchWindows/huggingface
+
+jobs:
+  integration-test:
+    uses: ./.github/workflows/integration-test.yml
+
+  build:
+    runs-on: windows-latest
+    needs: [integration-test]
+    steps:
+
+    - name: Checkout
+      uses: actions/checkout@v4
+      with:
+        path: MaterialSearchWindows
+
+    - name: Download Python
+      run: Invoke-WebRequest "https://www.python.org/ftp/python/3.10.11/python-3.10.11-embed-amd64.zip" -OutFile python.zip
+
+    - name: Unzip Python
+      run: Expand-Archive python.zip -DestinationPath MaterialSearchWindows
+
+    - name: Fix python310._pth
+      uses: DamianReeves/write-file-action@master
+      with:
+        path: MaterialSearchWindows/python310._pth
+        write-mode: append
+        contents: |
+          import site
+
+    - name: Download FFMpeg
+      run: Invoke-WebRequest "https://github.com/GyanD/codexffmpeg/releases/download/7.0/ffmpeg-7.0-full_build.zip" -OutFile ffmpeg.zip
+
+    - name: Unzip FFMpeg
+      run: Expand-Archive ffmpeg.zip -DestinationPath .
+
+    - name: Copy FFMpeg
+      run: cp ffmpeg-7.0-full_build/bin/ffmpeg.exe MaterialSearchWindows
+
+    - name: Download pip
+      run: Invoke-WebRequest "https://bootstrap.pypa.io/pip/pip.pyz" -OutFile pip.pyz
+
+    - name: Install requirements
+      run: MaterialSearchWindows/python.exe pip.pyz install -r MaterialSearchWindows/requirements.txt --index-url=https://download.pytorch.org/whl/cu118 --extra-index-url=https://pypi.org/simple/
+
+    - name: Download model
+      run: MaterialSearchWindows/python.exe -c 'from transformers import AutoModelForZeroShotImageClassification, AutoImageProcessor; AutoModelForZeroShotImageClassification.from_pretrained("OFA-Sys/chinese-clip-vit-base-patch16"); AutoImageProcessor.from_pretrained("OFA-Sys/chinese-clip-vit-base-patch16");'
+
+    - name: Create 运行.bat
+      uses: DamianReeves/write-file-action@master
+      with:
+        path: MaterialSearchWindows/运行.bat
+        write-mode: overwrite
+        contents: |
+          :: 下面配置扫描路径，多个路径之间用逗号分隔
+          SET ASSETS_PATH=C:/Users/Administrator/Pictures,C:/Users/Administrator/Videos
+          :: 下面配置设备，cpu或cuda
+          SET DEVICE=cpu
+          SET DEVICE_TEXT=cpu
+          :: 下面的不要改
+          SET PATH=%PATH%;.\
+          SET TRANSFORMERS_OFFLINE=1
+          SET HF_HOME=huggingface
+          python.exe main.py
+
+    - name: Create 使用说明.txt
+      uses: DamianReeves/write-file-action@master
+      with:
+        path: MaterialSearchWindows/使用说明.txt
+        write-mode: overwrite
+        contents: |
+          首先右键“运行.bat”进行编辑，配置扫描路径和设备，然后保存。双击运行“运行.bat”即可。
+          本软件是开源软件，免费下载使用，不用付款购买，切勿上当受骗！
+          最新版本下载和详细使用说明请看：https://github.com/chn-lee-yumi/MaterialSearch
+
+    - name: Compress
+      run: Compress-Archive -LiteralPath MaterialSearchWindows -DestinationPath MaterialSearchWindows.zip
+
+    - name: Release
+      uses: softprops/action-gh-release@v2
+      if: startsWith(github.ref, 'refs/tags/')
+      with:
+        files: MaterialSearchWindows.zip
+
+
