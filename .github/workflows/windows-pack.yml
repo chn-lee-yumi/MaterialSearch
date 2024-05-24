@@ -37,21 +37,20 @@ jobs:
         path: MaterialSearchWindows/MaterialSearch
 
     - name: Install requirements
-      run: MaterialSearchWindows/python.exe pip.pyz install -r MaterialSearchWindows/MaterialSearch/requirements.txt --index-url=https://download.pytorch.org/whl/cu118 --extra-index-url=https://pypi.org/simple/
+      run: MaterialSearchWindows/python.exe pip.pyz install -r MaterialSearchWindows/MaterialSearch/requirements.txt 
+      # --index-url=https://download.pytorch.org/whl/cu118 --extra-index-url=https://pypi.org/simple/
     
     - name: Download FFMpeg
       run: Invoke-WebRequest "https://github.com/GyanD/codexffmpeg/releases/download/7.0/ffmpeg-7.0-full_build.zip" -OutFile ffmpeg.zip
     
     - name: Unzip FFMpeg
       run: Expand-Archive ffmpeg.zip -DestinationPath .
-
       
-    - name: ls
-      run: ls MaterialSearchWindows
+    - name: Copy FFMpeg
+      run: cp ffmpeg-7.0-full_build/bin/ffmpeg.exe MaterialSearchWindows
       
     - name: Download model
       run: MaterialSearchWindows/python.exe -c 'from transformers import AutoModelForZeroShotImageClassification, AutoImageProcessor; AutoModelForZeroShotImageClassification.from_pretrained("OFA-Sys/chinese-clip-vit-base-patch16"); AutoImageProcessor.from_pretrained("OFA-Sys/chinese-clip-vit-base-patch16");'
-
       
     - name: create 运行.bat
       uses: DamianReeves/write-file-action@master
@@ -65,14 +64,13 @@ jobs:
           SET DEVICE=cpu
           SET DEVICE_TEXT=cpu
           :: 下面的不要改
-          SET PATH=%PATH%;..\
+          SET PATH=%PATH%;.\
           SET TRANSFORMERS_OFFLINE=1
-          SET HF_HOME=..\huggingface
-          cd MaterialSearch
-          ..\python main.py
+          SET HF_HOME=huggingface
+          python.exe main.py
           
     - name: ls
-      run: ls MaterialSearchWindows
+      run: ls && ls MaterialSearchWindows
 
     - name: test
       run: cd MaterialSearchWindows; ./运行.bat
