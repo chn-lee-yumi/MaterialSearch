@@ -47,24 +47,25 @@ jobs:
       run: MaterialSearchWindows/python.exe MaterialSearchWindows/pip.pyz install -r MaterialSearchWindows/requirements.txt # --index-url=https://download.pytorch.org/whl/cu118 --extra-index-url=https://pypi.org/simple/
 
     - name: Download model
-      run: MaterialSearchWindows/python.exe -c 'from transformers import AutoModelForZeroShotImageClassification, AutoImageProcessor; AutoModelForZeroShotImageClassification.from_pretrained("OFA-Sys/chinese-clip-vit-base-patch16"); AutoImageProcessor.from_pretrained("OFA-Sys/chinese-clip-vit-base-patch16");'
+      run: MaterialSearchWindows/python.exe -c 'from transformers import AutoModelForZeroShotImageClassification, AutoProcessor; AutoModelForZeroShotImageClassification.from_pretrained("OFA-Sys/chinese-clip-vit-base-patch16"); AutoProcessor.from_pretrained("OFA-Sys/chinese-clip-vit-base-patch16");'
 
-    - name: Create 运行.bat
+    - name: Remove redundant files
+      run: rm -r MaterialSearchWindows/huggingface/hub/models--OFA-Sys--chinese-clip-vit-base-patch16/blobs
+
+    - name: Create .env
       uses: DamianReeves/write-file-action@master
       with:
-        path: MaterialSearchWindows/运行.bat
+        path: MaterialSearchWindows/.env
         write-mode: overwrite
         contents: |
-          :: 下面配置扫描路径，多个路径之间用逗号分隔
-          SET ASSETS_PATH=C:/Users/Administrator/Pictures,C:/Users/Administrator/Videos
-          :: 下面配置设备，cpu或cuda
-          SET DEVICE=cpu
-          SET DEVICE_TEXT=cpu
-          :: 下面的不要改
-          SET PATH=%PATH%;.\
-          SET TRANSFORMERS_OFFLINE=1
-          SET HF_HOME=huggingface
-          python.exe main.py
+          # 下面添加扫描路径，用逗号分隔
+          ASSETS_PATH=C:\Users\Administrator\Pictures,C:\Users\Administrator\Videos
+          # 下面填写扫描设备，cpu或gpu。注意：N卡才能选gpu，并且请先运行"N卡加速安装.bat"
+          DEVICE=cpu
+          DEVICE_TEXT=cpu
+          # 下面的不要改
+          TRANSFORMERS_OFFLINE=1
+          HF_HOME=huggingface
           
     - name: Create N卡加速安装.bat
       uses: DamianReeves/write-file-action@master
@@ -72,7 +73,8 @@ jobs:
         path: MaterialSearchWindows/N卡加速安装.bat
         write-mode: overwrite
         contents: |
-          python.exe pip.pyz install torch --index-url=https://download.pytorch.org/whl/cu118
+          python pip.pyz install torch --index-url=https://download.pytorch.org/whl/cu118
+          PAUSE
           
     - name: Create 使用说明.txt
       uses: DamianReeves/write-file-action@master
@@ -81,7 +83,9 @@ jobs:
         write-mode: overwrite
         contents: |
           如果你是NVIDIA显卡且想使用显卡加速，则请先双击运行“N卡加速安装.bat”。如果你是用AMD显卡，或者不想用显卡加速，则跳过这一步。
-          右键“运行.bat”进行编辑，配置扫描路径和设备，然后保存。双击运行“运行.bat”即可。
+          右键“.env”文件进行编辑，配置扫描路径和设备，然后保存。
+          最后双击运行“run.bat”即可，待看到"http://127.0.0.1:8085"的输出就可以浏览器打开对应链接进行使用。
+          关闭“run.bat”的运行框即关闭程序。
           本软件是开源软件，免费下载使用，不用付款购买，切勿上当受骗！
           最新版本下载和详细使用说明请看：https://github.com/chn-lee-yumi/MaterialSearch
 
