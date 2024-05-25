@@ -51,7 +51,7 @@ jobs:
 
     # 下载模型的时候snapshot是链接到blobs的，但压缩的时候会将blobs和snapshot都压缩一次，导致解压后模型变成双倍大小。下面是临时解决办法。
     - name: Solve zip issue
-      run: rm -r MaterialSearchWindows/huggingface/hub/models--OFA-Sys--chinese-clip-vit-base-patch16/snapshot; mv MaterialSearchWindows/huggingface/hub/models--OFA-Sys--chinese-clip-vit-base-patch16/blobs MaterialSearchWindows/huggingface/hub/models--OFA-Sys--chinese-clip-vit-base-patch16/snapshot
+      run: rm -r MaterialSearchWindows/huggingface/hub/models--OFA-Sys--chinese-clip-vit-base-patch16/snapshots; mv MaterialSearchWindows/huggingface/hub/models--OFA-Sys--chinese-clip-vit-base-patch16/blobs MaterialSearchWindows/huggingface/hub/models--OFA-Sys--chinese-clip-vit-base-patch16/snapshot
 
     - name: Create .env
       uses: DamianReeves/write-file-action@master
