@@ -91,10 +91,10 @@ jobs:
 
     # 下载模型的时候snapshot是链接到blobs的，但压缩的时候会将blobs和snapshot都压缩一次，导致解压后模型变成双倍大小。下面是临时解决办法，不过有点bug（目录不对），所以暂时不解决。
     - name: Unzip (solve zip issue)
-      run: Expand-Archive MaterialSearchWindows.zip -DestinationPath MaterialSearch; rm -r MaterialSearch/huggingface/hub/models--OFA-Sys--chinese-clip-vit-base-patch16/blobs
+      run: Expand-Archive MaterialSearchWindows.zip -DestinationPath MaterialSearch_tmp; rm MaterialSearchWindows.zip; rm -r MaterialSearch_tmp/MaterialSearchWindows/huggingface/hub/models--OFA-Sys--chinese-clip-vit-base-patch16/blobs
 
     - name: Compress (solve zip issue)
-      run: Compress-Archive -LiteralPath MaterialSearch -DestinationPath MaterialSearchWindows.zip
+      run: Compress-Archive -LiteralPath MaterialSearch_tmp/MaterialSearchWindows -DestinationPath MaterialSearchWindows.zip
 
     - name: Release
       uses: softprops/action-gh-release@v2
