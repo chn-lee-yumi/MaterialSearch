@@ -61,17 +61,17 @@ jobs:
         contents: |
           # 下面添加扫描路径，用逗号分隔
           ASSETS_PATH=C:\Users\Administrator\Pictures,C:\Users\Administrator\Videos
-          # 下面填写扫描设备，cpu或gpu。注意：N卡才能选gpu，并且请先运行"N卡加速安装.bat"
+          # 下面填写扫描设备，cpu或cuda（cuda会使用NVIDIA显卡进行加速）。注意：N卡才能选cuda，并且请先运行"CUDA加速安装.bat"。
           DEVICE=cpu
           DEVICE_TEXT=cpu
           # 下面的不要改
           TRANSFORMERS_OFFLINE=1
           HF_HOME=huggingface
           
-    - name: Create N卡加速安装.bat
+    - name: Create CUDA加速安装.bat
       uses: DamianReeves/write-file-action@master
       with:
-        path: MaterialSearchWindows/N卡加速安装.bat
+        path: MaterialSearchWindows/CUDA加速安装.bat
         write-mode: overwrite
         contents: |
           python pip.pyz install torch --index-url=https://download.pytorch.org/whl/cu118
