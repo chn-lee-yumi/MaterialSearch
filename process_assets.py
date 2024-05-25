@@ -53,7 +53,7 @@ def process_image(path, ignore_small_images=True):
     image = get_image_data(path, ignore_small_images)
     if image is None:
         return None
-    inputs = processor(images=image, return_tensors="pt", padding=True)["pixel_values"].to(torch.device(DEVICE))
+    inputs = processor(images=image, return_tensors="pt")["pixel_values"].to(torch.device(DEVICE))
     feature = model.get_image_features(inputs).detach().cpu().numpy()
     return feature
 
@@ -72,7 +72,7 @@ def process_images(path_list, ignore_small_images=True):
             path_list.remove(path)
             continue
         images.append(image)
-    inputs = processor(images=images, return_tensors="pt", padding=True)["pixel_values"].to(torch.device(DEVICE))
+    inputs = processor(images=images, return_tensors="pt")["pixel_values"].to(torch.device(DEVICE))
     features = model.get_image_features(inputs).detach().cpu().numpy()
     return path_list, features
 
@@ -88,7 +88,7 @@ def process_web_image(url):
     except Exception as e:
         logger.warning("获取图片报错：%s %s" % (url, repr(e)))
         return None
-    inputs = processor(images=image, return_tensors="pt", padding=True)["pixel_values"].to(torch.device(DEVICE))
+    inputs = processor(images=image, return_tensors="pt")["pixel_values"].to(torch.device(DEVICE))
     feature = model.get_image_features(inputs).detach().cpu().numpy()
     return feature
 
@@ -135,7 +135,7 @@ def process_video(path):
     try:
         video = cv2.VideoCapture(path)
         for ids, frames in get_frames(video):
-            inputs = processor(images=frames, return_tensors="pt", padding=True)["pixel_values"].to(torch.device(DEVICE))
+            inputs = processor(images=frames, return_tensors="pt")["pixel_values"].to(torch.device(DEVICE))
             features = model.get_image_features(inputs).detach().cpu().numpy()
             if features is None:
                 logger.warning("features is None")
