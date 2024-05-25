@@ -51,7 +51,7 @@ jobs:
       run: MaterialSearchWindows/python.exe -c 'from transformers import AutoModelForZeroShotImageClassification, AutoProcessor; AutoModelForZeroShotImageClassification.from_pretrained("OFA-Sys/chinese-clip-vit-base-patch16"); AutoProcessor.from_pretrained("OFA-Sys/chinese-clip-vit-base-patch16");'
 
     - name: ls
-      run: ls MaterialSearchWindows/huggingface/hub/; ls models--OFA-Sys--chinese-clip-vit-base-patch16/
+      run: ls MaterialSearchWindows/huggingface/hub/models--OFA-Sys--chinese-clip-vit-base-patch16
       
     # 下载模型的时候snapshot是链接到blobs的，但压缩的时候会将blobs和snapshot都压缩一次，导致解压后模型变成双倍大小。下面是临时解决办法。
     - name: Solve zip issue
