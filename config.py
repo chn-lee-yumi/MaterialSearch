@@ -28,7 +28,7 @@ AUTO_SAVE_INTERVAL = int(os.getenv('AUTO_SAVE_INTERVAL', 100))  # 扫描自动�
 # *****模型配置*****
 # 更换模型需要删库重新扫描！否则搜索会报错。数据库路径见下面SQLALCHEMY_DATABASE_URL参数。模型越大，扫描速度越慢，且占用的内存和显存越大。
 # 如果显存较小且用了较大的模型，并在扫描的时候出现了"CUDA out of memory"，请换成较小的模型。如果显存充足，可以调大上面的SCAN_PROCESS_BATCH_SIZE来提高扫描速度。
-# 4G显存推荐参数：小模型，SCAN_PROCESS_BATCH_SIZE=8
+# 4G显存推荐参数：小模型，SCAN_PROCESS_BATCH_SIZE=16
 # 8G显存推荐参数：小模型，SCAN_PROCESS_BATCH_SIZE=32
 # 超大模型最低显存要求是6G，且SCAN_PROCESS_BATCH_SIZE=1
 # 其余显存大小请自行摸索搭配。
