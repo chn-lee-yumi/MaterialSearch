@@ -6,7 +6,7 @@ ENV HF_HOME=/MaterialSearch/transformers/
 RUN apt update && apt install -y ffmpeg && apt clean
 COPY requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt
-RUN python -c 'from transformers import AutoModelForZeroShotImageClassification, AutoImageProcessor; AutoModelForZeroShotImageClassification.from_pretrained("OFA-Sys/chinese-clip-vit-base-patch16"); AutoImageProcessor.from_pretrained("OFA-Sys/chinese-clip-vit-base-patch16");'
+RUN python -c 'from transformers import AutoModelForZeroShotImageClassification, AutoProcessor; AutoModelForZeroShotImageClassification.from_pretrained("OFA-Sys/chinese-clip-vit-base-patch16"); AutoProcessor.from_pretrained("OFA-Sys/chinese-clip-vit-base-patch16");'
 COPY *.py ./
 COPY static/ ./static/
 ENV TRANSFORMERS_OFFLINE=1
