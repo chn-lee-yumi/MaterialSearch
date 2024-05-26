@@ -45,7 +45,6 @@ def delete_image_if_outdated(session: Session, path: str) -> bool:
     """
     record = session.query(Image).filter_by(path=path).first()
     if not record:
-        logger.info(f"新增文件：{path}")
         return False
     modify_time = os.path.getmtime(path)
     modify_time = datetime.datetime.fromtimestamp(modify_time)
@@ -67,7 +66,6 @@ def delete_video_if_outdated(session: Session, path: str) -> bool:
     """
     record = session.query(Video).filter_by(path=path).first()
     if not record:
-        logger.info(f"新增文件：{path}")
         return False
     modify_time = os.path.getmtime(path)
     modify_time = datetime.datetime.fromtimestamp(modify_time)
@@ -121,6 +119,7 @@ def delete_video_by_path(session: Session, path: str):
 
 def add_image(session: Session, path: str, modify_time: datetime.datetime, features: bytes):
     """添加图片到数据库"""
+    logger.info(f"新增文件：{path}")
     image = Image(path=path, modify_time=modify_time, features=features)
     session.add(image)
     session.commit()
@@ -135,6 +134,7 @@ def add_video(session: Session, path: str, modify_time, frame_time_features_gene
     :param frame_time_features_generator: 返回(帧序列号,特征)元组的迭代器
     """
     # 使用 bulk_save_objects 一次性提交，因此处理至一半中断不会导致下次扫描时跳过
+    logger.info(f"新增文件：{path}")
     video_list = (
         Video(
             path=path, modify_time=modify_time, frame_time=frame_time, features=features
