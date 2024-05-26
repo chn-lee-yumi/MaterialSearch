@@ -72,6 +72,8 @@ def process_images(path_list, ignore_small_images=True):
             path_list.remove(path)
             continue
         images.append(image)
+    if not images:
+        return None, None
     inputs = processor(images=images, return_tensors="pt")["pixel_values"].to(torch.device(DEVICE))
     features = model.get_image_features(inputs).detach().cpu().numpy()
     return path_list, features

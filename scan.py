@@ -155,6 +155,8 @@ class Scanner:
 
     def handle_image_batch(self, session, image_batch_dict):
         path_list, features_list = process_images(list(image_batch_dict.keys()))
+        if not path_list:
+            return
         for path, features in zip(path_list, features_list):
             # 写入数据库
             features = features.tobytes()
