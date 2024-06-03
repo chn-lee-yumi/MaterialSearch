@@ -64,4 +64,8 @@ global_vars = globals().copy()
 for var_name, var_value in global_vars.items():
     if var_name[0].isupper():
         print(f"{var_name}: {var_value!r}")
+print(f"HF_HOME: {os.getenv('HF_HOME')}")
+print(f"HF_HUB_OFFLINE: {os.getenv('HF_HUB_OFFLINE')}")
+print(f"TRANSFORMERS_OFFLINE: {os.getenv('TRANSFORMERS_OFFLINE')}")
+print(f"CWD: {os.getcwd()}")
 print("**************************************************")
