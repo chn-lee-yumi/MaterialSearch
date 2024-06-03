@@ -62,6 +62,7 @@ jobs:
           DEVICE_TEXT=cpu
           # 下面的不要改
           TRANSFORMERS_OFFLINE=1
+          HF_HUB_OFFLINE=1
           HF_HOME=huggingface
           
     - name: Create CUDA加速安装.bat
@@ -79,6 +80,7 @@ jobs:
         path: MaterialSearchWindows/使用说明.txt
         write-mode: overwrite
         contents: |
+          ！！！注意：如果你的电脑本来已经装过其它整合包（如 Stable Diffusion 等），可能会导致python环境冲突，进而使得本整合包无法使用。如遇到这种情况，请清理之前的环境，或者尝试双击“install.bat”更新环境。
           如果你是NVIDIA显卡且想使用显卡加速，则请先双击运行“N卡加速安装.bat”。如果你是用AMD显卡，或者不想用显卡加速，则跳过这一步。
           右键“.env”文件进行编辑，配置扫描路径和设备，然后保存。
           最后双击运行“run.bat”即可，待看到"http://127.0.0.1:8085"的输出就可以浏览器打开对应链接进行使用。
