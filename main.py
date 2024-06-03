@@ -280,4 +280,5 @@ def api_upload():
 
 if __name__ == "__main__":
     init()
+    logging.getLogger('werkzeug').setLevel(LOG_LEVEL)
     app.run(port=PORT, host=HOST, debug=FLASK_DEBUG)
