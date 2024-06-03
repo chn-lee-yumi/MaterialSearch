@@ -71,7 +71,16 @@ jobs:
         path: MaterialSearchWindows/CUDA加速安装.bat
         write-mode: overwrite
         contents: |
-          python pip.pyz install torch --index-url=https://download.pytorch.org/whl/cu118
+          ./python.exe pip.pyz install torch --index-url=https://download.pytorch.org/whl/cu118
+          PAUSE
+
+    - name: Create run.bat
+      uses: DamianReeves/write-file-action@master
+      with:
+        path: MaterialSearchWindows/run.bat
+        write-mode: overwrite
+        contents: |
+          ./python.exe main.py
           PAUSE
           
     - name: Create 使用说明.txt
@@ -100,7 +109,7 @@ jobs:
 
     # 改用7z压缩，提高压缩率
     - name: Compress (solve zip issue)
-      run: 7zr a MaterialSearchWindows.7z MaterialSearch_tmp/MaterialSearchWindows
+      run: ./7zr.exe a MaterialSearchWindows.7z MaterialSearch_tmp/MaterialSearchWindows
 
     - name: Release
       uses: softprops/action-gh-release@v2
