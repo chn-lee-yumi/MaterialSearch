@@ -17,9 +17,6 @@ jobs:
       with:
         path: MaterialSearchWindows
 
-    - name: Download 7zr
-      run: Invoke-WebRequest "https://www.7-zip.org/a/7zr.exe" -OutFile 7zr.exe
-
     - name: Download Python
       run: Invoke-WebRequest "https://www.python.org/ftp/python/3.10.11/python-3.10.11-embed-amd64.zip" -OutFile python.zip
 
@@ -91,8 +88,11 @@ jobs:
           本软件是开源软件，免费下载使用，不用付款购买，切勿上当受骗！
           最新版本下载和详细使用说明请看：https://github.com/chn-lee-yumi/MaterialSearch
 
-    - name: Compress
-      run: Compress-Archive -LiteralPath MaterialSearchWindows -DestinationPath MaterialSearchWindows.zip
+    - name: Download 7zr
+      run: Invoke-WebRequest "https://www.7-zip.org/a/7zr.exe" -OutFile 7zr.exe
+
+    - name: Compress (has bug)
+      run: Compress-Archive -CompressionLevel NoCompression -LiteralPath MaterialSearchWindows -DestinationPath MaterialSearchWindows.zip
 
     # 下载模型的时候snapshot是链接到blobs的，但压缩的时候会将blobs和snapshot都压缩一次，导致解压后模型变成双倍大小。下面是临时解决办法，不过有点bug（目录不对），所以暂时不解决。
     - name: Unzip (solve zip issue)
