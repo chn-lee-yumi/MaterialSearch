@@ -155,7 +155,7 @@ class Scanner:
 
     def handle_image_batch(self, session, image_batch_dict):
         path_list, features_list = process_images(list(image_batch_dict.keys()))
-        if not path_list:
+        if not path_list or features_list is None:
             return
         for path, features in zip(path_list, features_list):
             # 写入数据库
