@@ -17,6 +17,9 @@ jobs:
       with:
         path: MaterialSearchWindows
 
+    - name: Download 7zr
+      run: Invoke-WebRequest "https://www.7-zip.org/a/7zr.exe" -OutFile 7zr.exe
+
     - name: Download Python
       run: Invoke-WebRequest "https://www.python.org/ftp/python/3.10.11/python-3.10.11-embed-amd64.zip" -OutFile python.zip
 
@@ -95,13 +98,14 @@ jobs:
     - name: Unzip (solve zip issue)
       run: Expand-Archive MaterialSearchWindows.zip -DestinationPath MaterialSearch_tmp; rm MaterialSearchWindows.zip; rm -r MaterialSearch_tmp/MaterialSearchWindows/huggingface/hub/models--OFA-Sys--chinese-clip-vit-base-patch16/blobs
 
+    # 改用7z压缩，提高压缩率
     - name: Compress (solve zip issue)
-      run: Compress-Archive -LiteralPath MaterialSearch_tmp/MaterialSearchWindows -DestinationPath MaterialSearchWindows.zip
+      run: 7zr a MaterialSearchWindows.7z MaterialSearch_tmp/MaterialSearchWindows
 
     - name: Release
       uses: softprops/action-gh-release@v2
       if: startsWith(github.ref, 'refs/tags/')
       with:
-        files: MaterialSearchWindows.zip
+        files: MaterialSearchWindows.7z
 
 
