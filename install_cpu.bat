@@ -1,2 +1,2 @@
-pip install -U -r requirements.txt --index-url=https://pypi.douban.com/simple/
+pip install -U -r requirements.txt --index-url=https://pypi.org/simple/
 pause
