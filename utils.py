@@ -84,13 +84,14 @@ def crop_video(input_file, output_file, start_time, end_time):
         cmd += ".exe"
     command = [
         cmd,
-        '-i', input_file,
         '-ss', format_seconds(start_time),
         '-to', format_seconds(end_time),
+        '-i', input_file,
         '-c:v', 'copy',
         '-c:a', 'copy',
         output_file
     ]
+    logger.info("Crop video:", " ".join(command))
     subprocess.run(command)
 
 
