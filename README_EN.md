@@ -13,7 +13,6 @@ Online Demo：https://chn-lee-yumi.github.io/MaterialSearchWebDemo/
 - Text-based video search (provides matching video clips based on descriptions)
 - Image-based video search (searches for video segments based on screenshots)
 - Calculation of image-text similarity (provides a score, not very useful)
-- Pexels video search
 
 ## Deploy Instructions
 
@@ -80,12 +79,6 @@ https_proxy=http://127.0.0.1:7070
 ```
 
 Note: It is no recommended to set `ASSETS_PATH` as remote directory such as SMB/NFS, which may slow your scanning speed.
-
-## Pexels Video Search Functionality Instructions
-
-[Download the database](https://drive.google.com/file/d/1LZAI7QuTxiNgLzpp_6s5zIQdwb9AlxQ1/view?usp=sharing) and unzip to the root directory of this repo, and then restart the program. Then you can search Pexels videos.
-
-Note: This database uses `OFA-Sys/chinese-clip-vit-base-patch16` model. If you use other models, this function will not work correctly.
 
 ## Troubleshooting
 
