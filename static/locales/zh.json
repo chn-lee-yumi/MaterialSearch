@@ -36,14 +36,14 @@
     "uploading": "上传中……"
   },
   "formPlaceholders": {
-    "positiveSearch": "搜索内容（不能为空）",
-    "negativeSearch": "过滤内容（可以留空）",
+    "positiveSearch": "搜索内容（不能为空，建议使用英文逗号分隔关键词）",
+    "negativeSearch": "过滤内容（可以留空，建议使用英文逗号分隔关键词）",
     "positiveThreshold": "搜索阈值（高于该相似度才显示）",
     "negativeThreshold": "过滤阈值（低于该相似度才显示）",
     "topNResults": "查看前n个结果",
     "imagePath": "图片路径（不能为空）",
     "videoPath": "视频路径（不能为空）",
-    "textMatch": "文字内容（不能为空）",
+    "textMatch": "文字内容（不能为空，建议使用英文逗号分隔关键词）",
     "topnAll": "全部"
   },
   "searchButtons": {
