@@ -104,8 +104,9 @@ Increasing the search threshold can speed up searching speed. On a J3455 CPU, wh
 
 ## Known Issues
 
-1. Some images and videos cannot be displayed on the web page because the browser does not support that file type (such as TIFF files, videos encoded with SVQ3, etc.).
-2. When searching for videos, if too many videos are displayed and the video size is too large, the computer may freeze, which is normal. So it is suggested that do not select more than 12 results when you searching videos.
+1. Some videos cannot be displayed on the web page because the browser does not support that file type (e.g. videos encoded with SVQ3).
+2. When you click on an image to enlarge it, some images cannot be displayed because the browser does not support this type of file (e.g. images in tiff format). Small images can be displayed normally because they are converted into thumbnails in a format supported by the browser. Large images use the original file.
+3. When searching for videos, if too many videos are displayed and the video size is too large, the computer may freeze, which is normal. So it is suggested that do not select more than 12 results when you searching videos.
 
 ## About Pull Requests
 
