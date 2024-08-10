@@ -27,6 +27,7 @@ class Scanner:
 
     def __init__(self) -> None:
         # 全局变量
+        self.scanned = False  # 表示本次自动扫描时间段内是否以及扫描过
         self.is_scanning = False
         self.scan_start_time = 0
         self.scanning_files = 0
@@ -137,10 +138,14 @@ class Scanner:
         """
         while True:
             time.sleep(5)
-            if self.is_scanning or not self.is_current_auto_scan_time():
-                continue
-            self.logger.info("触发自动扫描")
-            self.scan(True)
+            if self.is_scanning:
+                self.scanned = True  # 设置扫描标记，这样如果手动扫描在自动扫描时间段内结束，也不会重新扫描
+            elif not self.is_current_auto_scan_time():
+                self.scanned = False  # 已经过了自动扫描时间段，重置扫描标记
+            elif not self.scanned and self.is_current_auto_scan_time():
+                self.logger.info("触发自动扫描")
+                self.scanned = True  # 表示本目标时间段内已进行扫描，防止同个时间段内扫描多次
+                self.scan(True)
 
     def scan_dir(self):
         """
