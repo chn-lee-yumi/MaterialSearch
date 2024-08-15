@@ -30,8 +30,8 @@ def get_image_feature(images):
     try:
         inputs = processor(images=images, return_tensors="pt")["pixel_values"].to(torch.device(DEVICE))
         feature = model.get_image_features(inputs).detach().cpu().numpy()
-    except:
-        logger.warning(f"处理图片报错：")
+    except Exception as e:
+        logger.warning(f"处理图片报错：{repr(e)}")
         traceback.print_stack()
     return feature
 
@@ -173,8 +173,8 @@ def process_text(input_text):
     try:
         text = processor(text=input_text, return_tensors="pt", padding=True)["input_ids"].to(torch.device(DEVICE))
         feature = model.get_text_features(text).detach().cpu().numpy()
-    except:
-        logger.warning(f"处理文字报错：")
+    except Exception as e:
+        logger.warning(f"处理文字报错：{repr(e)}")
         traceback.print_stack()
     return feature
 
