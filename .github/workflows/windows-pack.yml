@@ -109,7 +109,7 @@ jobs:
 
     # 改用7z压缩，提高压缩率
     - name: Compress (solve zip issue)
-      run: rm -r MaterialSearchWindows; mv MaterialSearch_tmp/MaterialSearchWindows ./; ./7zr.exe a MaterialSearchWindows.7z MaterialSearchWindows
+      run: cd MaterialSearch_tmp; ../7zr.exe a ../MaterialSearchWindows.7z MaterialSearchWindows
 
     - name: Release
       uses: softprops/action-gh-release@v2
