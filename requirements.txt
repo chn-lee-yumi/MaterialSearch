@@ -1,7 +1,7 @@
-numpy>=1.20.3
+numpy>=1.20.3,<2.0
 Flask>=2.2.2
 SQLAlchemy>=2.0.20
-torch>=1.13.1
+torch>=2.0,<2.4
 Pillow>=8.1.0
 pillow-heif>=0.14.0
 transformers>=4.28.1
