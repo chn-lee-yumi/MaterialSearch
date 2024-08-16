@@ -57,7 +57,7 @@ jobs:
         contents: |
           # 下面添加扫描路径，用逗号分隔
           ASSETS_PATH=C:\Users\Administrator\Pictures,C:\Users\Administrator\Videos
-          # 下面填写扫描设备，cpu或cuda（cuda会使用NVIDIA显卡进行加速）。注意：NVIDIA显卡才能选cuda，并且请先运行"CUDA加速安装.bat"。AMD显卡不支持加速。
+          # 下面填写扫描设备，cpu或cuda（cuda会使用NVIDIA显卡进行加速）。注意：NVIDIA显卡才能选cuda，并且请先运行"CUDA加速安装.bat"，等下载安装完毕之后再重新运行“run.bat”。AMD显卡不支持加速。
           DEVICE=cpu
           DEVICE_TEXT=cpu
           # 下面的不要改
