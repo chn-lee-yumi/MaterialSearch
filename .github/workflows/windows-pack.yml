@@ -71,7 +71,7 @@ jobs:
         path: MaterialSearchWindows/CUDA加速安装.bat
         write-mode: overwrite
         contents: |
-          .\python.exe pip.pyz install -U torch<2.4 --index-url=https://download.pytorch.org/whl/cu118
+          .\python.exe pip.pyz install -U "torch>=2.0,<2.4" --index-url=https://download.pytorch.org/whl/cu118
           PAUSE
 
     - name: Create run.bat
