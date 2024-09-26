@@ -75,6 +75,10 @@
                     <el-form-item :label="$t('formPlaceholders.negativeThreshold')" style="margin-bottom: 0px;" @keyup.enter.native="search(0)">
                         <el-slider style="width:200px" v-model="form.negative_threshold"></el-slider>
                     </el-form-item>
+                    <el-form-item :label="$t('formPlaceholders.date')" style="margin-bottom: 0px;">
+                        <el-date-picker v-model="time_filter" type="datetimerange" start-placeholder="Start date" end-placeholder="End date"
+                                        format="YYYY-MM-DD HH:mm:ss" date-format="YYYY/MM/DD ddd" time-format="A hh:mm:ss"></el-date-picker>
+                    </el-form-item>
                     <el-select v-model="form.top_n" :placeholder="$t('formPlaceholders.topNResults')" style="width:100px">
                         <el-option label="Top 6" value="6"></el-option>
                         <el-option label="Top 12" value="12"></el-option>
@@ -120,6 +124,10 @@
                     </el-form-item>
                     <el-form-item :label="$t('formPlaceholders.negativeThreshold')" style="margin-bottom: 0px;" @keyup.enter.native="search(2)">
                         <el-slider style="width:200px" v-model="form.negative_threshold"></el-slider>
+                    </el-form-item>
+                    <el-form-item :label="$t('formPlaceholders.date')" style="margin-bottom: 0px;">
+                        <el-date-picker v-model="time_filter" type="datetimerange" start-placeholder="Start date" end-placeholder="End date"
+                                        format="YYYY-MM-DD HH:mm:ss" date-format="YYYY/MM/DD ddd" time-format="A hh:mm:ss"></el-date-picker>
                     </el-form-item>
                     <el-select v-model="form.top_n" :placeholder="$t('formPlaceholders.topNResults')" style="width:100px">
                         <el-option label="Top 6" value="6"></el-option>
@@ -300,6 +308,7 @@ const app = Vue.createApp({
                 start_time: 0,
                 end_time: 0,
             },
+            time_filter: null,
             files: [],
             image_url_list: [],
             pexels_videos: [],
@@ -380,6 +389,13 @@ const app = Vue.createApp({
                 ElementPlus.ElMessage.error(that.$t('messages.textContentEmpty'));
                 loadingInstance.close();
                 return;
+            }
+            if (that.time_filter) {
+                that.form.start_time = Math.floor(that.time_filter[0] / 1000);
+                that.form.end_time = Math.floor(that.time_filter[1] / 1000);
+            } else {
+                that.form.start_time = 0;
+                that.form.end_time = 0;
             }
             axios.post('/api/match', that.form)
                 .then(function(response) {
@@ -486,8 +502,6 @@ async function loadLocales() {
 loadLocales().then(() => {
     app.mount('#app');
 });
-
-
 </script>
 <style scoped>
 .el-tag {
@@ -532,7 +546,5 @@ video {
     max-height: 240px;
     margin-bottom: 2px;
 }
-
-
 </style>
 </html>

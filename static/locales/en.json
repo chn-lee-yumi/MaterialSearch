@@ -40,6 +40,7 @@
     "negativeThreshold": "Filter Threshold (display when similarity is below)",
     "topNResults": "Show Top N Results",
     "path": "Search Path (left empty means don't filter by path)",
+    "date": "Modify Time",
     "textMatch": "Text Content (cannot be empty)",
     "topnAll": "ALL"
   },
@@ -71,7 +72,7 @@
     "searching": "Searching..."
   },
   "footer": {
-    "description": "This project is open-sourced on GitHub: ",
+    "description1": "This project is open-sourced on GitHub: ",
     "description2": "(if you like, please star~)"
   }
 }

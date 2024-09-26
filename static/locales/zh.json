@@ -40,6 +40,7 @@
     "negativeThreshold": "过滤阈值（低于该相似度才显示）",
     "topNResults": "查看前n个结果",
     "path": "搜索路径（留空表示不对路径进行过滤）",
+    "date": "修改时间",
     "textMatch": "文字内容（不能为空，建议使用英文逗号分隔关键词）",
     "topnAll": "全部"
   },
