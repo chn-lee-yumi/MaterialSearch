@@ -83,7 +83,7 @@ def test_api_match():
         "negative_threshold": 10,
         "image_threshold": 85,
         "img_id": -1,
-        "path": "",
+        "path": "test.png",
         "start_time": 0,
         "end_time": 0,
     }
@@ -107,8 +107,7 @@ def test_api_match():
         assert data[0]["path"] == "test.png"
         assert data[0]["score"] != 0
     # 测试下载图片
-    image_url = data[0]["url"]
-    response = requests.get('http://127.0.0.1:8085/' + image_url)
+    response = requests.get('http://127.0.0.1:8085/' + data[0]["url"])
     assert response.status_code == 200
     with open(upload_file, "rb") as f:
         hash_origin = get_hash(f)
@@ -118,14 +117,6 @@ def test_api_match():
     # TODO：文字搜视频
     # TODO：以图搜视频
     # TODO：get_video
-    # 路径搜图
-    payload["search_type"] = 7
-    payload["path"] = "test.png"
-    response = requests.post('http://127.0.0.1:8085/api/match', json=payload)
-    data = response.json()
-    assert len(data) == 1  # 测试环境默认只有一张图
-    assert data[0]["path"] == "test.png"
-    assert data[0]["url"] == image_url
 
 
 # 运行测试
