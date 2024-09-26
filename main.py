@@ -15,11 +15,9 @@ from scan import Scanner
 from search import (
     clean_cache,
     search_image_by_image,
-    search_image_by_text,
-    search_image_file,
+    search_image_by_text_path_time,
     search_video_by_image,
-    search_video_by_text,
-    search_video_file,
+    search_video_by_text_path_time,
     search_pexels_video_by_text,
 )
 from utils import crop_video, get_hash, resize_image_with_aspect_ratio
@@ -156,6 +154,8 @@ def api_match():
     image_threshold = data["image_threshold"]
     img_id = data["img_id"]
     path = data["path"]
+    start_time = data["start_time"]
+    end_time = data["end_time"]
     upload_file_path = session.get('upload_file_path', '')
     session['upload_file_path'] = ""
     if search_type in (1, 3, 4):
@@ -164,11 +164,13 @@ def api_match():
     logger.debug(data)
     # 进行匹配
     if search_type == 0:  # 文字搜图
-        results = search_image_by_text(data["positive"], data["negative"], positive_threshold, negative_threshold)
+        results = search_image_by_text_path_time(data["positive"], data["negative"], positive_threshold, negative_threshold,
+                                                 path, start_time, end_time)
     elif search_type == 1:  # 以图搜图
         results = search_image_by_image(upload_file_path, image_threshold)
     elif search_type == 2:  # 文字搜视频
-        results = search_video_by_text(data["positive"], data["negative"], positive_threshold, negative_threshold)
+        results = search_video_by_text_path_time(data["positive"], data["negative"], positive_threshold, negative_threshold,
+                                                 path, start_time, end_time)
     elif search_type == 3:  # 以图搜视频
         results = search_video_by_image(upload_file_path, image_threshold)
     elif search_type == 4:  # 图文相似度匹配
@@ -178,10 +180,6 @@ def api_match():
         results = search_image_by_image(img_id, image_threshold)
     elif search_type == 6:  # 以图搜视频(图片是数据库中的)
         results = search_video_by_image(img_id, image_threshold)
-    elif search_type == 7:  # 路径搜图
-        results = search_image_file(path)
-    elif search_type == 8:  # 路径搜视频
-        results = search_video_file(path)
     elif search_type == 9:  # 文字搜pexels视频
         results = search_pexels_video_by_text(data["positive"], positive_threshold)
     else:  # 空

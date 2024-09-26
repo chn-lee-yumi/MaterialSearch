@@ -25,8 +25,6 @@
     "imageSearch": "以图搜图",
     "textVideoSearch": "文字搜视频",
     "imageVideoSearch": "以图搜视频",
-    "pathImageSearch": "路径搜图",
-    "pathVideoSearch": "路径搜视频",
     "textImageSimilarity": "图文相似度匹配",
     "pexelsVideos": "pexels视频"
   },
@@ -36,13 +34,12 @@
     "uploading": "上传中……"
   },
   "formPlaceholders": {
-    "positiveSearch": "搜索内容（不能为空，建议使用英文逗号分隔关键词）",
-    "negativeSearch": "过滤内容（可以留空，建议使用英文逗号分隔关键词）",
+    "positiveSearch": "搜索内容（建议使用英文逗号分隔关键词）",
+    "negativeSearch": "过滤内容（建议使用英文逗号分隔关键词）",
     "positiveThreshold": "搜索阈值（高于该相似度才显示）",
     "negativeThreshold": "过滤阈值（低于该相似度才显示）",
     "topNResults": "查看前n个结果",
-    "imagePath": "图片路径（不能为空）",
-    "videoPath": "视频路径（不能为空）",
+    "path": "搜索路径（留空表示不对路径进行过滤）",
     "textMatch": "文字内容（不能为空，建议使用英文逗号分隔关键词）",
     "topnAll": "全部"
   },
@@ -62,7 +59,7 @@
     "sourcePage": "来源页面"
   },
   "messages": {
-    "searchContentEmpty": "搜索内容不能为空",
+    "searchContentEmpty": "搜索内容或搜索路径至少需要输入一个",
     "textContentEmpty": "文字内容不能为空",
     "clipboardCopySuccess": "路径已复制到剪贴板",
     "totalSearchResult": "共搜索出来",

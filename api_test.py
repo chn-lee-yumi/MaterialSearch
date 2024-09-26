@@ -84,6 +84,8 @@ def test_api_match():
         "image_threshold": 85,
         "img_id": -1,
         "path": "",
+        "start_time": 0,
+        "end_time": 0,
     }
     # 文字搜图
     response = requests.post('http://127.0.0.1:8085/api/match', json=payload)
@@ -124,7 +126,6 @@ def test_api_match():
     assert len(data) == 1  # 测试环境默认只有一张图
     assert data[0]["path"] == "test.png"
     assert data[0]["url"] == image_url
-    # TODO：路径搜视频
 
 
 # 运行测试

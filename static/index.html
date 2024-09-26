@@ -67,6 +67,8 @@
                               @keyup.enter.native="search(0)"></el-input>
                     <el-input :placeholder="$t('formPlaceholders.negativeSearch')" v-model="form.negative" class="input-with-select"
                               @keyup.enter.native="search(0)"></el-input>
+                    <el-input :placeholder="$t('formPlaceholders.path')" v-model="form.path" class="input-with-select"
+                              @keyup.enter.native="search(0)"></el-input>
                     <el-form-item :label="$t('formPlaceholders.positiveThreshold')" style="margin-bottom: 0px;" @keyup.enter.native="search(0)">
                         <el-slider style="width:200px" v-model="form.positive_threshold"></el-slider>
                     </el-form-item>
@@ -111,6 +113,8 @@
                               @keyup.enter.native="search(2)"></el-input>
                     <el-input :placeholder="$t('formPlaceholders.negativeSearch')" v-model="form.negative" class="input-with-select"
                               @keyup.enter.native="search(2)"></el-input>
+                    <el-input :placeholder="$t('formPlaceholders.path')" v-model="form.path" class="input-with-select"
+                              @keyup.enter.native="search(2)"></el-input>
                     <el-form-item :label="$t('formPlaceholders.positiveThreshold')" style="margin-bottom: 0px;" @keyup.enter.native="search(2)">
                         <el-slider style="width:200px" v-model="form.positive_threshold"></el-slider>
                     </el-form-item>
@@ -145,36 +149,6 @@
                         <el-option :label="$t('formPlaceholders.topnAll')" value="1000000"></el-option>
                     </el-select>
                     <el-button type="success" icon="Search" @click="search(3)">{{ $t('searchButtons.search') }}</el-button>
-                </el-form>
-            </el-tab-pane>
-
-            <el-tab-pane :label="$t('searchTabs.pathImageSearch')" name="4">
-                <el-form ref="form" :model="form" :inline="true">
-                    <el-input :placeholder="$t('formPlaceholders.imagePath')" v-model="form.path" class="input-with-select"
-                              @keyup.enter.native="search(7)"></el-input>
-                    <el-select v-model="form.top_n" :placeholder="$t('formPlaceholders.topNResults')" style="width:100px">
-                        <el-option label="Top 6" value="6"></el-option>
-                        <el-option label="Top 12" value="12"></el-option>
-                        <el-option label="Top 30" value="30"></el-option>
-                        <el-option label="Top 150" value="150"></el-option>
-                        <el-option :label="$t('formPlaceholders.topnAll')" value="1000000"></el-option>
-                    </el-select>
-                    <el-button type="success" icon="Search" @click="search(7)">{{ $t('searchButtons.search') }}</el-button>
-                </el-form>
-            </el-tab-pane>
-
-            <el-tab-pane :label="$t('searchTabs.pathVideoSearch')" name="5">
-                <el-form ref="form" :model="form" :inline="true">
-                    <el-input :placeholder="$t('formPlaceholders.videoPath')" v-model="form.path" class="input-with-select"
-                              @keyup.enter.native="search(8)"></el-input>
-                    <el-select v-model="form.top_n" :placeholder="$t('formPlaceholders.topNResults')" style="width:100px">
-                        <el-option label="Top 6" value="6"></el-option>
-                        <el-option label="Top 12" value="12"></el-option>
-                        <el-option label="Top 30" value="30"></el-option>
-                        <el-option label="Top 150" value="150"></el-option>
-                        <el-option :label="$t('formPlaceholders.topnAll')" value="1000000"></el-option>
-                    </el-select>
-                    <el-button type="success" icon="Search" @click="search(8)">{{ $t('searchButtons.search') }}</el-button>
                 </el-form>
             </el-tab-pane>
 
@@ -273,6 +247,7 @@
             </el-col>
         </el-row>
     </el-row>
+
     <el-footer style="text-align: center; color: gray; padding: 10px 0; font-size: 14px;">
         <span style="vertical-align: middle;">{{ $t('footer.description1') }}</span>
         <el-link style="vertical-align: middle;" href="https://github.com/chn-lee-yumi/MaterialSearch/" type="info" target="_blank">
@@ -322,6 +297,8 @@ const app = Vue.createApp({
                 image_threshold: 85,
                 img_id: -1,
                 path: '',
+                start_time: 0,
+                end_time: 0,
             },
             files: [],
             image_url_list: [],
@@ -394,7 +371,7 @@ const app = Vue.createApp({
             const loadingInstance = ElementPlus.ElLoading.service({ fullscreen: true, text: that.$t('messages.searching') });
             this.upload.clearFiles();
             that.form.search_type = search_type;
-            if ((search_type === 0 || search_type === 2) && that.form.positive == "") {
+            if ((search_type === 0 || search_type === 2) && that.form.positive == "" && that.form.path == "") {
                 ElementPlus.ElMessage.error(that.$t('messages.searchContentEmpty'));
                 loadingInstance.close();
                 return;
@@ -408,7 +385,7 @@ const app = Vue.createApp({
                 .then(function(response) {
                     console.log(response);
                     loadingInstance.close();
-                    if (search_type === 0 || search_type === 1 || search_type === 5 || search_type === 7) {
+                    if (search_type === 0 || search_type === 1 || search_type === 5) {
                         that.files = response["data"];
                         that.image_url_list = [];
                         that.files.forEach(function(element) {
@@ -417,7 +394,7 @@ const app = Vue.createApp({
                         ElementPlus.ElMessage.info(that.$t('messages.totalSearchResult') + that.files.length + that.$t('messages.photos'));
                         return;
                     }
-                    if (search_type === 2 || search_type === 3 || search_type === 6 || search_type === 8) {
+                    if (search_type === 2 || search_type === 3 || search_type === 6) {
                         that.files = response["data"];
                         ElementPlus.ElMessage.info(that.$t('messages.totalSearchResult') + that.files.length + that.$t('messages.videos'));
                         return;

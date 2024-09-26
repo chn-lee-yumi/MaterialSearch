@@ -78,9 +78,12 @@ def delete_video_if_outdated(session: Session, path: str) -> bool:
     return False
 
 
-def get_video_paths(session: Session):
-    """获取所有视频的路径"""
-    for i, in session.query(Video.path).distinct():
+def get_video_paths(session: Session, filter_path: str = None):
+    """获取所有视频的路径，支持通过路径筛选"""
+    query = session.query(Video.path).distinct()
+    if filter_path:
+        query = query.filter(Video.path.like("%" + filter_path + "%"))
+    for i, in query:
         yield i
 
 
@@ -195,6 +198,27 @@ def get_image_id_path_features(session: Session) -> tuple[list[int], list[str], 
     session.query(Image).filter(Image.features.is_(None)).delete()
     session.commit()
     query = session.query(Image.id, Image.path, Image.features)
+    try:
+        id_list, path_list, features_list = zip(*query)
+        return id_list, path_list, features_list
+    except ValueError:  # 解包失败
+        return [], [], []
+
+
+def get_image_id_path_features_filter_by_path_time(session: Session, path: str, start_time: int, end_time: int) -> tuple[
+    list[int], list[str], list[bytes]]:
+    """
+    根据路径和时间，筛选出对应图片的 id, 路径, 特征，返回三个列表
+    """
+    session.query(Image).filter(Image.features.is_(None)).delete()
+    session.commit()
+    query = session.query(Image.id, Image.path, Image.features)
+    if start_time:
+        query = query.filter(Image.modify_time >= start_time)
+    if end_time:
+        query = query.filter(Image.modify_time <= end_time)
+    if path:
+        query = query.filter(Image.path.like("%" + path + "%"))
     try:
         id_list, path_list, features_list = zip(*query)
         return id_list, path_list, features_list

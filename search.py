@@ -7,12 +7,10 @@ import numpy as np
 
 from config import *
 from database import (
-    get_image_id_path_features,
+    get_image_id_path_features_filter_by_path_time,
     get_image_features_by_id,
     get_video_paths,
     get_frame_times_features_by_path,
-    search_image_by_path,
-    search_video_by_path,
     get_pexels_video_features,
 )
 from models import DatabaseSession, DatabaseSessionPexelsVideo
@@ -25,20 +23,21 @@ def clean_cache():
     """
     清空搜索缓存
     """
-    search_image_by_text.cache_clear()
+    search_image_by_text_path_time.cache_clear()
     search_image_by_image.cache_clear()
-    search_image_file.cache_clear()
-    search_video_by_text.cache_clear()
     search_video_by_image.cache_clear()
-    search_video_file.cache_clear()
+    search_video_by_text_path_time.cache_clear()
     search_pexels_video_by_text.cache_clear()
 
 
 def search_image_by_feature(
-        positive_feature,
+        positive_feature=None,
         negative_feature=None,
         positive_threshold=POSITIVE_THRESHOLD,
         negative_threshold=NEGATIVE_THRESHOLD,
+        path="",
+        start_time=None,
+        end_time=None,
 ):
     """
     通过特征搜索图片
@@ -46,11 +45,14 @@ def search_image_by_feature(
     :param negative_feature: np.array, 反向特征向量
     :param positive_threshold: int/float, 正向阈值
     :param negative_threshold: int/float, 反向阈值
+    :param path: string, 视频路径
+    :param start_time: int, 开始时间戳，单位秒，用于匹配modify_time
+    :param end_time: int, 结束时间戳，单位秒，用于匹配modify_time
     :return: list[dict], 搜索结果列表
     """
     t0 = time.time()
     with DatabaseSession() as session:
-        ids, paths, features = get_image_id_path_features(session)
+        ids, paths, features = get_image_id_path_features_filter_by_path_time(session, path, start_time, end_time)
     if len(ids) == 0:  # 没有素材，直接返回空
         return []
     features = np.frombuffer(b"".join(features), dtype=np.float32).reshape(len(features), -1)
@@ -62,7 +64,7 @@ def search_image_by_feature(
         return_list.append({
             "url": "api/get_image/%d" % id,
             "path": path,
-            "score": float(score.max()),  # 使用 max 可以避免强转导致的 Warning
+            "score": float(score),
         })
     return_list = sorted(return_list, key=lambda x: x["score"], reverse=True)
     logger.info("查询使用时间：%.2f" % (time.time() - t0))
@@ -70,11 +72,14 @@ def search_image_by_feature(
 
 
 @lru_cache(maxsize=CACHE_SIZE)
-def search_image_by_text(
+def search_image_by_text_path_time(
         positive_prompt="",
         negative_prompt="",
         positive_threshold=POSITIVE_THRESHOLD,
         negative_threshold=NEGATIVE_THRESHOLD,
+        path="",
+        start_time=None,
+        end_time=None,
 ):
     """
     使用文字搜图片
@@ -82,11 +87,14 @@ def search_image_by_text(
     :param negative_prompt: string, 反向提示词
     :param positive_threshold: int/float, 正向阈值
     :param negative_threshold: int/float, 反向阈值
+    :param path: string, 视频路径
+    :param start_time: int, 开始时间戳，单位秒，用于匹配modify_time
+    :param end_time: int, 结束时间戳，单位秒，用于匹配modify_time
     :return: list[dict], 搜索结果列表
     """
     positive_feature = process_text(positive_prompt)
     negative_feature = process_text(negative_prompt)
-    return search_image_by_feature(positive_feature, negative_feature, positive_threshold, negative_threshold)
+    return search_image_by_feature(positive_feature, negative_feature, positive_threshold, negative_threshold, path, start_time, end_time)
 
 
 @lru_cache(maxsize=CACHE_SIZE)
@@ -97,14 +105,14 @@ def search_image_by_image(img_id_or_path, threshold=IMAGE_THRESHOLD):
     :param threshold: int/float, 搜索阈值
     :return: list[dict], 搜索结果列表
     """
-    try:
+    try:  # 前端点击以图搜图，通过图片id来搜图 注意：如果后面id改成str的话，需要修改这部分
         img_id = int(img_id_or_path)
         with DatabaseSession() as session:
             features = get_image_features_by_id(session, img_id)
         if not features:
             return []
         features = np.frombuffer(features, dtype=np.float32).reshape(1, -1)
-    except ValueError:
+    except ValueError:  # 传入路径，通过上传的图片来搜图
         img_path = img_id_or_path
         features = process_image(img_path)
     return search_image_by_feature(features, None, threshold)
@@ -150,10 +158,13 @@ def get_video_range(start_index, end_index, scores, frame_times):
 
 
 def search_video_by_feature(
-        positive_feature,
+        positive_feature=None,
         negative_feature=None,
         positive_threshold=POSITIVE_THRESHOLD,
         negative_threshold=NEGATIVE_THRESHOLD,
+        filter_path="",
+        start_time=None,
+        end_time=None,
 ):
     """
     通过特征搜索视频
@@ -161,12 +172,15 @@ def search_video_by_feature(
     :param negative_feature: np.array, 反向特征向量
     :param positive_threshold: int/float, 正向阈值
     :param negative_threshold: int/float, 反向阈值
+    :param filter_path: string, 筛选的视频路径
+    :param start_time: int, 开始时间戳，单位秒，用于匹配modify_time
+    :param end_time: int, 结束时间戳，单位秒，用于匹配modify_time
     :return: list[dict], 搜索结果列表
     """
     t0 = time.time()
     return_list = []
     with DatabaseSession() as session:
-        for path in get_video_paths(session):  # 逐个视频比对
+        for path in get_video_paths(session, filter_path):  # 逐个视频比对
             frame_times, features = get_frame_times_features_by_path(session, path)
             features = np.frombuffer(b"".join(features), dtype=np.float32).reshape(len(features), -1)
             scores = match_batch(positive_feature, negative_feature, features, positive_threshold, negative_threshold)
@@ -178,7 +192,7 @@ def search_video_by_feature(
                     "url": "api/get_video/%s" % base64.urlsafe_b64encode(path.encode()).decode()
                            + "#t=%.1f,%.1f" % (start_time, end_time),
                     "path": path,
-                    "score": float(score.max()),  # 使用 max 可以避免强转导致的 Warning
+                    "score": float(score),
                     "start_time": start_time,
                     "end_time": end_time,
                 })
@@ -188,11 +202,14 @@ def search_video_by_feature(
 
 
 @lru_cache(maxsize=CACHE_SIZE)
-def search_video_by_text(
+def search_video_by_text_path_time(
         positive_prompt="",
         negative_prompt="",
         positive_threshold=POSITIVE_THRESHOLD,
         negative_threshold=NEGATIVE_THRESHOLD,
+        path="",
+        start_time=None,
+        end_time=None,
 ):
     """
     使用文字搜视频
@@ -200,6 +217,9 @@ def search_video_by_text(
     :param negative_prompt: string, 反向提示词
     :param positive_threshold: int/float, 正向阈值
     :param negative_threshold: int/float, 反向阈值
+    :param path: string, 视频路径
+    :param start_time: int, 开始时间戳，单位秒，用于匹配modify_time
+    :param end_time: int, 结束时间戳，单位秒，用于匹配modify_time
     :return: list[dict], 搜索结果列表
     """
     positive_feature = process_text(positive_prompt)
@@ -227,46 +247,6 @@ def search_video_by_image(img_id_or_path, threshold=IMAGE_THRESHOLD):
         img_path = img_id_or_path
         features = process_image(img_path)
     return search_video_by_feature(features, None, threshold)
-
-
-@lru_cache(maxsize=CACHE_SIZE)
-def search_image_file(path: str):
-    """
-    通过路径搜索图片
-    :param path: 路径
-    :return:
-    """
-    file_list = []
-    with DatabaseSession() as session:
-        id_paths = search_image_by_path(session, path)
-        file_list = [
-            {
-                "url": "api/get_image/%d" % id,
-                "path": path,
-            }
-            for id, path in id_paths
-        ]
-        return file_list
-
-
-@lru_cache(maxsize=CACHE_SIZE)
-def search_video_file(path: str):
-    """
-    通过路径搜索视频
-    :param path: 路径
-    :return:
-    """
-    with DatabaseSession() as session:
-        paths = search_video_by_path(session, path)
-        file_list = [
-            {
-                "url": "api/get_video/%s"
-                       % base64.urlsafe_b64encode(path.encode()).decode(),
-                "path": path,
-            }
-            for path, in paths
-        ]  # 这里的,不可以省，用于解包tuple
-        return file_list
 
 
 def search_pexels_video_by_feature(positive_feature, positive_threshold=POSITIVE_THRESHOLD):
@@ -298,7 +278,7 @@ def search_pexels_video_by_feature(positive_feature, positive_threshold=POSITIVE
             "description": description,
             "duration": duration,
             "view_count": view_count,
-            "score": float(score.max()),  # 使用 max 可以避免强转导致的 Warning
+            "score": float(score),
         })
     return_list = sorted(return_list, key=lambda x: x["score"], reverse=True)
     logger.info("查询使用时间：%.2f" % (time.time() - t0))
@@ -327,7 +307,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
     positive_prompt = args.positive_prompt
     if args.search_type == 'image':
-        results = search_image_by_text(positive_prompt)
+        results = search_image_by_text_path_time(positive_prompt)
         print(positive_prompt)
         print(f'results count: {len(results)}')
         print('-' * 30)
@@ -336,7 +316,7 @@ if __name__ == '__main__':
             print(f'score: {item["score"]:.3f}')
             print('-' * 30)
     elif args.search_type == 'video':
-        results = search_video_by_text(positive_prompt)
+        results = search_video_by_text_path_time(positive_prompt)
         print(positive_prompt)
         print(f'results count: {len(results)}')
         print('-' * 30)

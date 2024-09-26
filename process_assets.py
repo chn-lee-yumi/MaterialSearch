@@ -238,18 +238,21 @@ def match_batch(
     :param image_features: [<class 'numpy.ndarray'>], 图片特征列表
     :param positive_threshold: int/float, 正向提示分数阈值，高于此分数才显示
     :param negative_threshold: int/float, 反向提示分数阈值，低于此分数才显示
-    :return: [<class 'numpy.nparray'>], 提示词和每个图片余弦相似度列表，里面每个元素的shape=(1, 1)，如果小于正向提示分数阈值或大于反向提示分数阈值则会置0
+    :return: <class 'numpy.nparray'>, 提示词和每个图片余弦相似度列表，shape=(n, )，如果小于正向提示分数阈值或大于反向提示分数阈值则会置0
     """
     # 计算余弦相似度
     if len(image_features) > 1024:  # 多线程只对大矩阵效果好，1024是随便写的
         new_features = multithread_normalize(image_features)
     else:
         new_features = normalize_features(image_features)
-    new_text_positive_feature = positive_feature / np.linalg.norm(positive_feature)
-    positive_scores = new_features @ new_text_positive_feature.T
+    if positive_feature is None: # 没有正向feature就把分数全部设成1
+        positive_scores = np.ones(len(new_features))
+    else:
+        new_text_positive_feature = positive_feature / np.linalg.norm(positive_feature)
+        positive_scores = (new_features @ new_text_positive_feature.T).squeeze(-1)
     if negative_feature is not None:
         new_text_negative_feature = negative_feature / np.linalg.norm(negative_feature)
-        negative_scores = new_features @ new_text_negative_feature.T
+        negative_scores = (new_features @ new_text_negative_feature.T).squeeze(-1)
     # 根据阈值进行过滤
     scores = np.where(positive_scores < positive_threshold / 100, 0, positive_scores)
     if negative_feature is not None:

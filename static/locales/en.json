@@ -25,8 +25,6 @@
     "imageSearch": "Image Search",
     "textVideoSearch": "Text Video Search",
     "imageVideoSearch": "Image Video Search",
-    "pathImageSearch": "Path Image Search",
-    "pathVideoSearch": "Path Video Search",
     "textImageSimilarity": "Text-Image Similarity Matching",
     "pexelsVideos": "Pexels Videos"
   },
@@ -36,13 +34,12 @@
     "uploading": "Uploading..."
   },
   "formPlaceholders": {
-    "positiveSearch": "Search Content (cannot be empty)",
-    "negativeSearch": "Filter Content (can be empty)",
+    "positiveSearch": "Search Content",
+    "negativeSearch": "Filter Content",
     "positiveThreshold": "Search Threshold (display when similarity is above)",
     "negativeThreshold": "Filter Threshold (display when similarity is below)",
     "topNResults": "Show Top N Results",
-    "imagePath": "Image Path (cannot be empty)",
-    "videoPath": "Video Path (cannot be empty)",
+    "path": "Search Path (left empty means don't filter by path)",
     "textMatch": "Text Content (cannot be empty)",
     "topnAll": "ALL"
   },
@@ -62,7 +59,7 @@
     "sourcePage": "Source Page"
   },
   "messages": {
-    "searchContentEmpty": "Search content cannot be empty",
+    "searchContentEmpty": "At least one search content or search path must be entered",
     "textContentEmpty": "Text content cannot be empty",
     "clipboardCopySuccess": "Path copied to clipboard",
     "totalSearchResult": "Total search results: ",
