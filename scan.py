@@ -18,7 +18,8 @@ from database import (
 from models import create_tables, DatabaseSession
 from process_assets import process_images, process_video
 from search import clean_cache
-
+from image_dataset_main import ImageDataset
+import torch
 
 class Scanner:
     """
@@ -170,6 +171,34 @@ class Scanner:
             self.assets.remove(path)
         self.total_images = get_image_count(session)
 
+    def handle_image_batch_new_dataloader(self, session, image_batch_dict):
+        from torch.utils.data import Dataset, DataLoader
+        from transformers import AutoModelForZeroShotImageClassification, AutoProcessor
+        self.logger.info("Loading model...")
+        clip_model = AutoModelForZeroShotImageClassification.from_pretrained(MODEL_NAME).to(torch.device(DEVICE)) # 占用了两次显存
+        clip_processor = AutoProcessor.from_pretrained(MODEL_NAME)
+        self.logger.info("Model loaded.")
+
+        dataset = ImageDataset(clip_processor, AUTOPROCESSOR_BATCH_SIZE, list(image_batch_dict.keys()))
+        dataloader = DataLoader(dataset, batch_size=SCAN_PROCESS_BATCH_SIZE, num_workers=NUM_WORKERS) #一个num_workers占用2.7+GB内存
+        with torch.no_grad():
+          for batch, path_list in dataloader:
+              path_list_converted = [item for tup in path_list for item in tup] # [list(item) for item in path_list] #得换个名字
+
+              batch = batch.permute(1, 0, 2, 3, 4)  # 交换维度，得到 (4, 64, 3, 224, 224)
+              batch = batch.reshape(-1, 3, 224, 224)  # 重新调整形状为 (256, 3, 224, 224)
+              inputs = batch.to(torch.device(DEVICE))  # 将数据传到指定设备 .view(-1, 3, 224, 224) view不行 顺序乱了
+
+              features_list = clip_model.get_image_features(inputs).detach().cpu().numpy()
+              for path, features in zip(path_list_converted, features_list):
+                  # 写入数据库
+                  features = features.tobytes()
+                  modify_time = image_batch_dict[path]
+                  add_image(session, path, modify_time, features)
+                  self.assets.remove(path)
+              self.total_images = get_image_count(session)
+
+
     def scan(self, auto=False):
         """
         扫描资源。如果存在assets.pickle，则直接读取并开始扫描。如果不存在，则先读取所有文件路径，并写入assets.pickle，然后开始扫描。
@@ -206,9 +235,9 @@ class Scanner:
                         continue
                     image_batch_dict[path] = modify_time
                     # 达到SCAN_PROCESS_BATCH_SIZE再进行批量处理
-                    if len(image_batch_dict) == SCAN_PROCESS_BATCH_SIZE:
-                        self.handle_image_batch(session, image_batch_dict)
-                        image_batch_dict = {}
+                    # if len(image_batch_dict) == SCAN_PROCESS_BATCH_SIZE:
+                    #     self.handle_image_batch(session, image_batch_dict)
+                    #     image_batch_dict = {}
                     continue
                 elif path.lower().endswith(VIDEO_EXTENSIONS):  # 视频
                     not_modified = delete_video_if_outdated(session, path)
@@ -218,9 +247,12 @@ class Scanner:
                     add_video(session, path, modify_time, process_video(path))
                     self.total_video_frames = get_video_frame_count(session)
                     self.total_videos = get_video_count(session)
-                self.assets.remove(path)
+                self.assets.remove(path) # 一个集合
+
+
+
             if len(image_batch_dict) != 0:  # 最后如果图片数量没达到SCAN_PROCESS_BATCH_SIZE，也进行一次处理
-                self.handle_image_batch(session, image_batch_dict)
+                self.handle_image_batch_new_dataloader(session, image_batch_dict)
             # 最后重新统计一下数量
             self.total_images = get_image_count(session)
             self.total_videos = get_video_count(session)
