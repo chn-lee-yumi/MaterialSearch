@@ -7,10 +7,10 @@ services:
     restart: always # 容器重启规则设为always
     ports:
       - "8085:8085" # 映射容器的8085端口到宿主的8085端口（宿主端口:容器端口）
-    environment: # 通过环境变量修改配置
+    environment: # 通过环境变量修改配置，注意下面填的路径是容器里面的路径，不是宿主的路径
       - ASSETS_PATH=/home,/mnt
       - SKIP_PATH=/tmp
-    volumes:
+    volumes: # 将宿主的目录挂载到容器里（宿主路径:容器路径）
       - /srv/MaterialSearch/db:/MaterialSearch/instance/ # 挂载宿主/srv/MaterialSearch/db到容器的/MaterialSearch/instance/
       - /home:/home # 挂载宿主/home到容器的/home
       - /mnt:/mnt # 挂载宿主/mnt到容器的/mnt
