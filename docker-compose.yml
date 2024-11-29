@@ -14,7 +14,7 @@ services:
       - /srv/MaterialSearch/db:/MaterialSearch/instance/ # 挂载宿主/srv/MaterialSearch/db到容器的/MaterialSearch/instance/
       - /home:/home # 挂载宿主/home到容器的/home
       - /mnt:/mnt # 挂载宿主/mnt到容器的/mnt
-    # 如果使用GPU，就取消注释下面的内容
+    # 如果使用GPU，就取消注释下面的内容，并在上面environment处添加DEVICE=cuda
     #deploy:
     #  resources:
     #    reservations:
