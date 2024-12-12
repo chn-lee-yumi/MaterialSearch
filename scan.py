@@ -197,6 +197,9 @@ class Scanner:
                 if not os.path.isfile(path):
                     continue
                 modify_time = os.path.getmtime(path)
+                if modify_time > 253402271999:  # 超出该时间的话会报错 9999-12-31 23:59:59
+                    self.logger.warning("文件修改日期时间戳太大（公元9999年后）：", path, modify_time)
+                    continue
                 modify_time = datetime.datetime.fromtimestamp(modify_time)
                 # 如果数据库里有这个文件，并且修改时间一致，则跳过，否则进行预处理并入库
                 if path.lower().endswith(IMAGE_EXTENSIONS):  # 图片
