@@ -2,28 +2,40 @@ name: Integration Test
 
 on:
   pull_request:
-    branches: [ "main" , "dev" ]
+    branches: [ "main", "dev" ]
   push:
     branches: [ "testing" ]
   workflow_call:
 
 jobs:
-
   build:
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]  # 支持 Linux 和 Windows
     steps:
+      - name: Checkout
+        uses: actions/checkout@v4
 
-    - name: Checkout
-      uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.8"
 
-    - name: Install requirements
-      run: pip install -r requirements.txt && pip install pytest
+      - name: Install requirements
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pytest
 
-    - name: Run main.py
-      run: ASSETS_PATH=./ nohup python main.py &
+      - name: Run main.py
+        run: |
+          if [ "${{ matrix.os }}" == "ubuntu-latest" ]; then
+            ASSETS_PATH=./ nohup python main.py &
+          else
+            start /B python main.py
+        shell: bash
 
-    - name: Test API
-      run: pytest
-
-    #- name: enable debug interface
-    #  uses: chn-lee-yumi/debugger-action@master
+      - name: Test API
+        run: pytest
+        shell: bash
