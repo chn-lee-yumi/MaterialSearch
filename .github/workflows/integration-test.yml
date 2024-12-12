@@ -20,7 +20,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
-          python-version: "3.8"
+          python-version: "3.12"
 
       - name: Install requirements
         run: |
@@ -28,12 +28,15 @@ jobs:
           pip install -r requirements.txt
           pip install pytest
 
+      - name: Create .env file
+        run: echo "ASSETS_PATH=./" > .env
+
       - name: Run main.py
         run: |
           if [ "${{ matrix.os }}" == "ubuntu-latest" ]; then
-            ASSETS_PATH=./ nohup python main.py &
+            nohup python main.py &
           else
-            start /B python main.py
+            start /min python main.py
           fi
         shell: bash
 
