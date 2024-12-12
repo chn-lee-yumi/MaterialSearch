@@ -38,11 +38,9 @@ def init():
     清理和创建临时文件夹，初始化扫描线程（包括数据库初始化），根据AUTO_SCAN决定是否开启自动扫描线程
     """
     global scanner
-    # 删除上传目录中所有文件
-    shutil.rmtree(f'{TEMP_PATH}/upload', ignore_errors=True)
-    os.makedirs(f'{TEMP_PATH}/upload')
-    shutil.rmtree(f'{TEMP_PATH}/video_clips', ignore_errors=True)
-    os.makedirs(f'{TEMP_PATH}/video_clips')
+    # 删除临时目录中所有文件
+    shutil.rmtree(f'{TEMP_PATH}', ignore_errors=True)
+    os.makedirs(f'{TEMP_PATH}')
     # 初始化扫描线程
     scanner.init()
     if AUTO_SCAN:
