@@ -40,7 +40,8 @@ def init():
     global scanner
     # 删除临时目录中所有文件
     shutil.rmtree(f'{TEMP_PATH}', ignore_errors=True)
-    os.makedirs(f'{TEMP_PATH}')
+    os.makedirs(f'{TEMP_PATH}/upload')
+    os.makedirs(f'{TEMP_PATH}/video_clips')
     # 初始化扫描线程
     scanner.init()
     if AUTO_SCAN:
