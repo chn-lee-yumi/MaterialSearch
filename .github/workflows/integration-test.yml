@@ -34,6 +34,7 @@ jobs:
             ASSETS_PATH=./ nohup python main.py &
           else
             start /B python main.py
+          fi
         shell: bash
 
       - name: Test API
