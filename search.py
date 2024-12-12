@@ -163,8 +163,8 @@ def search_video_by_feature(
         positive_threshold=POSITIVE_THRESHOLD,
         negative_threshold=NEGATIVE_THRESHOLD,
         filter_path="",
-        start_time=None,
-        end_time=None,
+        modify_time_start=None,
+        modify_time_end=None,
 ):
     """
     通过特征搜索视频
@@ -173,14 +173,14 @@ def search_video_by_feature(
     :param positive_threshold: int/float, 正向阈值
     :param negative_threshold: int/float, 反向阈值
     :param filter_path: string, 筛选的视频路径
-    :param start_time: int, 开始时间戳，单位秒，用于匹配modify_time
-    :param end_time: int, 结束时间戳，单位秒，用于匹配modify_time
+    :param modify_time_start: int, 开始时间戳，单位秒，用于匹配modify_time
+    :param modify_time_end: int, 结束时间戳，单位秒，用于匹配modify_time
     :return: list[dict], 搜索结果列表
     """
     t0 = time.time()
     return_list = []
     with DatabaseSession() as session:
-        for path in get_video_paths(session, filter_path):  # 逐个视频比对
+        for path in get_video_paths(session, filter_path, modify_time_start, modify_time_end):  # 逐个视频比对
             frame_times, features = get_frame_times_features_by_path(session, path)
             features = np.frombuffer(b"".join(features), dtype=np.float32).reshape(len(features), -1)
             scores = match_batch(positive_feature, negative_feature, features, positive_threshold, negative_threshold)
@@ -224,7 +224,7 @@ def search_video_by_text_path_time(
     """
     positive_feature = process_text(positive_prompt)
     negative_feature = process_text(negative_prompt)
-    return search_video_by_feature(positive_feature, negative_feature, positive_threshold, negative_threshold)
+    return search_video_by_feature(positive_feature, negative_feature, positive_threshold, negative_threshold, path, start_time, end_time)
 
 
 @lru_cache(maxsize=CACHE_SIZE)

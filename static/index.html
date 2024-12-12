@@ -394,8 +394,8 @@ const app = Vue.createApp({
                 that.form.start_time = Math.floor(that.time_filter[0] / 1000);
                 that.form.end_time = Math.floor(that.time_filter[1] / 1000);
             } else {
-                that.form.start_time = 0;
-                that.form.end_time = 0;
+                that.form.start_time = null;
+                that.form.end_time = null;
             }
             axios.post('/api/match', that.form)
                 .then(function(response) {

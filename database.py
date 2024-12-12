@@ -78,13 +78,17 @@ def delete_video_if_outdated(session: Session, path: str) -> bool:
     return False
 
 
-def get_video_paths(session: Session, filter_path: str = None):
-    """获取所有视频的路径，支持通过路径筛选"""
-    query = session.query(Video.path).distinct()
+def get_video_paths(session: Session, filter_path: str = None, start_time: int = None, end_time: int = None):
+    """获取所有视频的路径，支持通过路径和修改时间筛选"""
+    query = session.query(Video.path, Video.modify_time).distinct()
     if filter_path:
         query = query.filter(Video.path.like("%" + filter_path + "%"))
-    for i, in query:
-        yield i
+    if start_time:
+        query = query.filter(Video.modify_time >= datetime.datetime.fromtimestamp(start_time))
+    if end_time:
+        query = query.filter(Video.modify_time <= datetime.datetime.fromtimestamp(end_time))
+    for path, modify_time in query:
+        yield path
 
 
 def get_frame_times_features_by_path(session: Session, path: str):
@@ -212,15 +216,15 @@ def get_image_id_path_features_filter_by_path_time(session: Session, path: str, 
     """
     session.query(Image).filter(Image.features.is_(None)).delete()
     session.commit()
-    query = session.query(Image.id, Image.path, Image.features)
+    query = session.query(Image.id, Image.path, Image.features, Image.modify_time)
     if start_time:
-        query = query.filter(Image.modify_time >= start_time)
+        query = query.filter(Image.modify_time >= datetime.datetime.fromtimestamp(start_time))
     if end_time:
-        query = query.filter(Image.modify_time <= end_time)
+        query = query.filter(Image.modify_time <= datetime.datetime.fromtimestamp(end_time))
     if path:
         query = query.filter(Image.path.like("%" + path + "%"))
     try:
-        id_list, path_list, features_list = zip(*query)
+        id_list, path_list, features_list, modify_time_list = zip(*query)
         return id_list, path_list, features_list
     except ValueError:  # 解包失败
         return [], [], []
