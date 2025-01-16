@@ -18,6 +18,7 @@ from database import (
 from models import create_tables, DatabaseSession
 from process_assets import process_images, process_video
 from search import clean_cache
+from utils import get_file_hash
 
 
 class Scanner:
@@ -165,8 +166,8 @@ class Scanner:
         for path, features in zip(path_list, features_list):
             # 写入数据库
             features = features.tobytes()
-            modify_time = image_batch_dict[path]
-            add_image(session, path, modify_time, features)
+            modify_time, checksum = image_batch_dict[path]
+            add_image(session, path, modify_time, checksum, features)
             self.assets.remove(path)
         self.total_images = get_image_count(session)
 
@@ -197,28 +198,34 @@ class Scanner:
                 if not os.path.isfile(path):
                     continue
                 modify_time = os.path.getmtime(path)
-                if modify_time > 253402271999:  # 超出该时间的话会报错 9999-12-31 23:59:59
-                    self.logger.warning("文件修改日期时间戳太大（公元9999年后）：", path, modify_time)
-                    continue
-                modify_time = datetime.datetime.fromtimestamp(modify_time)
-                # 如果数据库里有这个文件，并且修改时间一致，则跳过，否则进行预处理并入库
+                checksum = None
+                if ENABLE_CHECKSUM:  # 如果启用checksum则用checksum
+                    checksum = get_file_hash(path)
+                try:  # 尝试把modify_time转换成datetime用来写入数据库
+                    modify_time = datetime.datetime.fromtimestamp(modify_time)
+                except Exception as e:  # 如果无法转换修改日期，则改为checksum
+                    self.logger.warning("文件修改日期有问题：", path, modify_time, "导致datetime转换报错", repr(e))
+                    modify_time = None
+                    if not checksum:
+                        checksum = get_file_hash(path)
+                # 如果数据库里有这个文件，并且没有发生变化，则跳过，否则进行预处理并入库
                 if path.lower().endswith(IMAGE_EXTENSIONS):  # 图片
-                    not_modified = delete_image_if_outdated(session, path)
+                    not_modified = delete_image_if_outdated(session, path, modify_time, checksum)
                     if not_modified:
                         self.assets.remove(path)
                         continue
-                    image_batch_dict[path] = modify_time
+                    image_batch_dict[path] = (modify_time, checksum)
                     # 达到SCAN_PROCESS_BATCH_SIZE再进行批量处理
                     if len(image_batch_dict) == SCAN_PROCESS_BATCH_SIZE:
                         self.handle_image_batch(session, image_batch_dict)
                         image_batch_dict = {}
                     continue
                 elif path.lower().endswith(VIDEO_EXTENSIONS):  # 视频
-                    not_modified = delete_video_if_outdated(session, path)
+                    not_modified = delete_video_if_outdated(session, path, modify_time, checksum)
                     if not_modified:
                         self.assets.remove(path)
                         continue
-                    add_video(session, path, modify_time, process_video(path))
+                    add_video(session, path, modify_time, checksum, process_video(path))
                     self.total_video_frames = get_video_frame_count(session)
                     self.total_videos = get_video_count(session)
                 self.assets.remove(path)

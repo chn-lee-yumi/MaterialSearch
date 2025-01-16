@@ -25,10 +25,7 @@ def get_hash(bytesio):
         _hash.update(bytesio)
         return _hash.hexdigest()
     try:
-        while True:
-            data = bytesio.read(1048576)
-            if not data:
-                break
+        while data := bytesio.read(1048576):
             _hash.update(data)
     except Exception as e:
         logger.error(f"计算hash出错：{bytesio} {repr(e)}")
@@ -46,6 +43,23 @@ def get_string_hash(string):
     _hash = hashlib.sha1()
     _hash.update(string.encode("utf8"))
     return _hash.hexdigest()
+
+
+def get_file_hash(file_path):
+    """
+    计算文件的哈希值
+    :param file_path: string, 文件路径
+    :return: string, 十六进制哈希值，或 None（文件读取错误）
+    """
+    _hash = hashlib.sha1()
+    try:
+        with open(file_path, 'rb') as f:
+            while chunk := f.read(1048576):
+                _hash.update(chunk)
+        return _hash.hexdigest()
+    except Exception as e:
+        logger.error(f"计算文件hash出错：{file_path} {repr(e)}")
+        return None
 
 
 def softmax(x):

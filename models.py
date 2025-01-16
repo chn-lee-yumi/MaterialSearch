@@ -28,6 +28,7 @@ engine_pexels_video = create_engine(
 )
 DatabaseSessionPexelsVideo = sessionmaker(autocommit=False, autoflush=False, bind=engine_pexels_video)
 
+
 def create_tables():
     """
     创建数据库表
@@ -42,6 +43,7 @@ class Image(BaseModel):
     path = Column(String(4096), index=True)  # 文件路径
     modify_time = Column(DateTime)  # 文件修改时间
     features = Column(BINARY)  # 文件预处理后的二进制数据
+    checksum = Column(String(40), index=True)  # 文件SHA1
 
 
 class Video(BaseModel):
@@ -51,6 +53,7 @@ class Video(BaseModel):
     frame_time = Column(Integer, index=True)  # 这一帧所在的时间
     modify_time = Column(DateTime)  # 文件修改时间
     features = Column(BINARY)  # 文件预处理后的二进制数据
+    checksum = Column(String(40), index=True)  # 文件SHA1
 
 
 class PexelsVideo(BaseModelPexelsVideo):

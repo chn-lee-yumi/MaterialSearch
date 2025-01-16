@@ -1,6 +1,5 @@
 import datetime
 import logging
-import os
 
 from sqlalchemy import asc
 from sqlalchemy.orm import Session
@@ -36,42 +35,54 @@ def get_image_count(session: Session):
     return session.query(Image).count()
 
 
-def delete_image_if_outdated(session: Session, path: str) -> bool:
+def delete_image_if_outdated(session: Session, path: str, modify_time: datetime.datetime, checksum: str = None) -> bool:
     """
     判断图片是否修改，若修改则删除
     :param session: Session, 数据库 session
     :param path: str, 图片路径
+    :param modify_time: datetime.datetime, 图片修改时间
+    :param checksum: str, 图片hash
     :return: bool, 若文件未修改返回 True
     """
     record = session.query(Image).filter_by(path=path).first()
     if not record:
         return False
-    modify_time = os.path.getmtime(path)
-    modify_time = datetime.datetime.fromtimestamp(modify_time)
-    if record.modify_time == modify_time:
-        logger.debug(f"文件无变更，跳过：{path}")
-        return True
+    # 如果有checksum，则判断checksum
+    if checksum and record.checksum:
+        if record.checksum == checksum:
+            logger.debug(f"文件无变更，跳过：{path}")
+            return True
+    else:  # 否则判断modify_time
+        if record.modify_time == modify_time:
+            logger.debug(f"文件无变更，跳过：{path}")
+            return True
     logger.info(f"文件有更新：{path}")
     session.delete(record)
     session.commit()
     return False
 
 
-def delete_video_if_outdated(session: Session, path: str) -> bool:
+def delete_video_if_outdated(session: Session, path: str, modify_time: datetime.datetime, checksum: str = None) -> bool:
     """
     判断视频是否修改，若修改则删除
     :param session: Session, 数据库 session
     :param path: str, 视频路径
+    :param modify_time: datetime.datetime, 视频修改时间
+    :param checksum: str, 视频hash
     :return: bool, 若文件未修改返回 True
     """
     record = session.query(Video).filter_by(path=path).first()
     if not record:
         return False
-    modify_time = os.path.getmtime(path)
-    modify_time = datetime.datetime.fromtimestamp(modify_time)
-    if record.modify_time == modify_time:
-        logger.debug(f"文件无变更，跳过：{path}")
-        return True
+    # 如果有checksum，则判断checksum
+    if checksum and record.checksum:
+        if record.checksum == checksum:
+            logger.debug(f"文件无变更，跳过：{path}")
+            return True
+    else:  # 否则判断modify_time
+        if record.modify_time == modify_time:
+            logger.debug(f"文件无变更，跳过：{path}")
+            return True
     logger.info(f"文件有更新：{path}")
     session.query(Video).filter_by(path=path).delete()
     session.commit()
@@ -124,27 +135,28 @@ def delete_video_by_path(session: Session, path: str):
     session.commit()
 
 
-def add_image(session: Session, path: str, modify_time: datetime.datetime, features: bytes):
+def add_image(session: Session, path: str, modify_time: datetime.datetime, checksum: str, features: bytes):
     """添加图片到数据库"""
     logger.info(f"新增文件：{path}")
-    image = Image(path=path, modify_time=modify_time, features=features)
+    image = Image(path=path, modify_time=modify_time, features=features, checksum=checksum)
     session.add(image)
     session.commit()
 
 
-def add_video(session: Session, path: str, modify_time, frame_time_features_generator):
+def add_video(session: Session, path: str, modify_time: datetime.datetime, checksum: str, frame_time_features_generator):
     """
     将处理后的视频数据入库
     :param session: Session, 数据库session
     :param path: str, 视频路径
     :param modify_time: datetime, 文件修改时间
+    :param checksum: str, 文件hash
     :param frame_time_features_generator: 返回(帧序列号,特征)元组的迭代器
     """
     # 使用 bulk_save_objects 一次性提交，因此处理至一半中断不会导致下次扫描时跳过
     logger.info(f"新增文件：{path}")
     video_list = (
         Video(
-            path=path, modify_time=modify_time, frame_time=frame_time, features=features
+            path=path, modify_time=modify_time, frame_time=frame_time, features=features, checksum=checksum
         )
         for frame_time, features in frame_time_features_generator
     )

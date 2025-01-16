@@ -1,4 +1,3 @@
-import base64
 import logging
 import time
 from functools import lru_cache
