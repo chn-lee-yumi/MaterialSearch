@@ -46,7 +46,7 @@ jobs:
     - name: Optimise Code
       run: |
         cd MaterialSearchWindows
-        ./python.exe -m py_compile main.py database.py env.py models.py process_assets.py scan.py search.py utils.py
+        ./python.exe -m py_compile main.py config.py database.py env.py models.py process_assets.py scan.py search.py utils.py
         cp __pycache__/main.cpython-310.pyc main.pyc
         cp __pycache__/config.cpython-310.pyc config.pyc
         cp __pycache__/database.cpython-310.pyc database.pyc
