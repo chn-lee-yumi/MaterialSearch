@@ -47,13 +47,13 @@ jobs:
       run: |
         cd MaterialSearchWindows
         ./python.exe -m py_compile database.py env.py models.py process_assets.py scan.py search.py utils.py
-        cp __pycache__/database.pyc .
-        cp __pycache__/env.pyc .
-        cp __pycache__/models.pyc .
-        cp __pycache__/process_assets.pyc .
-        cp __pycache__/scan.pyc .
-        cp __pycache__/search.pyc .
-        cp __pycache__/utils.pyc .
+        cp __pycache__/database.cpython-310.pyc database.pyc
+        cp __pycache__/env.cpython-310.pyc env.pyc
+        cp __pycache__/models.cpython-310.pyc models.pyc
+        cp __pycache__/process_assets.cpython-310.pyc process_assets.pyc
+        cp __pycache__/scan.cpython-310.pyc scan.pyc
+        cp __pycache__/search.cpython-310.pyc search.pyc
+        cp __pycache__/utils.cpython-310.pyc utils.pyc
         rm database.py env.py models.py process_assets.py scan.py search.py utils.py
         cd ..
 
