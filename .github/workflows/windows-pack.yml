@@ -54,7 +54,13 @@ jobs:
         cp __pycache__/scan.cpython-310.pyc scan.pyc
         cp __pycache__/search.cpython-310.pyc search.pyc
         cp __pycache__/utils.cpython-310.pyc utils.pyc
-        rm database.py env.py models.py process_assets.py scan.py search.py utils.py
+        rm database.py
+        rm env.py
+        rm models.py
+        rm process_assets.py
+        rm scan.py
+        rm search.py
+        rm utils.py
         cd ..
 
     - name: Install requirements
