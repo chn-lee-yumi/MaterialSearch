@@ -43,6 +43,20 @@ jobs:
     - name: Download pip
       run: Invoke-WebRequest "https://bootstrap.pypa.io/pip/pip.pyz" -OutFile MaterialSearchWindows/pip.pyz
 
+    - name: Optimise Code
+      run: |
+        cd MaterialSearchWindows
+        MaterialSearchWindows/python.exe -m py_compile database.py env.py models.py process_assets.py scan.py search.py utils.py
+        cp __pycache__/database.pyc .
+        cp __pycache__/env.pyc .
+        cp __pycache__/models.pyc .
+        cp __pycache__/process_assets.pyc .
+        cp __pycache__/scan.pyc .
+        cp __pycache__/search.pyc .
+        cp __pycache__/utils.pyc .
+        rm database.py env.py models.py process_assets.py scan.py search.py utils.py
+        cd ..
+
     - name: Install requirements
       run: MaterialSearchWindows/python.exe MaterialSearchWindows/pip.pyz install -r MaterialSearchWindows/requirements.txt # --index-url=https://download.pytorch.org/whl/cu118 --extra-index-url=https://pypi.org/simple/
 
