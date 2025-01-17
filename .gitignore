@@ -152,3 +152,5 @@ pyvenv.cfg
 .venv
 pip-selfcheck.json
 env_*.py
+init_*.py
+enc_*.py
