@@ -84,6 +84,8 @@ jobs:
           # 下面填写扫描设备，cpu或cuda（cuda会使用NVIDIA显卡进行加速）。注意：NVIDIA显卡才能选cuda，并且请先运行"CUDA加速安装.bat"，等下载安装完毕之后再重新运行“run.bat”。AMD显卡不支持加速。
           DEVICE=cpu
           DEVICE_TEXT=cpu
+          # 视频搜索出来的片段前后延长时间，单位秒，如果搜索出来的片段不完整，可以调大这个值
+          VIDEO_EXTENSION_LENGTH=1
           # 下面的不要改
           MODEL_NAME=OFA-Sys/chinese-clip-vit-large-patch14-336px
           TRANSFORMERS_OFFLINE=1

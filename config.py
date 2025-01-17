@@ -51,7 +51,7 @@ LOG_LEVEL = os.getenv('LOG_LEVEL', 'INFO')  # 日志等级：NOTSET/DEBUG/INFO/W
 # *****其它配置*****
 SQLALCHEMY_DATABASE_URL = os.getenv('SQLALCHEMY_DATABASE_URL', 'sqlite:///./instance/assets.db')  # 数据库保存路径
 TEMP_PATH = os.getenv('TEMP_PATH', './tmp')  # 临时目录路径
-VIDEO_EXTENSION_LENGTH = int(os.getenv('VIDEO_EXTENSION_LENGTH', 1))  # 下载视频片段时，视频前后增加的时长，单位为秒
+VIDEO_EXTENSION_LENGTH = int(os.getenv('VIDEO_EXTENSION_LENGTH', 0))  # 下载视频片段时，视频前后增加的时长，单位为秒
 ENABLE_LOGIN = os.getenv('ENABLE_LOGIN', 'False').lower() == 'true'  # 是否启用登录
 USERNAME = os.getenv('USERNAME', 'admin')  # 登录用户名
 PASSWORD = os.getenv('PASSWORD', 'MaterialSearch')  # 登录密码
@@ -62,7 +62,6 @@ ENABLE_CHECKSUM = os.getenv('ENABLE_CHECKSUM', 'False').lower() == 'true'  # 是
 print("********** 运行配置 / RUNNING CONFIGURATIONS **********")
 global_vars = globals().copy()
 for var_name, var_value in global_vars.items():
-    if var_name in ("OoOo","III","Ii","Ooo","I1"): continue
     if var_name[0].isupper():
         print(f"{var_name}: {var_value!r}")
 print(f"HF_HOME: {os.getenv('HF_HOME')}")
