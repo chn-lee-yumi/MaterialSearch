@@ -34,6 +34,7 @@
     "uploading": "上传中……"
   },
   "formPlaceholders": {
+    "advanceSearch": "高级搜索选项",
     "positiveSearch": "搜索内容（建议使用英文逗号分隔关键词）",
     "negativeSearch": "过滤内容（建议使用英文逗号分隔关键词）",
     "positiveThreshold": "搜索阈值（高于该相似度才显示）",

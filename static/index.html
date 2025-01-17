@@ -10,7 +10,7 @@
     <script src="static/assets/index.iife.min.js"></script>
     <script src="static/assets/clipboard.min.js"></script>
     <script src="static/assets/axios.min.js"></script>
-    <script src="static/assets/index.js"></script>
+    <script src="static/assets/index.js" defer></script>
 </head>
 <body>
 <el-main id="app">
@@ -57,30 +57,40 @@
 
             <el-tab-pane :label="$t('searchTabs.textSearch')" name="0">
                 <el-form ref="form" :model="form" :inline="true">
-                    <el-input :placeholder="$t('formPlaceholders.positiveSearch')" v-model="form.positive" class="input-with-select"
+                    <el-row>
+                        <el-col :span="18">
+                            <el-input :placeholder="$t('formPlaceholders.positiveSearch')" v-model="form.positive" class="input-with-select"
+                                  @keyup.enter.native="search(0)"></el-input>
+                        </el-col>
+                        <el-col :span="6">
+                            <el-select v-model="form.top_n" :placeholder="$t('formPlaceholders.topNResults')" style="width:100px">
+                                <el-option label="Top 6" value="6"></el-option>
+                                <el-option label="Top 12" value="12"></el-option>
+                                <el-option label="Top 30" value="30"></el-option>
+                                <el-option label="Top 150" value="150"></el-option>
+                                <el-option :label="$t('formPlaceholders.topnAll')" value="1000000"></el-option>
+                            </el-select>
+                            <el-button type="success" icon="Search" @click="search(0)">{{ $t('searchButtons.search') }}</el-button>
+                        </el-col>
+                    </el-row>
+                    <el-collapse v-model="activeNames" @change="handleChange">
+                        <el-collapse-item :title="$t('formPlaceholders.advanceSearch')" name="1" icon="CaretRight">
+                            <el-input :placeholder="$t('formPlaceholders.negativeSearch')" v-model="form.negative" class="input-with-select"
                               @keyup.enter.native="search(0)"></el-input>
-                    <el-input :placeholder="$t('formPlaceholders.negativeSearch')" v-model="form.negative" class="input-with-select"
-                              @keyup.enter.native="search(0)"></el-input>
-                    <el-input :placeholder="$t('formPlaceholders.path')" v-model="form.path" class="input-with-select"
-                              @keyup.enter.native="search(0)"></el-input>
-                    <el-form-item :label="$t('formPlaceholders.positiveThreshold')" style="margin-bottom: 0px;" @keyup.enter.native="search(0)">
-                        <el-slider style="width:200px" v-model="form.positive_threshold"></el-slider>
-                    </el-form-item>
-                    <el-form-item :label="$t('formPlaceholders.negativeThreshold')" style="margin-bottom: 0px;" @keyup.enter.native="search(0)">
-                        <el-slider style="width:200px" v-model="form.negative_threshold"></el-slider>
-                    </el-form-item>
-                    <el-form-item :label="$t('formPlaceholders.date')" style="margin-bottom: 0px;">
-                        <el-date-picker v-model="time_filter" type="datetimerange" start-placeholder="Start date" end-placeholder="End date"
-                                        format="YYYY-MM-DD HH:mm:ss" date-format="YYYY/MM/DD ddd" time-format="A hh:mm:ss"></el-date-picker>
-                    </el-form-item>
-                    <el-select v-model="form.top_n" :placeholder="$t('formPlaceholders.topNResults')" style="width:100px">
-                        <el-option label="Top 6" value="6"></el-option>
-                        <el-option label="Top 12" value="12"></el-option>
-                        <el-option label="Top 30" value="30"></el-option>
-                        <el-option label="Top 150" value="150"></el-option>
-                        <el-option :label="$t('formPlaceholders.topnAll')" value="1000000"></el-option>
-                    </el-select>
-                    <el-button type="success" icon="Search" @click="search(0)">{{ $t('searchButtons.search') }}</el-button>
+                            <el-input :placeholder="$t('formPlaceholders.path')" v-model="form.path" class="input-with-select"
+                                      @keyup.enter.native="search(0)"></el-input>
+                            <el-form-item :label="$t('formPlaceholders.positiveThreshold')" style="margin-bottom: 0px;" @keyup.enter.native="search(0)">
+                                <el-slider style="width:200px" v-model="form.positive_threshold"></el-slider>
+                            </el-form-item>
+                            <el-form-item :label="$t('formPlaceholders.negativeThreshold')" style="margin-bottom: 0px;" @keyup.enter.native="search(0)">
+                                <el-slider style="width:200px" v-model="form.negative_threshold"></el-slider>
+                            </el-form-item>
+                            <el-form-item :label="$t('formPlaceholders.date')" style="margin-bottom: 0px;">
+                                <el-date-picker v-model="time_filter" type="datetimerange" start-placeholder="Start date" end-placeholder="End date"
+                                                format="YYYY-MM-DD HH:mm:ss" date-format="YYYY/MM/DD ddd" time-format="A hh:mm:ss"></el-date-picker>
+                            </el-form-item>
+                        </el-collapse-item>
+                    </el-collapse>
                 </el-form>
             </el-tab-pane>
 
@@ -107,30 +117,40 @@
 
             <el-tab-pane :label="$t('searchTabs.textVideoSearch')" name="2">
                 <el-form ref="form" :model="form" :inline="true">
-                    <el-input :placeholder="$t('formPlaceholders.positiveSearch')" v-model="form.positive" class="input-with-select"
+                    <el-row>
+                        <el-col :span="18">
+                            <el-input :placeholder="$t('formPlaceholders.positiveSearch')" v-model="form.positive" class="input-with-select"
                               @keyup.enter.native="search(2)"></el-input>
-                    <el-input :placeholder="$t('formPlaceholders.negativeSearch')" v-model="form.negative" class="input-with-select"
-                              @keyup.enter.native="search(2)"></el-input>
-                    <el-input :placeholder="$t('formPlaceholders.path')" v-model="form.path" class="input-with-select"
-                              @keyup.enter.native="search(2)"></el-input>
-                    <el-form-item :label="$t('formPlaceholders.positiveThreshold')" style="margin-bottom: 0px;" @keyup.enter.native="search(2)">
-                        <el-slider style="width:200px" v-model="form.positive_threshold"></el-slider>
-                    </el-form-item>
-                    <el-form-item :label="$t('formPlaceholders.negativeThreshold')" style="margin-bottom: 0px;" @keyup.enter.native="search(2)">
-                        <el-slider style="width:200px" v-model="form.negative_threshold"></el-slider>
-                    </el-form-item>
-                    <el-form-item :label="$t('formPlaceholders.date')" style="margin-bottom: 0px;">
-                        <el-date-picker v-model="time_filter" type="datetimerange" start-placeholder="Start date" end-placeholder="End date"
-                                        format="YYYY-MM-DD HH:mm:ss" date-format="YYYY/MM/DD ddd" time-format="A hh:mm:ss"></el-date-picker>
-                    </el-form-item>
-                    <el-select v-model="form.top_n" :placeholder="$t('formPlaceholders.topNResults')" style="width:100px">
-                        <el-option label="Top 6" value="6"></el-option>
-                        <el-option label="Top 12" value="12"></el-option>
-                        <el-option label="Top 30" value="30"></el-option>
-                        <el-option label="Top 150" value="150"></el-option>
-                        <el-option :label="$t('formPlaceholders.topnAll')" value="1000000"></el-option>
-                    </el-select>
-                    <el-button type="success" icon="Search" @click="search(2)">{{ $t('searchButtons.search') }}</el-button>
+                        </el-col>
+                        <el-col :span="6">
+                            <el-select v-model="form.top_n" :placeholder="$t('formPlaceholders.topNResults')" style="width:100px">
+                                <el-option label="Top 6" value="6"></el-option>
+                                <el-option label="Top 12" value="12"></el-option>
+                                <el-option label="Top 30" value="30"></el-option>
+                                <el-option label="Top 150" value="150"></el-option>
+                                <el-option :label="$t('formPlaceholders.topnAll')" value="1000000"></el-option>
+                            </el-select>
+                            <el-button type="success" icon="Search" @click="search(2)">{{ $t('searchButtons.search') }}</el-button>
+                        </el-col>
+                    </el-row>
+                    <el-collapse v-model="activeNames" @change="handleChange">
+                        <el-collapse-item :title="$t('formPlaceholders.advanceSearch')" name="1" icon="CaretRight">
+                            <el-input :placeholder="$t('formPlaceholders.negativeSearch')" v-model="form.negative" class="input-with-select"
+                                      @keyup.enter.native="search(2)"></el-input>
+                            <el-input :placeholder="$t('formPlaceholders.path')" v-model="form.path" class="input-with-select"
+                                      @keyup.enter.native="search(2)"></el-input>
+                            <el-form-item :label="$t('formPlaceholders.positiveThreshold')" style="margin-bottom: 0px;" @keyup.enter.native="search(2)">
+                                <el-slider style="width:200px" v-model="form.positive_threshold"></el-slider>
+                            </el-form-item>
+                            <el-form-item :label="$t('formPlaceholders.negativeThreshold')" style="margin-bottom: 0px;" @keyup.enter.native="search(2)">
+                                <el-slider style="width:200px" v-model="form.negative_threshold"></el-slider>
+                            </el-form-item>
+                            <el-form-item :label="$t('formPlaceholders.date')" style="margin-bottom: 0px;">
+                                <el-date-picker v-model="time_filter" type="datetimerange" start-placeholder="Start date" end-placeholder="End date"
+                                                format="YYYY-MM-DD HH:mm:ss" date-format="YYYY/MM/DD ddd" time-format="A hh:mm:ss"></el-date-picker>
+                            </el-form-item>
+                        </el-collapse-item>
+                    </el-collapse>
                 </el-form>
             </el-tab-pane>
 
@@ -445,40 +465,6 @@ const app = Vue.createApp({
         };
     }
 })
-
-// use ElementPlus and ElementPlusIconsVue
-app.use(ElementPlus)
-for (const [key, component] of Object.entries(ElementPlusIconsVue)) {
-    app.component(key, component)
-}
-
-// use VueI18n
-const browserLanguage = navigator.language || navigator.userLanguage; // zh-CN en-US
-const languageTag = browserLanguage.split('-')[0]; // zh en
-const i18n = VueI18n.createI18n({
-    legacy: false, // you must set `false`, to use Composition API
-    locale: languageTag, // set locale
-    fallbackLocale: 'en', // set fallback locale
-    messages: {},
-})
-app.use(i18n)
-function loadLocaleMessages(locale) {
-    return axios.get(`static/locales/${locale}.json`).then(response => {
-        return response.data;
-    });
-}
-async function loadLocales() {
-    const locales = ['en', 'zh'];
-    await Promise.all(
-        locales.map(async (locale) => {
-            const messages = await loadLocaleMessages(locale);
-            i18n.global.setLocaleMessage(locale, messages);
-        })
-    );
-}
-loadLocales().then(() => {
-    app.mount('#app');
-});
 </script>
 <style scoped>
 .el-tag {

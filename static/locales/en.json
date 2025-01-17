@@ -34,6 +34,7 @@
     "uploading": "Uploading..."
   },
   "formPlaceholders": {
+    "advanceSearch": "Advance Search Options",
     "positiveSearch": "Search Content",
     "negativeSearch": "Filter Content",
     "positiveThreshold": "Search Threshold (display when similarity is above)",
