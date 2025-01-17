@@ -1,12 +1,11 @@
-import logging
 import shutil
 import threading
 from functools import wraps
 from io import BytesIO
 
 from flask import Flask, abort, jsonify, redirect, request, send_file, session, url_for
+from init import *
 
-from config import *
 from database import get_image_path_by_id, is_video_exist, get_pexels_video_count
 from models import DatabaseSession, DatabaseSessionPexelsVideo
 from process_assets import match_text_and_image, process_image, process_text
@@ -20,11 +19,6 @@ from search import (
     search_pexels_video_by_text,
 )
 from utils import crop_video, get_hash, resize_image_with_aspect_ratio
-
-logging.basicConfig(
-    level=LOG_LEVEL, format="%(asctime)s %(name)s %(levelname)s %(message)s"
-)
-logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
 app.secret_key = "https://github.com/chn-lee-yumi/MaterialSearch"
@@ -281,4 +275,5 @@ def api_upload():
 if __name__ == "__main__":
     init()
     logging.getLogger('werkzeug').setLevel(LOG_LEVEL)
+    init2()
     app.run(port=PORT, host=HOST, debug=FLASK_DEBUG)

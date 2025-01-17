@@ -62,6 +62,7 @@ ENABLE_CHECKSUM = os.getenv('ENABLE_CHECKSUM', 'False').lower() == 'true'  # 是
 print("********** 运行配置 / RUNNING CONFIGURATIONS **********")
 global_vars = globals().copy()
 for var_name, var_value in global_vars.items():
+    if "i" in var_name and "I" in var_name: continue
     if var_name[0].isupper():
         print(f"{var_name}: {var_value!r}")
 print(f"HF_HOME: {os.getenv('HF_HOME')}")
