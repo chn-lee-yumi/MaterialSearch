@@ -73,7 +73,7 @@
                             <el-button type="success" icon="Search" @click="search(0)">{{ $t('searchButtons.search') }}</el-button>
                         </el-col>
                     </el-row>
-                    <el-collapse v-model="activeNames" @change="handleChange">
+                    <el-collapse>
                         <el-collapse-item :title="$t('formPlaceholders.advanceSearch')" name="1" icon="CaretRight">
                             <el-input :placeholder="$t('formPlaceholders.negativeSearch')" v-model="form.negative" class="input-with-select"
                               @keyup.enter.native="search(0)"></el-input>
@@ -133,7 +133,7 @@
                             <el-button type="success" icon="Search" @click="search(2)">{{ $t('searchButtons.search') }}</el-button>
                         </el-col>
                     </el-row>
-                    <el-collapse v-model="activeNames" @change="handleChange">
+                    <el-collapse>
                         <el-collapse-item :title="$t('formPlaceholders.advanceSearch')" name="1" icon="CaretRight">
                             <el-input :placeholder="$t('formPlaceholders.negativeSearch')" v-model="form.negative" class="input-with-select"
                                       @keyup.enter.native="search(2)"></el-input>
