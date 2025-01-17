@@ -18,9 +18,11 @@
 
 ### Windows整合包
 
-[在这里下载整合包](https://github.com/chn-lee-yumi/MaterialSearch/releases/latest)`MaterialSearchWindows.7z`，解压后请阅读里面的`使用说明.txt`。
+[在这里下载整合包](https://github.com/chn-lee-yumi/MaterialSearch/releases/latest)`MaterialSearchWindows.7z`或`MaterialSearchWindowsLarge.7z`，解压后请阅读里面的`使用说明.txt`。
 
-整合包自带`OFA-Sys/chinese-clip-vit-base-patch16`模型。
+`MaterialSearchWindows.7z`整合包自带`OFA-Sys/chinese-clip-vit-base-patch16`模型。`MaterialSearchWindowsLarge.7z`整合包则是`OFA-Sys/chinese-clip-vit-large-patch14-336px`模型。
+
+一般而言`OFA-Sys/chinese-clip-vit-base-patch16`模型已经足够日常使用，如果效果不佳并且显卡显存足够大（8G以上），可以尝试`MaterialSearchWindowsLarge.7z`整合包。
 
 ### 通过源码部署
 
