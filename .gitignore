@@ -154,3 +154,4 @@ pip-selfcheck.json
 env_*.py
 init_*.py
 enc_*.py
+index_*.js
