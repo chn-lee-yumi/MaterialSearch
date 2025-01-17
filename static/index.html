@@ -10,6 +10,7 @@
     <script src="static/assets/index.iife.min.js"></script>
     <script src="static/assets/clipboard.min.js"></script>
     <script src="static/assets/axios.min.js"></script>
+    <script src="static/assets/index.js"></script>
 </head>
 <body>
 <el-main id="app">
@@ -259,23 +260,6 @@
 </el-main>
 </body>
 <script>
-function formatTime(seconds) {
-    const days = Math.floor(seconds / (3600 * 24));
-    seconds -= days * 3600 * 24;
-    const hours = Math.floor(seconds / 3600);
-    seconds -= hours * 3600;
-    const minutes = Math.floor(seconds / 60);
-    seconds -= minutes * 60;
-
-    const formattedDays = days > 0 ? days + ':' : '';
-    const formattedHours = hours.toString().padStart(2, '0') + ':';
-    const formattedMinutes = minutes.toString().padStart(2, '0') + ':';
-    const formattedSeconds = seconds.toString().padStart(2, '0') + '';
-
-    let result = formattedDays + formattedHours + formattedMinutes + formattedSeconds;
-    return result;
-}
-
 const app = Vue.createApp({
     data() {
         return {
