@@ -46,11 +46,10 @@ jobs:
     - name: Optimise Code
       run: |
         cd MaterialSearchWindows
-        ./python.exe -m py_compile main.py config.py database.py env.py init.py models.py process_assets.py scan.py search.py utils.py
+        ./python.exe -m py_compile main.py config.py database.py init.py models.py process_assets.py scan.py search.py utils.py
         cp __pycache__/main.cpython-310.pyc main.pyc
         cp __pycache__/config.cpython-310.pyc config.pyc
         cp __pycache__/database.cpython-310.pyc database.pyc
-        cp __pycache__/env.cpython-310.pyc env.pyc
         cp __pycache__/init.cpython-310.pyc init.pyc
         cp __pycache__/models.cpython-310.pyc models.pyc
         cp __pycache__/process_assets.cpython-310.pyc process_assets.pyc
@@ -60,20 +59,20 @@ jobs:
         rm main.py
         rm config.py
         rm database.py
-        rm env.py
         rm init.py
         rm models.py
         rm process_assets.py
         rm scan.py
         rm search.py
         rm utils.py
+        rm -r __pycache__
         cd ..
 
     - name: Install requirements
       run: MaterialSearchWindows/python.exe MaterialSearchWindows/pip.pyz install -r MaterialSearchWindows/requirements.txt # --index-url=https://download.pytorch.org/whl/cu118 --extra-index-url=https://pypi.org/simple/
 
     - name: Download model
-      run: MaterialSearchWindows/python.exe -c 'from transformers import AutoModelForZeroShotImageClassification, AutoProcessor; AutoModelForZeroShotImageClassification.from_pretrained("OFA-Sys/chinese-clip-vit-base-patch16"); AutoProcessor.from_pretrained("OFA-Sys/chinese-clip-vit-base-patch16");'
+      run: MaterialSearchWindows/python.exe -c "from transformers import AutoModelForZeroShotImageClassification, AutoProcessor; AutoModelForZeroShotImageClassification.from_pretrained('OFA-Sys/chinese-clip-vit-base-patch16', use_safetensors=False); AutoProcessor.from_pretrained('OFA-Sys/chinese-clip-vit-base-patch16');"
       
     - name: Create .env
       uses: DamianReeves/write-file-action@master
