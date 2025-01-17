@@ -4,9 +4,9 @@ from functools import wraps
 from io import BytesIO
 
 from flask import Flask, abort, jsonify, redirect, request, send_file, session, url_for
-from init import *
 
 from database import get_image_path_by_id, is_video_exist, get_pexels_video_count
+from init import *
 from models import DatabaseSession, DatabaseSessionPexelsVideo
 from process_assets import match_text_and_image, process_image, process_text
 from scan import Scanner
@@ -20,6 +20,7 @@ from search import (
 )
 from utils import crop_video, get_hash, resize_image_with_aspect_ratio
 
+logger = logging.getLogger(__name__)
 app = Flask(__name__)
 app.secret_key = "https://github.com/chn-lee-yumi/MaterialSearch"
 
