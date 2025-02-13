@@ -111,7 +111,7 @@ def crop_video(input_file, output_file, start_time, end_time):
 
 def resize_image_with_aspect_ratio(image_path, target_size, convert_rgb=False):
     image = Image.open(image_path)
-    if convert_rgb and image.mode in ("RGBA", "P"):
+    if convert_rgb:
         image = image.convert('RGB')
     # 计算调整后图像的目标大小及长宽比
     width, height = image.size
