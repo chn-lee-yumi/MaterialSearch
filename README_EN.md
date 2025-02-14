@@ -65,8 +65,6 @@ ASSETS_PATH=C:/Users/Administrator/Pictures,C:/Users/Administrator/Videos
 DEVICE=cuda
 ```
 
-The functionality is still being iterated upon, so the configuration may change frequently. If you find that the application fails to start after updating to a new version, please refer to the latest configuration file and manually modify the configuration accordingly.
-
 If you find that certain formats of images or videos are not being scanned, you can try adding the corresponding file extensions to `IMAGE_EXTENSIONS` and `VIDEO_EXTENSIONS`. If you find that some supported extensions have not been added to the code, please feel free to open an issue or submit a pull request to add them.
 
 If small images are not being scanned, you can try reducing `IMAGE_MIN_WIDTH` and `IMAGE_MIN_HEIGHT` and try again.
