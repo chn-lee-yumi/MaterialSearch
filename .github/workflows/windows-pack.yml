@@ -69,7 +69,7 @@ jobs:
         cd ..
 
     - name: Install requirements
-      run: MaterialSearchWindows/python.exe MaterialSearchWindows/pip.pyz install -r MaterialSearchWindows/requirements.txt torch-directml
+      run: MaterialSearchWindows/python.exe MaterialSearchWindows/pip.pyz install -r MaterialSearchWindows/requirements_windows.txt
 
     - name: Download model
       run: MaterialSearchWindows/python.exe -c "from transformers import AutoModelForZeroShotImageClassification, AutoProcessor; AutoModelForZeroShotImageClassification.from_pretrained('OFA-Sys/chinese-clip-vit-base-patch16', use_safetensors=False); AutoProcessor.from_pretrained('OFA-Sys/chinese-clip-vit-base-patch16');"
