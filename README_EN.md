@@ -56,7 +56,7 @@ Note:
 
 All configurations are in the `config.py` file, which contains detailed comments.
 
-It is recommended to modify the configuration through environment variables or by creating a `.env` file in the project root directory. If a corresponding variable is not configured, the default value in `config.py` will be used. For example, `os.getenv('HOST', '0.0.0.0')` will default to `0.0.0.0` if the `HOST` variable is not configured.
+It is recommended to modify the configuration through environment variables or by creating a `.env` file in the project root directory. If a corresponding variable is not configured, the default value in `config.py` will be used. For example, `os.getenv('HOST', '127.0.0.1')` will default to `127.0.0.1` if the `HOST` variable is not configured.
 
 Example `.env` file configuration:
 

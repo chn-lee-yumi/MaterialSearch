@@ -6,10 +6,15 @@ from PIL import Image
 from transformers import AutoModelForZeroShotImageClassification, AutoProcessor
 
 from config import *
+import importlib.util
 
 device_list = ["cpu", "cuda", "mps"]  # 推理设备，可选cpu、cuda、mps
+if importlib.util.find_spec("torch_directml") is not None: # 如果支持DirectML，则加入DirectML设备
+    import torch_directml
+    if torch_directml.device_count() > 0:
+        device_list.append(torch_directml.device())
+
 image = Image.open("test.png")  # 测试图片。图片大小影响速度，一般相机照片为4000x3000。图片内容不影响速度。
-input_text = "This is a test sentence."  # 测试文本
 test_times = 100  # 测试次数
 
 print("Loading models...")
