@@ -47,7 +47,8 @@
   },
   "searchButtons": {
     "search": "Search",
-    "calculateSimilarity": "Calculate Similarity"
+    "calculateSimilarity": "Calculate Similarity",
+    "paste": "Paste"
   },
   "fileResults": {
     "matchingProbability": "Similarity",

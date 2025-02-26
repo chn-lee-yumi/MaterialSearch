@@ -47,7 +47,8 @@
   },
   "searchButtons": {
     "search": "搜索",
-    "calculateSimilarity": "计算相似度"
+    "calculateSimilarity": "计算相似度",
+    "paste": "粘贴"
   },
   "fileResults": {
     "matchingProbability": "相似度",

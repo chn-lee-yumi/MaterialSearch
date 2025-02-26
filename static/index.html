@@ -94,25 +94,34 @@
                 </el-form>
             </el-tab-pane>
 
+            <!--TODO: 以图搜图和以图搜视频 支持路径过滤和时间筛选 -->
             <el-tab-pane :label="$t('searchTabs.imageSearch')" name="1">
-                <el-upload ref="upload" drag action="api/upload" :multiple=false :limit="1" :on-exceed="handleExceed" :on-success="handleSuccess">
-                    <i class="el-icon-upload"></i>
-                    <div class="el-upload__text">{{ $t('uploader.drag') }}<em>{{ $t('uploader.click') }}</em></div>
-                </el-upload>
-                <el-form ref="form" :model="form" :inline="true" style="margin-top:5px;">
-                    <el-form-item :label="$t('formPlaceholders.positiveThreshold')" style="margin-bottom: 0px;" @keyup.enter.native="search(1)">
-                        <el-slider style="width:200px" v-model="form.image_threshold"></el-slider>
-                    </el-form-item>
-                    <el-select v-model="form.top_n" :placeholder="$t('formPlaceholders.topNResults')" style="width:100px"
-                               @keyup.enter.native="search(1)">
-                        <el-option label="Top 6" value="6"></el-option>
-                        <el-option label="Top 12" value="12"></el-option>
-                        <el-option label="Top 30" value="30"></el-option>
-                        <el-option label="Top 150" value="150"></el-option>
-                        <el-option :label="$t('formPlaceholders.topnAll')" value="1000000"></el-option>
-                    </el-select>
-                    <el-button type="success" icon="Search" @click="search(1)">{{ $t('searchButtons.search') }}</el-button>
-                </el-form>
+                <el-row>
+                    <el-col :span="6" style="display: flex; justify-content: center; padding-right: 10px">
+                        <el-image fit="contain" :src="imageSearchUrl"></el-image>
+                    </el-col>
+                    <el-col :span="18">
+                        <el-upload ref="upload" drag action="api/upload" :multiple=false :limit="1" :on-exceed="handleExceed" :on-success="handleSuccess" :before-upload="handleBeforeUpload">
+                            <i class="el-icon-upload"></i>
+                            <div class="el-upload__text">{{ $t('uploader.drag') }}<em>{{ $t('uploader.click') }}</em></div>
+                        </el-upload>
+                        <el-form ref="form" :model="form" :inline="true" style="margin-top:5px;">
+                            <el-form-item :label="$t('formPlaceholders.positiveThreshold')" style="margin-bottom: 0px;" @keyup.enter.native="search(1)">
+                                <el-slider style="width:200px" v-model="form.image_threshold"></el-slider>
+                            </el-form-item>
+                            <el-select v-model="form.top_n" :placeholder="$t('formPlaceholders.topNResults')" style="width:100px"
+                                       @keyup.enter.native="search(1)">
+                                <el-option label="Top 6" value="6"></el-option>
+                                <el-option label="Top 12" value="12"></el-option>
+                                <el-option label="Top 30" value="30"></el-option>
+                                <el-option label="Top 150" value="150"></el-option>
+                                <el-option :label="$t('formPlaceholders.topnAll')" value="1000000"></el-option>
+                            </el-select>
+                            <el-button type="success" icon="Search" @click="search(1)">{{ $t('searchButtons.search') }}</el-button>
+                            <el-button type="success" icon="Pointer" @click="pasteImg">{{ $t('searchButtons.paste') }}</el-button>
+                        </el-form>
+                    </el-col>
+                </el-row>
             </el-tab-pane>
 
             <el-tab-pane :label="$t('searchTabs.textVideoSearch')" name="2">
@@ -154,34 +163,52 @@
                 </el-form>
             </el-tab-pane>
 
+            <!--TODO: 以图搜图和以图搜视频 支持路径过滤和时间筛选 -->
             <el-tab-pane :label="$t('searchTabs.imageVideoSearch')" name="3">
-                <el-upload ref="upload" drag action="api/upload" :multiple=false :limit="1" :on-exceed="handleExceed" :on-success="handleSuccess">
-                    <i class="el-icon-upload"></i>
-                    <div class="el-upload__text">{{ $t('uploader.drag') }}<em>{{ $t('uploader.click') }}</em></div>
-                </el-upload>
-                <el-form ref="form" :model="form" :inline="true" style="margin-top:10px;">
-                    <el-form-item :label="$t('formPlaceholders.positiveThreshold')" style="margin-bottom: 0px;" @keyup.enter.native="search(3)">
-                        <el-slider style="width:200px" v-model="form.image_threshold"></el-slider>
-                    </el-form-item>
-                    <el-select v-model="form.top_n" :placeholder="$t('formPlaceholders.topNResults')" style="width:100px">
-                        <el-option label="Top 6" value="6"></el-option>
-                        <el-option label="Top 12" value="12"></el-option>
-                        <el-option label="Top 30" value="30"></el-option>
-                        <el-option label="Top 150" value="150"></el-option>
-                        <el-option :label="$t('formPlaceholders.topnAll')" value="1000000"></el-option>
-                    </el-select>
-                    <el-button type="success" icon="Search" @click="search(3)">{{ $t('searchButtons.search') }}</el-button>
-                </el-form>
+                <el-row>
+                    <el-col :span="6" style="display: flex; justify-content: center; padding-right: 10px">
+                        <el-image fit="contain" :src="imageSearchUrl"></el-image>
+                    </el-col>
+                    <el-col :span="18">
+                        <el-upload ref="upload" drag action="api/upload" :multiple=false :limit="1" :on-exceed="handleExceed" :on-success="handleSuccess" :before-upload="handleBeforeUpload">
+                            <i class="el-icon-upload"></i>
+                            <div class="el-upload__text">{{ $t('uploader.drag') }}<em>{{ $t('uploader.click') }}</em></div>
+                        </el-upload>
+                        <el-form ref="form" :model="form" :inline="true" style="margin-top:5px;">
+                            <el-form-item :label="$t('formPlaceholders.positiveThreshold')" style="margin-bottom: 0px;" @keyup.enter.native="search(3)">
+                                <el-slider style="width:200px" v-model="form.image_threshold"></el-slider>
+                            </el-form-item>
+                            <el-select v-model="form.top_n" :placeholder="$t('formPlaceholders.topNResults')" style="width:100px"
+                                       @keyup.enter.native="search(1)">
+                                <el-option label="Top 6" value="6"></el-option>
+                                <el-option label="Top 12" value="12"></el-option>
+                                <el-option label="Top 30" value="30"></el-option>
+                                <el-option label="Top 150" value="150"></el-option>
+                                <el-option :label="$t('formPlaceholders.topnAll')" value="1000000"></el-option>
+                            </el-select>
+                            <el-button type="success" icon="Search" @click="search(3)">{{ $t('searchButtons.search') }}</el-button>
+                            <el-button type="success" icon="Pointer" @click="pasteImg">{{ $t('searchButtons.paste') }}</el-button>
+                        </el-form>
+                    </el-col>
+                </el-row>
             </el-tab-pane>
 
             <el-tab-pane :label="$t('searchTabs.textImageSimilarity')" name="6">
-                <el-input :placeholder="$t('formPlaceholders.textMatch')" v-model="form.text" class="input-with-select"></el-input>
-                <el-upload ref="upload" drag action="api/upload" :multiple=false :limit="1" :on-exceed="handleExceed" :on-success="handleSuccess">
-                    <i class="el-icon-upload"></i>
-                    <div class="el-upload__text">{{ $t('uploader.drag') }}<em>{{ $t('uploader.click') }}</em></div>
-                </el-upload>
+                <el-input :placeholder="$t('formPlaceholders.textMatch')" v-model="form.positive" class="input-with-select"></el-input>
+                <el-row>
+                    <el-col :span="6" style="display: flex; justify-content: center; padding-right: 10px">
+                        <el-image fit="contain" :src="imageSearchUrl"></el-image>
+                    </el-col>
+                    <el-col :span="18">
+                        <el-upload ref="upload" drag action="api/upload" :multiple=false :limit="1" :on-exceed="handleExceed" :on-success="handleSuccess" :before-upload="handleBeforeUpload">
+                            <i class="el-icon-upload"></i>
+                            <div class="el-upload__text">{{ $t('uploader.drag') }}<em>{{ $t('uploader.click') }}</em></div>
+                        </el-upload>
+                    </el-col>
+                </el-row>
                 <el-row style="margin-top:10px;">
                     <el-button type="success" icon="Search" @click="search(4)">{{ $t('searchButtons.calculateSimilarity') }}</el-button>
+                    <el-button type="success" icon="Pointer" @click="pasteImg">{{ $t('searchButtons.paste') }}</el-button>
                 </el-row>
             </el-tab-pane>
 
@@ -310,6 +337,7 @@ const app = Vue.createApp({
             image_url_list: [],
             pexels_videos: [],
             timer: null,
+            imageSearchUrl: null,
         }
     },
     mounted: function() {
@@ -382,7 +410,7 @@ const app = Vue.createApp({
                 loadingInstance.close();
                 return;
             }
-            if (search_type === 5 && that.form.text == "") {
+            if ((search_type === 4 || search_type == 5) && that.form.positive == "") {
                 ElementPlus.ElMessage.error(that.$t('messages.textContentEmpty'));
                 loadingInstance.close();
                 return;
@@ -445,7 +473,53 @@ const app = Vue.createApp({
             } else {
                 ElementPlus.ElMessage.error(that.$t('messages.imgIdNotFound'));
             }
-        }
+        },
+        handleBeforeUpload(file) {
+            console.log(file);
+            return new Promise((resolve) => {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    this.imageSearchUrl = e.target.result;
+                    resolve(true);
+                };
+                reader.readAsDataURL(file);
+            });
+        },
+        async pasteImg() {
+            // 检查浏览器是否支持剪切板 API 和 Image 对象
+            if (navigator.clipboard && window.Image) {
+                try {
+                    // 读取剪切板中的内容，返回一个 Promise，解析为一个 ClipboardItem 数组
+                    const clipboardItems = await navigator.clipboard.read();
+                    // 检查剪切板中是否有内容，并且第一个项目是否包含图片类型（PNG 或 JPEG）
+                    if (clipboardItems.length > 0 && (clipboardItems[0].types.includes('image/png') || clipboardItems[0].types.includes('image/jpeg'))) {
+                        // 获取剪切板中的第一个图片项目
+                        const [imageItem] = clipboardItems;
+                        // 获取图片的 Blob 数据
+                        const blob = await imageItem.getType('image/png');
+                        // 将 Blob 对象转换为 File 对象
+                        const file = this.blobToFile(blob, 'pasteboard.png');
+                        // 清空当前文件列表
+                        this.upload.clearFiles();
+                        // 开始处理文件
+                        this.upload.handleStart(file);
+                        // 提交文件上传请求
+                        this.upload.submit();
+                    } else {
+                        ElementPlus.ElMessage.error(this.$t('剪切板没有图片'));
+                    }
+                } catch (error) {
+                    // 捕获并处理可能的错误
+                    console.error('读取剪切板失败:', error);
+                    ElementPlus.ElMessage.error(this.$t('messages.clipboardReadFailed'));
+                }
+            } else {
+                ElementPlus.ElMessage.error(this.$t('messages.clipboardNotSupported'));
+            }
+        },
+        blobToFile(blob, fileName) {
+            return new File([blob], fileName, { type: blob.type });
+        },
     },
     setup() {
         const upload = Vue.ref();
@@ -463,7 +537,7 @@ const app = Vue.createApp({
             handleExceed,
             handleSuccess,
         };
-    }
+    },
 })
 </script>
 <style scoped>
