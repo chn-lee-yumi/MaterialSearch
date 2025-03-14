@@ -22,14 +22,10 @@ First, install the Python environment and then download the code from this repos
 
 Note that the first run will automatically download the models. The download speed may be slow, so please be patient. If the network is poor, the model download may fail. In that case, simply rerun the program.
 
-1. Install the dependencies before first use: `pip install -U -r requirements.txt`. For Windows systems, you can double-click on `install.bat` (for NVIDIA GPU acceleration) or `install_cpu.bat` (for pure CPU).
-2. If you plan to use GPU acceleration, run the benchmark to determine whether the CPU or GPU is faster: `python benchmark.py`. For Windows systems, you can double-click on `benchmark.bat`. Note that GPU is not necessarily faster than CPU; on my Mac, CPU is faster.
-3. If it is not the CPU that is fastest, modify the `DEVICE` settings in the configuration file to correspond to the appropriate device (refer to the configuration instructions below for how to modify the configuration).
-4. Start the program: `python main.py`. For Windows systems, you can double-click on `run.bat`.
+1. Install the dependencies before first use: `pip install -U -r requirements.txt`. For Windows systems, use `requirements_windows.txt` instead, or you can double-click on `install.bat`.
+2. Start the program: `python main.py`. For Windows systems, you can double-click on `run.bat`.
 
 If you encounter any issues with the version dependencies in `requirements.txt` (for example, if a library version is too new and causes errors), please provide feedback by opening an issue. I will add version range restrictions.
-
-If you encounter issues with hardware support but are unable to use GPU acceleration, please update the torch version according to the [PyTorch documentation](https://pytorch.org/get-started/locally/).
 
 To use the "Download Video Segments" feature, you need to install `ffmpeg`. If you are using Windows, remember to add the directory where `ffmpeg.exe` is located to the `PATH` environment variable. You can refer to a [Bing search](https://bing.com/search?q=windows+add+path+environment+variable) for instructions.
 
@@ -62,7 +58,7 @@ Example `.env` file configuration:
 
 ```conf
 ASSETS_PATH=C:/Users/Administrator/Pictures,C:/Users/Administrator/Videos
-DEVICE=cuda
+SKIP_PATH=C:/Users/Administrator/AppData
 ```
 
 If you find that certain formats of images or videos are not being scanned, you can try adding the corresponding file extensions to `IMAGE_EXTENSIONS` and `VIDEO_EXTENSIONS`. If you find that some supported extensions have not been added to the code, please feel free to open an issue or submit a pull request to add them.
@@ -91,8 +87,6 @@ I am doing this project purely "for the love of it" (which means, in fact, I am 
 It is recommended to use a `amd64` or `arm64` architecture CPU. The minimum requirement is 2GB of memory, but it is recommended to have at least 4GB of memory. If you have a large number of photos, it is recommended to increase the amount of memory.
 
 Test environment: J3455 CPU, 8GB of memory. Allwinner H6, 2GB of memory.
-
-If you are using an AMD GPU, GPU acceleration is only supported on Linux. Please refer to the [PyTorch documentation](https://pytorch.org/get-started/locally/).
 
 ## Search Speed
 

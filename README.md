@@ -18,7 +18,7 @@
 
 ### Windows整合包
 
-[在这里下载整合包](https://github.com/chn-lee-yumi/MaterialSearch/releases/latest)`MaterialSearchWindows.7z`或`MaterialSearchWindowsLarge.7z`，解压后请阅读里面的`使用说明.txt`。
+[在这里下载整合包](https://github.com/chn-lee-yumi/MaterialSearch/releases/latest)`MaterialSearchWindows.7z`或`MaterialSearchWindowsLarge.7z`，解压后请阅读里面的`使用说明.txt`。整合包会自动选择独显或核显进行加速。
 
 `MaterialSearchWindows.7z`整合包自带`OFA-Sys/chinese-clip-vit-base-patch16`模型。`MaterialSearchWindowsLarge.7z`整合包则是`OFA-Sys/chinese-clip-vit-large-patch14-336px`模型。
 
@@ -30,14 +30,10 @@
 
 注意，首次运行会自动下载模型。下载速度可能比较慢，请耐心等待。如果网络不好，模型可能会下载失败，这个时候重新执行程序即可。
 
-1. 首次使用前需要安装依赖：`pip install -U -r requirements.txt`，Windows系统可以双击`install.bat`（NVIDIA GPU加速）或`install_cpu.bat`（纯CPU）。
-2. 如果你打算使用GPU加速，则执行基准测试判断是CPU快还是GPU快：`python benchmark.py`，Windows系统可以双击`benchmark.bat`。GPU不一定比CPU快，在我的Mac上CPU更快。
-3. 如果不是CPU最快，则修改配置中的`DEVICE`，改为对应设备（配置修改方法请参考后面的配置说明）。
-4. 启动程序：`python main.py`，Windows系统可以双击`run.bat`。
+1. 首次使用前需要安装依赖：`pip install -U -r requirements.txt`。Windows系统使用`requirements_windows.txt`，或双击`install.bat`。
+2. 启动程序：`python main.py`，Windows系统可以双击`run.bat`。
 
 如遇到`requirements.txt`版本依赖问题（比如某个库版本过新会导致运行报错），请提issue反馈，我会添加版本范围限制。
-
-如遇到硬件支持但无法使用GPU加速的情况，请根据[PyTorch文档](https://pytorch.org/get-started/locally/)更新torch版本。
 
 如果想使用"下载视频片段"的功能，需要安装`ffmpeg`。如果是Windows系统，记得把`ffmpeg.exe`所在目录加入环境变量`PATH`，可以参考：[Bing搜索](https://cn.bing.com/search?q=windows+%E5%A6%82%E4%BD%95%E6%B7%BB%E5%8A%A0+path+%E7%8E%AF%E5%A2%83%E5%8F%98%E9%87%8F)。
 
@@ -70,7 +66,7 @@
 
 ```conf
 ASSETS_PATH=C:/Users/Administrator/Pictures,C:/Users/Administrator/Videos
-DEVICE=cuda
+SKIP_PATH=C:/Users/Administrator/AppData
 ```
 
 如果你发现某些格式的图片或视频没有被扫描到，可以尝试在`IMAGE_EXTENSIONS`和`VIDEO_EXTENSIONS`增加对应的后缀。如果你发现一些支持的后缀没有被添加到代码中，欢迎提issue或pr增加。
@@ -99,8 +95,6 @@ https_proxy=http://127.0.0.1:7070
 推荐使用`amd64`或`arm64`架构的CPU。内存最低2G，但推荐最少4G内存。如果照片数量很多，推荐增加更多内存。
 
 测试环境：J3455，8G内存。全志H6，2G内存。
-
-如果使用AMD的GPU，仅支持在Linux下使用GPU加速。请参考：[PyTorch文档](https://pytorch.org/get-started/locally/)。
 
 ## 搜索速度
 
