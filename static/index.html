@@ -73,7 +73,7 @@
                             <el-button type="success" icon="Search" @click="search(0)">{{ $t('searchButtons.search') }}</el-button>
                         </el-col>
                     </el-row>
-                    <el-collapse>
+                    <el-collapse v-model="activeCollapse">
                         <el-collapse-item :title="$t('formPlaceholders.advanceSearch')" name="1" icon="CaretRight">
                             <el-input :placeholder="$t('formPlaceholders.negativeSearch')" v-model="form.negative" class="input-with-select"
                               @keyup.enter.native="search(0)"></el-input>
@@ -94,7 +94,6 @@
                 </el-form>
             </el-tab-pane>
 
-            <!--TODO: 以图搜图和以图搜视频 支持路径过滤和时间筛选 -->
             <el-tab-pane :label="$t('searchTabs.imageSearch')" name="1">
                 <el-row>
                     <el-col :span="6" style="display: flex; justify-content: center; padding-right: 10px">
@@ -106,9 +105,6 @@
                             <div class="el-upload__text">{{ $t('uploader.drag') }}<em>{{ $t('uploader.click') }}</em></div>
                         </el-upload>
                         <el-form ref="form" :model="form" :inline="true" style="margin-top:5px;">
-                            <el-form-item :label="$t('formPlaceholders.positiveThreshold')" style="margin-bottom: 0px;" @keyup.enter.native="search(1)">
-                                <el-slider style="width:200px" v-model="form.image_threshold"></el-slider>
-                            </el-form-item>
                             <el-select v-model="form.top_n" :placeholder="$t('formPlaceholders.topNResults')" style="width:100px"
                                        @keyup.enter.native="search(1)">
                                 <el-option label="Top 6" value="6"></el-option>
@@ -119,6 +115,19 @@
                             </el-select>
                             <el-button type="success" icon="Search" @click="search(1)">{{ $t('searchButtons.search') }}</el-button>
                             <el-button type="success" icon="Pointer" @click="pasteImg">{{ $t('searchButtons.paste') }}</el-button>
+                            <el-collapse v-model="activeCollapse">
+                                <el-collapse-item :title="$t('formPlaceholders.advanceSearch')" name="1" icon="CaretRight">
+                                    <el-input :placeholder="$t('formPlaceholders.path')" v-model="form.path" class="input-with-select"
+                                              @keyup.enter.native="search(1)"></el-input>
+                                    <el-form-item :label="$t('formPlaceholders.positiveThreshold')" style="margin-bottom: 0px;" @keyup.enter.native="search(1)">
+                                        <el-slider style="width:200px" v-model="form.image_threshold"></el-slider>
+                                    </el-form-item>
+                                    <el-form-item :label="$t('formPlaceholders.date')" style="margin-bottom: 0px;">
+                                        <el-date-picker v-model="time_filter" type="datetimerange" start-placeholder="Start date" end-placeholder="End date"
+                                                        format="YYYY-MM-DD HH:mm:ss" date-format="YYYY/MM/DD ddd" time-format="A hh:mm:ss"></el-date-picker>
+                                    </el-form-item>
+                                </el-collapse-item>
+                            </el-collapse>
                         </el-form>
                     </el-col>
                 </el-row>
@@ -142,7 +151,7 @@
                             <el-button type="success" icon="Search" @click="search(2)">{{ $t('searchButtons.search') }}</el-button>
                         </el-col>
                     </el-row>
-                    <el-collapse>
+                    <el-collapse v-model="activeCollapse">
                         <el-collapse-item :title="$t('formPlaceholders.advanceSearch')" name="1" icon="CaretRight">
                             <el-input :placeholder="$t('formPlaceholders.negativeSearch')" v-model="form.negative" class="input-with-select"
                                       @keyup.enter.native="search(2)"></el-input>
@@ -163,7 +172,6 @@
                 </el-form>
             </el-tab-pane>
 
-            <!--TODO: 以图搜图和以图搜视频 支持路径过滤和时间筛选 -->
             <el-tab-pane :label="$t('searchTabs.imageVideoSearch')" name="3">
                 <el-row>
                     <el-col :span="6" style="display: flex; justify-content: center; padding-right: 10px">
@@ -175,9 +183,6 @@
                             <div class="el-upload__text">{{ $t('uploader.drag') }}<em>{{ $t('uploader.click') }}</em></div>
                         </el-upload>
                         <el-form ref="form" :model="form" :inline="true" style="margin-top:5px;">
-                            <el-form-item :label="$t('formPlaceholders.positiveThreshold')" style="margin-bottom: 0px;" @keyup.enter.native="search(3)">
-                                <el-slider style="width:200px" v-model="form.image_threshold"></el-slider>
-                            </el-form-item>
                             <el-select v-model="form.top_n" :placeholder="$t('formPlaceholders.topNResults')" style="width:100px"
                                        @keyup.enter.native="search(1)">
                                 <el-option label="Top 6" value="6"></el-option>
@@ -188,6 +193,19 @@
                             </el-select>
                             <el-button type="success" icon="Search" @click="search(3)">{{ $t('searchButtons.search') }}</el-button>
                             <el-button type="success" icon="Pointer" @click="pasteImg">{{ $t('searchButtons.paste') }}</el-button>
+                            <el-collapse v-model="activeCollapse">
+                                <el-collapse-item :title="$t('formPlaceholders.advanceSearch')" name="1" icon="CaretRight">
+                                    <el-input :placeholder="$t('formPlaceholders.path')" v-model="form.path" class="input-with-select"
+                                              @keyup.enter.native="search(3)"></el-input>
+                                    <el-form-item :label="$t('formPlaceholders.positiveThreshold')" style="margin-bottom: 0px;" @keyup.enter.native="search(1)">
+                                        <el-slider style="width:200px" v-model="form.image_threshold"></el-slider>
+                                    </el-form-item>
+                                    <el-form-item :label="$t('formPlaceholders.date')" style="margin-bottom: 0px;">
+                                        <el-date-picker v-model="time_filter" type="datetimerange" start-placeholder="Start date" end-placeholder="End date"
+                                                        format="YYYY-MM-DD HH:mm:ss" date-format="YYYY/MM/DD ddd" time-format="A hh:mm:ss"></el-date-picker>
+                                    </el-form-item>
+                                </el-collapse-item>
+                            </el-collapse>
                         </el-form>
                     </el-col>
                 </el-row>
@@ -204,11 +222,11 @@
                             <i class="el-icon-upload"></i>
                             <div class="el-upload__text">{{ $t('uploader.drag') }}<em>{{ $t('uploader.click') }}</em></div>
                         </el-upload>
+                        <el-row style="margin-top:10px;">
+                            <el-button type="success" icon="Search" @click="search(4)">{{ $t('searchButtons.calculateSimilarity') }}</el-button>
+                            <el-button type="success" icon="Pointer" @click="pasteImg">{{ $t('searchButtons.paste') }}</el-button>
+                        </el-row>
                     </el-col>
-                </el-row>
-                <el-row style="margin-top:10px;">
-                    <el-button type="success" icon="Search" @click="search(4)">{{ $t('searchButtons.calculateSimilarity') }}</el-button>
-                    <el-button type="success" icon="Pointer" @click="pasteImg">{{ $t('searchButtons.paste') }}</el-button>
                 </el-row>
             </el-tab-pane>
 
@@ -338,6 +356,7 @@ const app = Vue.createApp({
             pexels_videos: [],
             timer: null,
             imageSearchUrl: null,
+            activeCollapse: [],
         }
     },
     mounted: function() {
@@ -410,7 +429,7 @@ const app = Vue.createApp({
                 loadingInstance.close();
                 return;
             }
-            if ((search_type === 4 || search_type == 5) && that.form.positive == "") {
+            if ((search_type === 4 || search_type == 9) && that.form.positive == "") {
                 ElementPlus.ElMessage.error(that.$t('messages.textContentEmpty'));
                 loadingInstance.close();
                 return;

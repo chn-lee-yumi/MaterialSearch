@@ -164,19 +164,19 @@ def api_match():
         results = search_image_by_text_path_time(data["positive"], data["negative"], positive_threshold, negative_threshold,
                                                  path, start_time, end_time)
     elif search_type == 1:  # 以图搜图
-        results = search_image_by_image(upload_file_path, image_threshold)
+        results = search_image_by_image(upload_file_path, image_threshold, path, start_time, end_time)
     elif search_type == 2:  # 文字搜视频
         results = search_video_by_text_path_time(data["positive"], data["negative"], positive_threshold, negative_threshold,
                                                  path, start_time, end_time)
     elif search_type == 3:  # 以图搜视频
-        results = search_video_by_image(upload_file_path, image_threshold)
+        results = search_video_by_image(upload_file_path, image_threshold, path, start_time, end_time)
     elif search_type == 4:  # 图文相似度匹配
         score = match_text_and_image(process_text(data["positive"]), process_image(upload_file_path)) * 100
         return jsonify({"score": "%.2f" % score})
     elif search_type == 5:  # 以图搜图(图片是数据库中的)
-        results = search_image_by_image(img_id, image_threshold)
+        results = search_image_by_image(img_id, image_threshold, path, start_time, end_time)
     elif search_type == 6:  # 以图搜视频(图片是数据库中的)
-        results = search_video_by_image(img_id, image_threshold)
+        results = search_video_by_image(img_id, image_threshold, path, start_time, end_time)
     elif search_type == 9:  # 文字搜pexels视频
         results = search_pexels_video_by_text(data["positive"], positive_threshold)
     else:  # 空

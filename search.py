@@ -34,7 +34,7 @@ def search_image_by_feature(
         negative_feature=None,
         positive_threshold=POSITIVE_THRESHOLD,
         negative_threshold=NEGATIVE_THRESHOLD,
-        path="",
+        filter_path="",
         start_time=None,
         end_time=None,
 ):
@@ -44,14 +44,14 @@ def search_image_by_feature(
     :param negative_feature: np.array, 反向特征向量
     :param positive_threshold: int/float, 正向阈值
     :param negative_threshold: int/float, 反向阈值
-    :param path: string, 视频路径
-    :param start_time: int, 开始时间戳，单位秒，用于匹配modify_time
-    :param end_time: int, 结束时间戳，单位秒，用于匹配modify_time
+    :param filter_path: string, 图片路径
+    :param start_time: int, 时间范围筛选开始时间戳，单位秒，用于匹配modify_time
+    :param end_time: int, 时间范围筛选结束时间戳，单位秒，用于匹配modify_time
     :return: list[dict], 搜索结果列表
     """
     t0 = time.time()
     with DatabaseSession() as session:
-        ids, paths, features = get_image_id_path_features_filter_by_path_time(session, path, start_time, end_time)
+        ids, paths, features = get_image_id_path_features_filter_by_path_time(session, filter_path, start_time, end_time)
     if len(ids) == 0:  # 没有素材，直接返回空
         return []
     features = np.frombuffer(b"".join(features), dtype=np.float32).reshape(len(features), -1)
@@ -76,7 +76,7 @@ def search_image_by_text_path_time(
         negative_prompt="",
         positive_threshold=POSITIVE_THRESHOLD,
         negative_threshold=NEGATIVE_THRESHOLD,
-        path="",
+        filter_path="",
         start_time=None,
         end_time=None,
 ):
@@ -86,22 +86,25 @@ def search_image_by_text_path_time(
     :param negative_prompt: string, 反向提示词
     :param positive_threshold: int/float, 正向阈值
     :param negative_threshold: int/float, 反向阈值
-    :param path: string, 视频路径
-    :param start_time: int, 开始时间戳，单位秒，用于匹配modify_time
-    :param end_time: int, 结束时间戳，单位秒，用于匹配modify_time
+    :param filter_path: string, 图片路径
+    :param start_time: int, 时间范围筛选开始时间戳，单位秒，用于匹配modify_time
+    :param end_time: int, 时间范围筛选结束时间戳，单位秒，用于匹配modify_time
     :return: list[dict], 搜索结果列表
     """
     positive_feature = process_text(positive_prompt)
     negative_feature = process_text(negative_prompt)
-    return search_image_by_feature(positive_feature, negative_feature, positive_threshold, negative_threshold, path, start_time, end_time)
+    return search_image_by_feature(positive_feature, negative_feature, positive_threshold, negative_threshold, filter_path, start_time, end_time)
 
 
 @lru_cache(maxsize=CACHE_SIZE)
-def search_image_by_image(img_id_or_path, threshold=IMAGE_THRESHOLD):
+def search_image_by_image(img_id_or_path, threshold=IMAGE_THRESHOLD, filter_path="", start_time=None, end_time=None):
     """
     使用图片搜图片
     :param img_id_or_path: int/string, 图片ID 或 图片路径
     :param threshold: int/float, 搜索阈值
+    :param filter_path: string, 图片路径
+    :param start_time: int, 时间范围筛选开始时间戳，单位秒，用于匹配modify_time
+    :param end_time: int, 时间范围筛选结束时间戳，单位秒，用于匹配modify_time
     :return: list[dict], 搜索结果列表
     """
     try:  # 前端点击以图搜图，通过图片id来搜图 注意：如果后面id改成str的话，需要修改这部分
@@ -114,7 +117,7 @@ def search_image_by_image(img_id_or_path, threshold=IMAGE_THRESHOLD):
     except ValueError:  # 传入路径，通过上传的图片来搜图
         img_path = img_id_or_path
         features = process_image(img_path)
-    return search_image_by_feature(features, None, threshold)
+    return search_image_by_feature(features, None, threshold, None, filter_path, start_time, end_time)
 
 
 def get_index_pairs(scores):
@@ -171,9 +174,9 @@ def search_video_by_feature(
     :param negative_feature: np.array, 反向特征向量
     :param positive_threshold: int/float, 正向阈值
     :param negative_threshold: int/float, 反向阈值
-    :param filter_path: string, 筛选的视频路径
-    :param modify_time_start: int, 开始时间戳，单位秒，用于匹配modify_time
-    :param modify_time_end: int, 结束时间戳，单位秒，用于匹配modify_time
+    :param filter_path: string, 视频路径
+    :param modify_time_start: int, 时间范围筛选开始时间戳，单位秒，用于匹配modify_time
+    :param modify_time_end: int, 时间范围筛选结束时间戳，单位秒，用于匹配modify_time
     :return: list[dict], 搜索结果列表
     """
     t0 = time.time()
@@ -206,7 +209,7 @@ def search_video_by_text_path_time(
         negative_prompt="",
         positive_threshold=POSITIVE_THRESHOLD,
         negative_threshold=NEGATIVE_THRESHOLD,
-        path="",
+        filter_path="",
         start_time=None,
         end_time=None,
 ):
@@ -216,22 +219,25 @@ def search_video_by_text_path_time(
     :param negative_prompt: string, 反向提示词
     :param positive_threshold: int/float, 正向阈值
     :param negative_threshold: int/float, 反向阈值
-    :param path: string, 视频路径
-    :param start_time: int, 开始时间戳，单位秒，用于匹配modify_time
-    :param end_time: int, 结束时间戳，单位秒，用于匹配modify_time
+    :param filter_path: string, 视频路径
+    :param start_time: int, 时间范围筛选开始时间戳，单位秒，用于匹配modify_time
+    :param end_time: int, 时间范围筛选结束时间戳，单位秒，用于匹配modify_time
     :return: list[dict], 搜索结果列表
     """
     positive_feature = process_text(positive_prompt)
     negative_feature = process_text(negative_prompt)
-    return search_video_by_feature(positive_feature, negative_feature, positive_threshold, negative_threshold, path, start_time, end_time)
+    return search_video_by_feature(positive_feature, negative_feature, positive_threshold, negative_threshold, filter_path, start_time, end_time)
 
 
 @lru_cache(maxsize=CACHE_SIZE)
-def search_video_by_image(img_id_or_path, threshold=IMAGE_THRESHOLD):
+def search_video_by_image(img_id_or_path, threshold=IMAGE_THRESHOLD, filter_path="", start_time=None, end_time=None):
     """
     使用图片搜视频
     :param img_id_or_path: int/string, 图片ID 或 图片路径
     :param threshold: int/float, 搜索阈值
+    :param filter_path: string, 视频路径
+    :param start_time: int, 时间范围筛选开始时间戳，单位秒，用于匹配modify_time
+    :param end_time: int, 时间范围筛选结束时间戳，单位秒，用于匹配modify_time
     :return: list[dict], 搜索结果列表
     """
     features = b""
@@ -245,7 +251,7 @@ def search_video_by_image(img_id_or_path, threshold=IMAGE_THRESHOLD):
     except ValueError:
         img_path = img_id_or_path
         features = process_image(img_path)
-    return search_video_by_feature(features, None, threshold)
+    return search_video_by_feature(features, None, threshold, None, filter_path, start_time, end_time)
 
 
 def search_pexels_video_by_feature(positive_feature, positive_threshold=POSITIVE_THRESHOLD):
