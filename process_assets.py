@@ -201,9 +201,9 @@ def match_batch(
 ):
     """
     匹配image_feature列表并返回余弦相似度
-    :param positive_feature: <class 'numpy.ndarray'>, 正向提示词特征
-    :param negative_feature: <class 'numpy.ndarray'>, 反向提示词特征
-    :param image_features: [<class 'numpy.ndarray'>], 图片特征列表
+    :param positive_feature: <class 'numpy.ndarray'>, 正向提示词特征，shape=(1, m)
+    :param negative_feature: <class 'numpy.ndarray'>, 反向提示词特征，shape=(1, m)
+    :param image_features: <class 'numpy.ndarray'>, 图片特征，shape=(n, m)
     :param positive_threshold: int/float, 正向提示分数阈值，高于此分数才显示
     :param negative_threshold: int/float, 反向提示分数阈值，低于此分数才显示
     :return: <class 'numpy.nparray'>, 提示词和每个图片余弦相似度列表，shape=(n, )，如果小于正向提示分数阈值或大于反向提示分数阈值则会置0
