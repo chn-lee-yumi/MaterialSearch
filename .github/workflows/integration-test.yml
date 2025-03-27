@@ -13,7 +13,8 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest, windows-latest]  # 支持 Linux 和 Windows
-        python-version: [3.10, 3.12]  # 测试 Python 3.10 和 3.12
+        python-version: ["3.10", "3.12"]  # 测试 Python 3.10 和 3.12
+        
     steps:
       - name: Checkout
         uses: actions/checkout@v4
