@@ -58,6 +58,7 @@ USERNAME = os.getenv('USERNAME', 'admin')  # 登录用户名
 PASSWORD = os.getenv('PASSWORD', 'MaterialSearch')  # 登录密码
 FLASK_DEBUG = os.getenv('FLASK_DEBUG', 'False').lower() == 'true'  # flask 调试开关（热重载）
 ENABLE_CHECKSUM = os.getenv('ENABLE_CHECKSUM', 'False').lower() == 'true'  # 是否启用文件校验（如果是，则通过文件校验来判断文件是否更新，否则通过修改时间判断）
+MATCH_BATCH_PARALLEL_THRESHOLD = int(os.getenv('MATCH_BATCH_PARALLEL_THRESHOLD', 1024))  # 搜出来的图片大于这个数量时，使用torch并行计算余弦相似度，否则使用numpy计算
 
 # *****DEVICE处理*****
 if DEVICE == 'auto':  # 自动选择设备，优先级：cuda > mps > directml > cpu

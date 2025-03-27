@@ -6,7 +6,6 @@ import traceback
 import cv2
 import numpy as np
 import requests
-import torch
 from PIL import Image
 from tqdm import trange
 from transformers import AutoModelForZeroShotImageClassification, AutoProcessor
@@ -205,6 +204,17 @@ def normalize_features(features):
     return features / np.linalg.norm(features, axis=1, keepdims=True)
 
 
+def normalize_features_torch(features):
+    """
+    使用 PyTorch 归一化特征，支持 NumPy 输入并返回 NumPy 输出
+    :param features: [<class 'numpy.ndarray'>], 特征
+    :return: <class 'numpy.ndarray'>, 归一化后的特征
+    """
+    features = torch.tensor(features, dtype=torch.float32, device=DEVICE)
+    normalized_features = features / torch.norm(features, dim=1, keepdim=True)
+    return normalized_features.cpu().numpy()
+
+
 def multithread_normalize(features):
     """
     多线程执行归一化，只有对大矩阵效果才好
@@ -241,11 +251,12 @@ def match_batch(
     :return: <class 'numpy.nparray'>, 提示词和每个图片余弦相似度列表，shape=(n, )，如果小于正向提示分数阈值或大于反向提示分数阈值则会置0
     """
     # 计算余弦相似度
-    if len(image_features) > 1024:  # 多线程只对大矩阵效果好，1024是随便写的
-        new_features = multithread_normalize(image_features)
+    if len(image_features) > MATCH_BATCH_PARALLEL_THRESHOLD:  # 排序数量超过阈值时使用torch来处理，速度更快。数量少时直接numpy处理，省去转换开销。
+        # new_features = multithread_normalize(image_features)
+        new_features = normalize_features_torch(image_features)
     else:
         new_features = normalize_features(image_features)
-    if positive_feature is None: # 没有正向feature就把分数全部设成1
+    if positive_feature is None:  # 没有正向feature就把分数全部设成1
         positive_scores = np.ones(len(new_features))
     else:
         new_text_positive_feature = positive_feature / np.linalg.norm(positive_feature)
