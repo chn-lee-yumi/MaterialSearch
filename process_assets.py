@@ -1,5 +1,4 @@
 # 预处理图片和视频，建立索引，加快搜索速度
-import concurrent.futures
 import logging
 import traceback
 
@@ -22,17 +21,20 @@ logger.info("Model loaded.")
 
 def get_image_feature(images):
     """
-    :param images: 图片
+    :param images: 图片列表
     :return: feature
     """
-    feature = None
+    assert isinstance(images, list)
+    features = None
     try:
         inputs = processor(images=images, return_tensors="pt")["pixel_values"].to(torch.device(DEVICE))
-        feature = model.get_image_features(inputs).detach().cpu().numpy()
+        features = model.get_image_features(inputs)
+        normalized_features = features / torch.norm(features, dim=1, keepdim=True)  # 归一化，方便后续计算余弦相似度
+        features = normalized_features.detach().cpu().numpy()
     except Exception as e:
         logger.warning(f"处理图片报错：{repr(e)}")
         traceback.print_stack()
-    return feature
+    return features
 
 
 def get_image_data(path: str, ignore_small_images: bool = True):
@@ -68,7 +70,7 @@ def process_image(path, ignore_small_images=True):
     image = get_image_data(path, ignore_small_images)
     if image is None:
         return None
-    feature = get_image_feature(image)
+    feature = get_image_feature([image])[0]
     return feature
 
 
@@ -103,7 +105,7 @@ def process_web_image(url):
     except Exception as e:
         logger.warning("获取图片报错：%s %s" % (url, repr(e)))
         return None
-    feature = get_image_feature(image)
+    feature = get_image_feature([image])[0]
     return feature
 
 
@@ -171,7 +173,9 @@ def process_text(input_text):
         return None
     try:
         text = processor(text=input_text, return_tensors="pt", padding=True)["input_ids"].to(torch.device(DEVICE))
-        feature = model.get_text_features(text).detach().cpu().numpy()
+        feature = model.get_text_features(text)
+        normalize_feature = feature / torch.norm(feature)  # 归一化，方便后续计算余弦相似度
+        feature = normalize_feature.detach().cpu().numpy()
     except Exception as e:
         logger.warning(f"处理文字报错：{repr(e)}")
         traceback.print_stack()
@@ -185,53 +189,8 @@ def match_text_and_image(text_feature, image_feature):
     :param image_feature: <class 'numpy.nparray'>, 图片特征
     :return: <class 'numpy.nparray'>, 文字和图片的余弦相似度，shape=(1, 1)
     """
-    score = (image_feature @ text_feature.T) / (
-            np.linalg.norm(image_feature) * np.linalg.norm(text_feature)
-    )
-    # 上面的计算等价于下面三步：
-    # new_image_feature = image_feature / np.linalg.norm(image_feature)
-    # new_text_feature = text_feature / np.linalg.norm(text_feature)
-    # score = (new_image_feature @ new_text_feature.T)
+    score = image_feature @ text_feature.T
     return score
-
-
-def normalize_features(features):
-    """
-    归一化
-    :param features: [<class 'numpy.nparray'>], 特征
-    :return: <class 'numpy.nparray'>, 归一化后的特征
-    """
-    return features / np.linalg.norm(features, axis=1, keepdims=True)
-
-
-def normalize_features_torch(features):
-    """
-    使用 PyTorch 归一化特征，支持 NumPy 输入并返回 NumPy 输出
-    :param features: [<class 'numpy.ndarray'>], 特征
-    :return: <class 'numpy.ndarray'>, 归一化后的特征
-    """
-    features = torch.tensor(features, dtype=torch.float32, device=DEVICE)
-    normalized_features = features / torch.norm(features, dim=1, keepdim=True)
-    return normalized_features.cpu().numpy()
-
-
-def multithread_normalize(features):
-    """
-    多线程执行归一化，只有对大矩阵效果才好
-    :param features:  [<class 'numpy.nparray'>], 特征
-    :return: <class 'numpy.nparray'>, 归一化后的特征
-    """
-    num_threads = os.cpu_count()
-    with concurrent.futures.ThreadPoolExecutor(max_workers=num_threads) as executor:
-        # 将图像特征分成等分，每个线程处理一部分
-        chunk_size = len(features) // num_threads
-        chunks = [
-            features[i: i + chunk_size] for i in range(0, len(features), chunk_size)
-        ]
-        # 并发执行特征归一化
-        normalized_chunks = executor.map(normalize_features, chunks)
-    # 将处理后的特征重新合并
-    return np.concatenate(list(normalized_chunks))
 
 
 def match_batch(
@@ -250,20 +209,12 @@ def match_batch(
     :param negative_threshold: int/float, 反向提示分数阈值，低于此分数才显示
     :return: <class 'numpy.nparray'>, 提示词和每个图片余弦相似度列表，shape=(n, )，如果小于正向提示分数阈值或大于反向提示分数阈值则会置0
     """
-    # 计算余弦相似度
-    if len(image_features) > MATCH_BATCH_PARALLEL_THRESHOLD:  # 排序数量超过阈值时使用torch来处理，速度更快。数量少时直接numpy处理，省去转换开销。
-        # new_features = multithread_normalize(image_features)
-        new_features = normalize_features_torch(image_features)
-    else:
-        new_features = normalize_features(image_features)
     if positive_feature is None:  # 没有正向feature就把分数全部设成1
-        positive_scores = np.ones(len(new_features))
+        positive_scores = np.ones(len(image_features))
     else:
-        new_text_positive_feature = positive_feature / np.linalg.norm(positive_feature)
-        positive_scores = (new_features @ new_text_positive_feature.T).squeeze(-1)
+        positive_scores = (image_features @ positive_feature.T).squeeze(-1)
     if negative_feature is not None:
-        new_text_negative_feature = negative_feature / np.linalg.norm(negative_feature)
-        negative_scores = (new_features @ new_text_negative_feature.T).squeeze(-1)
+        negative_scores = (image_features @ negative_feature.T).squeeze(-1)
     # 根据阈值进行过滤
     scores = np.where(positive_scores < positive_threshold / 100, 0, positive_scores)
     if negative_feature is not None:
