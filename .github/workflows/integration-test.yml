@@ -33,6 +33,7 @@ jobs:
           else
             pip install -r requirements_windows.txt
           fi
+        shell: bash
 
       - name: Create .env file
         run: echo "ASSETS_PATH=./" > .env
