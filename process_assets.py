@@ -24,7 +24,6 @@ def get_image_feature(images):
     :param images: 图片列表
     :return: feature
     """
-    assert isinstance(images, list)
     features = None
     try:
         inputs = processor(images=images, return_tensors="pt")["pixel_values"].to(torch.device(DEVICE))
@@ -70,7 +69,7 @@ def process_image(path, ignore_small_images=True):
     image = get_image_data(path, ignore_small_images)
     if image is None:
         return None
-    feature = get_image_feature([image])[0]
+    feature = get_image_feature(image)
     return feature
 
 
@@ -105,7 +104,7 @@ def process_web_image(url):
     except Exception as e:
         logger.warning("获取图片报错：%s %s" % (url, repr(e)))
         return None
-    feature = get_image_feature([image])[0]
+    feature = get_image_feature(image)
     return feature
 
 
@@ -174,7 +173,7 @@ def process_text(input_text):
     try:
         text = processor(text=input_text, return_tensors="pt", padding=True)["input_ids"].to(torch.device(DEVICE))
         feature = model.get_text_features(text)
-        normalize_feature = feature / torch.norm(feature)  # 归一化，方便后续计算余弦相似度
+        normalize_feature = feature / torch.norm(feature, dim=1, keepdim=True)  # 归一化，方便后续计算余弦相似度
         feature = normalize_feature.detach().cpu().numpy()
     except Exception as e:
         logger.warning(f"处理文字报错：{repr(e)}")
@@ -212,7 +211,6 @@ def match_batch(
     if positive_feature is None:  # 没有正向feature就把分数全部设成1
         positive_scores = np.ones(len(image_features))
     else:
-        print((image_features @ positive_feature.T).shape)
         positive_scores = image_features @ positive_feature.T
     if negative_feature is not None:
         negative_scores = image_features @ negative_feature.T
@@ -220,4 +218,4 @@ def match_batch(
     scores = np.where(positive_scores < positive_threshold / 100, 0, positive_scores)
     if negative_feature is not None:
         scores = np.where(negative_scores > negative_threshold / 100, 0, scores)
-    return scores
+    return scores.squeeze(-1)
