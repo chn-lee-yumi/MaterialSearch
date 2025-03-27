@@ -212,9 +212,10 @@ def match_batch(
     if positive_feature is None:  # 没有正向feature就把分数全部设成1
         positive_scores = np.ones(len(image_features))
     else:
-        positive_scores = (image_features @ positive_feature.T).squeeze(-1)
+        print((image_features @ positive_feature.T).shape)
+        positive_scores = image_features @ positive_feature.T
     if negative_feature is not None:
-        negative_scores = (image_features @ negative_feature.T).squeeze(-1)
+        negative_scores = image_features @ negative_feature.T
     # 根据阈值进行过滤
     scores = np.where(positive_scores < positive_threshold / 100, 0, positive_scores)
     if negative_feature is not None:
