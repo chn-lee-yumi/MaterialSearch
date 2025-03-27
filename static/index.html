@@ -421,7 +421,12 @@ const app = Vue.createApp({
         },
         search(search_type) {
             var that = this;
-            const loadingInstance = ElementPlus.ElLoading.service({ fullscreen: true, text: that.$t('messages.searching') });
+            var loadingInstance;
+            if (search_type === 4) {
+                loadingInstance = ElementPlus.ElLoading.service({ fullscreen: true, text: that.$t('messages.matching') });
+            } else {
+                loadingInstance = ElementPlus.ElLoading.service({ fullscreen: true, text: that.$t('messages.searching') });
+            }
             this.upload.clearFiles();
             that.form.search_type = search_type;
             if ((search_type === 0 || search_type === 2) && that.form.positive == "" && that.form.path == "") {

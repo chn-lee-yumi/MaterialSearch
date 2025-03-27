@@ -71,7 +71,8 @@
     "matchingSimilarityInfo": "Similarity: ",
     "uploadSuccess": "Upload successful",
     "imgIdNotFound": "Unable to extract image ID from img_url. This should not happen. Please report to the developer.",
-    "searching": "Searching..."
+    "searching": "Searching...",
+    "matching": "Matching……"
   },
   "footer": {
     "description1": "This project is open-sourced on GitHub: ",
