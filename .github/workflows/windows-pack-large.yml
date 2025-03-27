@@ -18,27 +18,27 @@ jobs:
         path: MaterialSearchWindows
 
     - name: Download Python
-      run: Invoke-WebRequest "https://www.python.org/ftp/python/3.10.11/python-3.10.11-embed-amd64.zip" -OutFile python.zip
+      run: Invoke-WebRequest "https://www.python.org/ftp/python/3.12.9/python-3.12.9-embed-amd64.zip" -OutFile python.zip
 
     - name: Unzip Python
       run: Expand-Archive python.zip -DestinationPath MaterialSearchWindows
 
-    - name: Fix python310._pth
+    - name: Fix python312._pth
       uses: DamianReeves/write-file-action@master
       with:
-        path: MaterialSearchWindows/python310._pth
+        path: MaterialSearchWindows/python312._pth
         write-mode: append
         contents: |
           import site
 
     - name: Download FFMpeg
-      run: Invoke-WebRequest "https://github.com/GyanD/codexffmpeg/releases/download/7.0/ffmpeg-7.0-full_build.zip" -OutFile ffmpeg.zip
+      run: Invoke-WebRequest "https://github.com/GyanD/codexffmpeg/releases/download/7.1.1/ffmpeg-7.1.1-full_build.zip" -OutFile ffmpeg.zip
 
     - name: Unzip FFMpeg
       run: Expand-Archive ffmpeg.zip -DestinationPath .
 
     - name: Copy FFMpeg
-      run: cp ffmpeg-7.0-full_build/bin/ffmpeg.exe MaterialSearchWindows
+      run: cp ffmpeg-7.1.1-full_build/bin/ffmpeg.exe MaterialSearchWindows
 
     - name: Download pip
       run: Invoke-WebRequest "https://bootstrap.pypa.io/pip/pip.pyz" -OutFile MaterialSearchWindows/pip.pyz
@@ -47,15 +47,15 @@ jobs:
       run: |
         cd MaterialSearchWindows
         ./python.exe -m py_compile main.py config.py database.py init.py models.py process_assets.py scan.py search.py utils.py
-        cp __pycache__/main.cpython-310.pyc main.pyc
-        cp __pycache__/config.cpython-310.pyc config.pyc
-        cp __pycache__/database.cpython-310.pyc database.pyc
-        cp __pycache__/init.cpython-310.pyc init.pyc
-        cp __pycache__/models.cpython-310.pyc models.pyc
-        cp __pycache__/process_assets.cpython-310.pyc process_assets.pyc
-        cp __pycache__/scan.cpython-310.pyc scan.pyc
-        cp __pycache__/search.cpython-310.pyc search.pyc
-        cp __pycache__/utils.cpython-310.pyc utils.pyc
+        cp __pycache__/main.cpython-312.pyc main.pyc
+        cp __pycache__/config.cpython-312.pyc config.pyc
+        cp __pycache__/database.cpython-312.pyc database.pyc
+        cp __pycache__/init.cpython-312.pyc init.pyc
+        cp __pycache__/models.cpython-312.pyc models.pyc
+        cp __pycache__/process_assets.cpython-312.pyc process_assets.pyc
+        cp __pycache__/scan.cpython-312.pyc scan.pyc
+        cp __pycache__/search.cpython-312.pyc search.pyc
+        cp __pycache__/utils.cpython-312.pyc utils.pyc
         rm main.py
         rm config.py
         rm database.py
@@ -106,6 +106,7 @@ jobs:
           TRANSFORMERS_OFFLINE=1
           HF_HUB_OFFLINE=1
           HF_HOME=huggingface
+          MODEL_NAME=OFA-Sys/chinese-clip-vit-large-patch14-336px
 
     - name: Create run.bat
       uses: DamianReeves/write-file-action@master
@@ -122,7 +123,6 @@ jobs:
         path: MaterialSearchWindows/使用说明.txt
         write-mode: overwrite
         contents: |
-          ！！！注意：如果你的电脑本来已经装过其它整合包（如 Stable Diffusion 等），可能会导致python环境冲突，进而使得本整合包无法使用。如遇到这种情况，请清理之前的环境，或者尝试双击“install.bat”更新环境。
           右键“.env”文件进行编辑，配置扫描路径和设备，然后保存。
           最后双击运行“run.bat”即可，待看到"http://127.0.0.1:8085"的输出就可以浏览器打开对应链接进行使用。
           关闭“run.bat”的运行框即关闭程序。
