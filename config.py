@@ -1,5 +1,6 @@
-import os
 import importlib.util
+import os
+
 import torch
 from env import *
 
@@ -66,10 +67,15 @@ if DEVICE == 'auto':  # 自动选择设备，优先级：cuda > mps > directml >
     elif torch.backends.mps.is_available():
         DEVICE = 'mps'
     elif importlib.util.find_spec("torch_directml") is not None:
-        import torch_directml
-        if torch_directml.device_count() > 0:
-            DEVICE = torch_directml.device()
-        else:
+        try:
+            import torch_directml
+
+            if torch_directml.device_count() > 0:
+                DEVICE = torch_directml.device()
+            else:
+                DEVICE = 'cpu'
+        except Exception as e:
+            print("import torch_directml 失败，使用CPU:", repr(e))
             DEVICE = 'cpu'
     else:
         DEVICE = 'cpu'
