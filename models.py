@@ -39,30 +39,30 @@ def create_tables():
 
 class Image(BaseModel):
     __tablename__ = "image"
-    id = Column(Integer, primary_key=True)
+    id = Column(Integer, primary_key=True, index=True)
     path = Column(String(4096), index=True)  # 文件路径
-    modify_time = Column(DateTime)  # 文件修改时间
+    modify_time = Column(DateTime, index=True)  # 文件修改时间
     features = Column(BINARY)  # 文件预处理后的二进制数据
     checksum = Column(String(40), index=True)  # 文件SHA1
 
 
 class Video(BaseModel):
     __tablename__ = "video"
-    id = Column(Integer, primary_key=True)
+    id = Column(Integer, primary_key=True, index=True)
     path = Column(String(4096), index=True)  # 文件路径
-    frame_time = Column(Integer, index=True)  # 这一帧所在的时间
-    modify_time = Column(DateTime)  # 文件修改时间
+    frame_time = Column(Integer)  # 这一帧所在的时间
+    modify_time = Column(DateTime, index=True)  # 文件修改时间
     features = Column(BINARY)  # 文件预处理后的二进制数据
     checksum = Column(String(40), index=True)  # 文件SHA1
 
 
 class PexelsVideo(BaseModelPexelsVideo):
     __tablename__ = "PexelsVideo"
-    id = Column(Integer, primary_key=True)
+    id = Column(Integer, primary_key=True, index=True)
     title = Column(String(128))  # 标题
     description = Column(String(256))  # 视频描述
     duration = Column(Integer, index=True)  # 视频时长，单位秒
     view_count = Column(Integer, index=True)  # 视频播放量
-    thumbnail_loc = Column(String(256), index=True)  # 视频缩略图链接
+    thumbnail_loc = Column(String(256))  # 视频缩略图链接
     content_loc = Column(String(256))  # 视频链接
     thumbnail_feature = Column(BINARY)  # 视频缩略图特征
