@@ -90,9 +90,7 @@ Test environment: J3455 CPU, 8GB of memory. Allwinner H6, 2GB of memory.
 
 ## Search Speed
 
-On a J3455 CPU, when search threshold is 0, approximately 18,000 image matches or 5,200 video frame matches can be performed in 1 second.
-
-Increasing the search threshold can speed up searching speed. On a J3455 CPU, when search threshold is 10, approximately 30,000 image matches or 6,100 video frame matches can be performed in 1 second.
+On a J3455 CPU, approximately 31,000 image matches or 25,000 video frame matches can be performed in 1 second.
 
 ## Known Issues
 
