@@ -31,7 +31,11 @@ To use the "Download Video Segments" feature, you need to install `ffmpeg`. If y
 
 ### Deployment via Docker
 
-Currently, there is only one Docker image available, which supports both `amd64` and `arm64` architectures. It includes the default models (`OFA-Sys/chinese-clip-vit-base-patch16`) and supports GPU acceleration (only for `amd64` architecture). If you have additional requirements, please open an issue.
+Supports both `amd64` and `arm64` architectures. It includes the default models (`OFA-Sys/chinese-clip-vit-base-patch16`) and supports GPU acceleration (only for `amd64` architecture).
+
+Image repositories:
+- [yumilee/materialsearch](https://hub.docker.com/r/yumilee/materialsearch) (DockerHub)
+- registry.cn-hongkong.aliyuncs.com/chn-lee-yumi/materialsearch (Aliyun, recommended for users in Mainland China)
 
 Before starting the image, you need to prepare:
 
