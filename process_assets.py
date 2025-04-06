@@ -24,7 +24,7 @@ def get_image_feature(images):
     :param images: 图片列表
     :return: feature
     """
-    if not images:
+    if images is None or len(images) == 0:
         return None
     features = None
     try:
