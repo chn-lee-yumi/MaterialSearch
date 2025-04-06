@@ -22,7 +22,7 @@ def read_file(path):
 
 
 def wait_server_ready():
-    for i in range(100):
+    for i in range(30):
         try:
             requests.get('http://127.0.0.1:8085/', timeout=1)
         except:
