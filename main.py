@@ -1,3 +1,4 @@
+import logging
 import shutil
 import threading
 from functools import wraps
@@ -5,6 +6,7 @@ from io import BytesIO
 
 from flask import Flask, abort, jsonify, redirect, request, send_file, session, url_for
 
+from config import *
 from database import get_image_path_by_id, is_video_exist, get_pexels_video_count
 from init import *
 from models import DatabaseSession, DatabaseSessionPexelsVideo
@@ -276,7 +278,9 @@ def api_upload():
 
 
 if __name__ == "__main__":
+    pre_init()
     init()
     logging.getLogger('werkzeug').setLevel(LOG_LEVEL)
-    init2()
+    init2()  # 函数定义在加密代码中，请忽略 Unresolved reference 'init2'
+    post_init()
     app.run(port=PORT, host=HOST, debug=FLASK_DEBUG)

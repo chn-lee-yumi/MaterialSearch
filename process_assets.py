@@ -24,6 +24,8 @@ def get_image_feature(images):
     :param images: 图片列表
     :return: feature
     """
+    if images is None or len(images) == 0:
+        return None
     features = None
     try:
         inputs = processor(images=images, return_tensors="pt")["pixel_values"].to(torch.device(DEVICE))
@@ -150,9 +152,11 @@ def process_video(path):
     try:
         video = cv2.VideoCapture(path)
         for ids, frames in get_frames(video):
+            if not frames:
+                continue
             features = get_image_feature(frames)
             if features is None:
-                logger.warning("features is None")
+                logger.warning("features is None in process_video")
                 continue
             for id, feature in zip(ids, features):
                 yield id, feature

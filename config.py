@@ -2,9 +2,12 @@ import importlib.util
 import os
 
 import torch
+
 from env import *
 
-env()
+pre_env()
+env()  # 函数定义在加密代码中，请忽略 Unresolved reference 'env'
+post_env()
 
 # *****服务器配置*****
 HOST = os.getenv('HOST', '127.0.0.1')  # 监听IP，如果想允许远程访问，把这个改成0.0.0.0
