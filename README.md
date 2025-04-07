@@ -35,7 +35,10 @@
 
 如遇到`requirements.txt`版本依赖问题（比如某个库版本过新会导致运行报错），请提issue反馈，我会添加版本范围限制。
 
-如果想使用"下载视频片段"的功能，需要安装`ffmpeg`。如果是Windows系统，记得把`ffmpeg.exe`所在目录加入环境变量`PATH`，可以参考：[Bing搜索](https://cn.bing.com/search?q=windows+%E5%A6%82%E4%BD%95%E6%B7%BB%E5%8A%A0+path+%E7%8E%AF%E5%A2%83%E5%8F%98%E9%87%8F)。
+如果想使用"下载视频片段"的功能，需要安装`ffmpeg`（记得把`ffmpeg.exe`所在目录加入环境变量`PATH`）。
+
+win7或更高可以运行`install_ffmpeg.bat`来自动安装(需要管理员权限)。
+
 
 ### 通过Docker部署
 
