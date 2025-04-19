@@ -27,7 +27,7 @@ Note that the first run will automatically download the models. The download spe
 
 If you encounter any issues with the version dependencies in `requirements.txt` (for example, if a library version is too new and causes errors), please provide feedback by opening an issue. I will add version range restrictions.
 
-To use the "Download Video Segments" feature, you need to install `ffmpeg`. If you are using Windows, remember to add the directory where `ffmpeg.exe` is located to the `PATH` environment variable. You can refer to a [Bing search](https://bing.com/search?q=windows+add+path+environment+variable) for instructions. On Windows systems, you can run `install_ffmpeg.bat` to install.
+To use the "Download Video Segments" feature, you need to install `ffmpeg`. If you are using Windows, you can run `install_ffmpeg.bat` to install.
 
 ### Deployment via Docker
 
