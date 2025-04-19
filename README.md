@@ -18,7 +18,18 @@
 
 ### Windows整合包
 
-[在这里下载整合包](https://github.com/chn-lee-yumi/MaterialSearch/releases/latest)`MaterialSearchWindows.7z`或`MaterialSearchWindowsLarge.7z`，解压后请阅读里面的`使用说明.txt`。整合包会自动选择独显或核显进行加速。
+B站视频教程：[点击这里，求三连支持](https://www.bilibili.com/video/BV1CKZmY4EqZ/)。
+
+用户**互助**QQ群：1029566498（因作者精力有限，欢迎加群讨论，互相帮助。一言解惑，胜造七级浮屠；一念善行，自有千般福报。）
+
+首先下载整合包（`MaterialSearchWindows.7z`或`MaterialSearchWindowsLarge.7z`），并使用 [7-Zip](https://www.7-zip.org/) 解压缩（注意：使用其它软件解压缩，可能会报错）。
+
+下载方式：
+- [GitHub Release](https://github.com/chn-lee-yumi/MaterialSearch/releases/latest)
+- [夸克网盘](https://pan.quark.cn/s/ae137c439484)
+- [百度网盘](https://pan.baidu.com/s/1yoLGTBoy1oSPhoV_Ze2BYA?pwd=CHNL) 提取码: CHNL
+
+解压后请阅读里面的`使用说明.txt`。整合包会自动选择独显或核显进行加速。
 
 `MaterialSearchWindows.7z`整合包自带`OFA-Sys/chinese-clip-vit-base-patch16`模型。`MaterialSearchWindowsLarge.7z`整合包则是`OFA-Sys/chinese-clip-vit-large-patch14-336px`模型。
 
