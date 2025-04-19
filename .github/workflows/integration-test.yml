@@ -29,8 +29,10 @@ jobs:
           python -m pip install --upgrade pip
           pip install pytest
           if [ "${{ matrix.os }}" == "ubuntu-latest" ]; then
+            apt-get update && apt-get install -y ffmpeg
             pip install -r requirements.txt
           else
+            powershell -ExecutionPolicy Bypass .\install_ffmpeg.ps1
             pip install -r requirements_windows.txt
           fi
         shell: bash
