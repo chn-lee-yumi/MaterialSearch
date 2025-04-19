@@ -6,4 +6,4 @@ if (-not $wingetInstalled) {
     Remove-Item winget.msixbundle
 }
 # Install ffmpeg
-winget install ffmpeg
+winget install ffmpeg -e --accept-package-agreements --accept-source-agreements
