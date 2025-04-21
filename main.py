@@ -199,7 +199,7 @@ def api_get_image(image_id):
         path = get_image_path_by_id(session, image_id)
         logger.debug(path)
     # 静态图片压缩返回
-    if request.args.get("thumbnail") and os.path.splitext(path)[-1] != "gif":
+    if request.args.get("thumbnail") == "1" and os.path.splitext(path)[-1] != "gif":
         # 这里转换成RGB然后压缩成JPEG格式返回。也可以不转换RGB，压缩成WEBP格式，这样可以保留透明通道。
         # 目前暂时使用JPEG格式，如果切换成WEBP，还需要实际测试两者的文件大小和质量。
         image = resize_image_with_aspect_ratio(path, (640, 480), convert_rgb=True)

@@ -4,7 +4,7 @@ import platform
 import subprocess
 
 import numpy as np
-from PIL import Image
+from PIL import Image, ImageOps
 from pillow_heif import register_heif_opener
 
 from config import LOG_LEVEL
@@ -111,6 +111,7 @@ def crop_video(input_file, output_file, start_time, end_time):
 
 def resize_image_with_aspect_ratio(image_path, target_size, convert_rgb=False):
     image = Image.open(image_path)
+    image = ImageOps.exif_transpose(image)  # 根据 EXIF 信息自动旋转图像
     if convert_rgb:
         image = image.convert('RGB')
     # 计算调整后图像的目标大小及长宽比
