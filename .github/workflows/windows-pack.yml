@@ -88,7 +88,7 @@ jobs:
           IMAGE_MIN_WIDTH=64
           # 图片最小高度，小于此高度则忽略。不需要可以改成0。
           IMAGE_MIN_HEIGHT=64
-          # 视频每隔多少秒取一帧，视频展示的时候，间隔小于等于2倍FRAME_INTERVAL的算为同一个素材，同时开始时间和结束时间各延长0.5个FRAME_INTERVAL
+          # 视频每隔多少秒取一帧，视频展示的时候，间隔小于等于2倍FRAME_INTERVAL的算为同一个素材，同时开始时间和结束时间各延长0.5个FRAME_INTERVAL，要求为整数，最小为1
           FRAME_INTERVAL=2
           # 视频搜索出来的片段前后延长时间，单位秒，如果搜索出来的片段不完整，可以调大这个值
           VIDEO_EXTENSION_LENGTH=1
