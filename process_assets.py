@@ -14,7 +14,7 @@ from config import *
 logger = logging.getLogger(__name__)
 
 logger.info("Loading model...")
-model = AutoModelForZeroShotImageClassification.from_pretrained(MODEL_NAME).to(torch.device(DEVICE))
+model = AutoModelForZeroShotImageClassification.from_pretrained(MODEL_NAME).to(DEVICE)
 processor = AutoProcessor.from_pretrained(MODEL_NAME)
 logger.info("Model loaded.")
 
@@ -28,13 +28,20 @@ def get_image_feature(images):
         return None
     features = None
     try:
-        inputs = processor(images=images, return_tensors="pt")["pixel_values"].to(torch.device(DEVICE))
+        inputs = processor(images=images, return_tensors="pt")["pixel_values"].to(DEVICE)
         features = model.get_image_features(inputs)
         normalized_features = features / torch.norm(features, dim=1, keepdim=True)  # 归一化，方便后续计算余弦相似度
         features = normalized_features.detach().cpu().numpy()
     except Exception as e:
-        logger.warning(f"处理图片报错：{repr(e)}")
+        logger.exception("处理图片报错：type=%s error=%s" % (type(images), repr(e)))
         traceback.print_stack()
+        if type(images) == list:
+            print("images[0]:", images[0])
+        else:
+            print("images:", images)
+        if features is not None:
+            print("feature.shape:", features.shape)
+            print("feature:", features)
     return features
 
 
@@ -57,7 +64,8 @@ def get_image_data(path: str, ignore_small_images: bool = True):
         image = np.array(image)
         return image
     except Exception as e:
-        logger.warning(f"打开图片报错：{path} {repr(e)}")
+        logger.exception("打开图片报错：path=%s error=%s" % (path, repr(e)))
+        traceback.print_stack()
         return None
 
 
@@ -161,7 +169,8 @@ def process_video(path):
             for id, feature in zip(ids, features):
                 yield id, feature
     except Exception as e:
-        logger.warning(f"处理视频出错：{path} {repr(e)}")
+        logger.exception("处理视频报错：path=%s error=%s" % (path, repr(e)))
+        traceback.print_stack()
         return
 
 
@@ -175,13 +184,16 @@ def process_text(input_text):
     if not input_text:
         return None
     try:
-        text = processor(text=input_text, return_tensors="pt", padding=True)["input_ids"].to(torch.device(DEVICE))
+        text = processor(text=input_text, return_tensors="pt", padding=True)["input_ids"].to(DEVICE)
         feature = model.get_text_features(text)
         normalize_feature = feature / torch.norm(feature, dim=1, keepdim=True)  # 归一化，方便后续计算余弦相似度
         feature = normalize_feature.detach().cpu().numpy()
     except Exception as e:
-        logger.warning(f"处理文字报错：{repr(e)}")
+        logger.exception("处理文字报错：text=%s error=%s" % (input_text, repr(e)))
         traceback.print_stack()
+        if feature is not None:
+            print("feature.shape:", feature.shape)
+            print("feature:", feature)
     return feature
 
 
