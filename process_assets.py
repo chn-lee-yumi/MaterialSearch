@@ -157,6 +157,7 @@ def process_video(path):
     :return: [int, <class 'numpy.nparray'>], [当前是第几帧（被采集的才算），图片特征]
     """
     logger.info(f"处理视频中：{path}")
+    video = None
     try:
         video = cv2.VideoCapture(path)
         for ids, frames in get_frames(video):
@@ -171,6 +172,11 @@ def process_video(path):
     except Exception as e:
         logger.exception("处理视频报错：path=%s error=%s" % (path, repr(e)))
         traceback.print_stack()
+        if video is not None:
+            frame_rate = round(video.get(cv2.CAP_PROP_FPS))
+            total_frames = video.get(cv2.CAP_PROP_FRAME_COUNT)
+            print(f"fps: {frame_rate} total: {total_frames}")
+            video.release()
         return
 
 
