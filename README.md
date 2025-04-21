@@ -97,6 +97,15 @@ https_proxy=http://127.0.0.1:7070
 
 注意：`ASSETS_PATH`不推荐设置为远程目录（如SMB/NFS），可能会导致扫描速度变慢。
 
+如果想调整默认的搜索阈值，需要修改`static/index.html`文件的两行：
+
+```text
+                positive_threshold: 36,
+                negative_threshold: 36,
+```
+
+这两行分别是正向和反向搜索的阈值，默认都是36。可以根据需要进行调整。如果使用`OFA-Sys/chinese-clip-vit-base-patch16`，推荐值是36，默认已经是这个值了。如果使用`OFA-Sys/chinese-clip-vit-large-patch14-336px`，推荐值是20。
+
 ## 问题解答
 
 如遇问题，请先仔细阅读本文档。如果找不到答案，请在issue中搜索是否有类似问题。如果没有，可以新开一个issue，**详细说明你遇到的问题，加上你做过的尝试和思考，附上报错内容和截图，并说明你使用的系统（Windows/Linux/MacOS）和你的配置（配置在执行`main.py`的时候会打印出来）**。

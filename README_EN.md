@@ -78,6 +78,15 @@ https_proxy=http://127.0.0.1:7070
 
 Note: It is no recommended to set `ASSETS_PATH` as remote directory such as SMB/NFS, which may slow your scanning speed.
 
+To adjust the default search thresholds, you need to modify the following two lines in the `static/index.html` file:
+
+```text
+                positive_threshold: 36,
+                negative_threshold: 36,
+```
+
+These lines represent the thresholds for positive and negative search respectively, both set to 36 by default. You can change them as needed. If you are using `OFA-Sys/chinese-clip-vit-base-patch16`, the recommended value is 36, which is already the default. If you are using `OFA-Sys/chinese-clip-vit-large-patch14-336px`, the recommended value is 20.
+
 ## Troubleshooting
 
 If you encounter any issues, please read this documentation carefully first. If you cannot find an answer, search the issues to see if there are similar problems. If not, you can open a new issue and provide detailed information about the problem, including your attempted solutions and thoughts, error messages and screenshots, and the system you are using (Windows/Linux/MacOS) and the configuration (which will be printed while running `main.py`).
