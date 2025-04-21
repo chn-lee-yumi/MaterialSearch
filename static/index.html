@@ -14,7 +14,7 @@
 </head>
 <body>
 <el-main id="app">
-    <el-row>
+    <el-row justify="center">
         <h1 style="margin:0;">{{ $t("title") }}</h1>
         <!-- TODO: 可以手动切换语言
         <el-select v-model="locale" @change="changeLocale">
@@ -24,7 +24,7 @@
         -->
     </el-row>
 
-    <el-row>
+    <el-row justify="center">
         <el-tag size="large" effect="dark">{{ $t("scanStatus." + (isScanning ? "scanning" : "scanComplete")) }}</el-tag>
         <el-tag size="large" type="success" effect="dark">{{ $t("statusLabels.totalImages") }}: {{ status.total_images }}</el-tag>
         <el-tag size="large" type="success" effect="dark">{{ $t("statusLabels.totalVideos") }}: {{ status.total_videos }}</el-tag>
@@ -265,12 +265,12 @@
                            v-if="form.search_type === 2 || form.search_type === 3 || form.search_type === 6 || form.search_type === 8"
                            :src="file.url" controls></video>
                 </el-row>
-                <el-row>
+                <el-row justify="center">
                     <el-tooltip :content="$t('fileResults.matchingProbability')" placement="bottom" v-if="file.score">
                         <el-tag size="default" effect="dark">{{(file.score * 100).toFixed(1)}}%</el-tag>
                     </el-tooltip>
                     <el-tooltip :content="file.path" placement="bottom">
-                        <el-tag size="default" type="info" effect="dark" class="copy" :data-clipboard-text="file.path">{{file.path.split('/').pop()}}
+                        <el-tag size="default" type="info" effect="dark" class="copy" :data-clipboard-text="file.path">{{file.path.replace(/\\/g, '/').split('/').pop()}}
                         </el-tag>
                     </el-tooltip>
                     <el-tooltip v-if="file.end_time" :content="$t('fileResults.matchingTimeRange')" placement="bottom">
