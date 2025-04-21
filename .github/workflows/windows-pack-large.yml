@@ -102,6 +102,8 @@ jobs:
           HOST=127.0.0.1
           # 监听端口
           PORT=8085
+          # 推理设备，会自动选择独显或核显。如无显卡，则需要把下面的值从auto改成cpu。
+          DEVICE=auto
           # 下面的不要改
           TRANSFORMERS_OFFLINE=1
           HF_HUB_OFFLINE=1

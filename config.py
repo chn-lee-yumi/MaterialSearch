@@ -75,6 +75,7 @@ if DEVICE == 'auto':  # 自动选择设备，优先级：cuda > mps > directml >
 
             if torch_directml.device_count() > 0:
                 DEVICE = torch_directml.device()
+                torch.rand((1, 1), device=DEVICE)  # 测试是否可用
             else:
                 DEVICE = 'cpu'
         except Exception as e:
