@@ -27,7 +27,7 @@ B站视频教程：[点击这里，求三连支持](https://www.bilibili.com/vid
 下载方式：
 - [GitHub Release](https://github.com/chn-lee-yumi/MaterialSearch/releases/latest)
 - [夸克网盘](https://pan.quark.cn/s/ae137c439484)
-- [百度网盘](https://pan.baidu.com/s/1yoLGTBoy1oSPhoV_Ze2BYA?pwd=CHNL) 提取码: CHNL
+- [百度网盘](https://pan.baidu.com/s/1uQ8t-4mbYmcfi6FjwzdrrQ?pwd=CHNL) 提取码: CHNL
 
 解压后请阅读里面的`使用说明.txt`。整合包会自动选择独显或核显进行加速。
 
