@@ -100,11 +100,11 @@ https_proxy=http://127.0.0.1:7070
 如果想调整默认的搜索阈值，需要修改`static/index.html`文件的两行：
 
 ```text
-                positive_threshold: 36,
-                negative_threshold: 36,
+                positive_threshold: 30,
+                negative_threshold: 30,
 ```
 
-这两行分别是正向和反向搜索的阈值，默认都是36。可以根据需要进行调整。如果使用`OFA-Sys/chinese-clip-vit-base-patch16`，推荐值是36，默认已经是这个值了。如果使用`OFA-Sys/chinese-clip-vit-large-patch14-336px`，推荐值是20。
+这两行分别是正向和反向搜索的阈值，默认都是30。可以根据需要进行调整。
 
 ## 问题解答
 

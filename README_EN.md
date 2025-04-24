@@ -81,11 +81,11 @@ Note: It is no recommended to set `ASSETS_PATH` as remote directory such as SMB/
 To adjust the default search thresholds, you need to modify the following two lines in the `static/index.html` file:
 
 ```text
-                positive_threshold: 36,
-                negative_threshold: 36,
+                positive_threshold: 30,
+                negative_threshold: 30,
 ```
 
-These lines represent the thresholds for positive and negative search respectively, both set to 36 by default. You can change them as needed. If you are using `OFA-Sys/chinese-clip-vit-base-patch16`, the recommended value is 36, which is already the default. If you are using `OFA-Sys/chinese-clip-vit-large-patch14-336px`, the recommended value is 20.
+These lines represent the thresholds for positive and negative search respectively, both set to 30 by default. You can change them as needed.
 
 ## Troubleshooting
 
