@@ -33,7 +33,7 @@ B站视频教程：[点击这里，求三连支持](https://www.bilibili.com/vid
 
 `MaterialSearchWindows.7z`整合包自带`OFA-Sys/chinese-clip-vit-base-patch16`模型。`MaterialSearchWindowsLarge.7z`整合包则是`OFA-Sys/chinese-clip-vit-large-patch14-336px`模型。
 
-一般而言`OFA-Sys/chinese-clip-vit-base-patch16`模型已经足够日常使用，如果效果不佳并且显卡显存足够大（8G以上），可以尝试`MaterialSearchWindowsLarge.7z`整合包。
+一般而言`OFA-Sys/chinese-clip-vit-base-patch16`模型已经足够日常使用，如果效果不佳并且显卡**显存足够大（16G以上）**，可以尝试`MaterialSearchWindowsLarge.7z`整合包。
 
 ### 通过源码部署
 

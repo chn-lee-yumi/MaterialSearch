@@ -92,8 +92,6 @@ jobs:
           FRAME_INTERVAL=2
           # 视频搜索出来的片段前后延长时间，单位秒，如果搜索出来的片段不完整，可以调大这个值
           VIDEO_EXTENSION_LENGTH=1
-          # 素材处理批次大小，显存2G请设置为3，显存4G请设置为6，显存8G请设置为12，以此类推，越大扫描速度越快，但显存占用也越大，过大会导致显存不足而无法运行或拖慢速度
-          SCAN_PROCESS_BATCH_SIZE=3
           # 支持的图片拓展名，逗号分隔，请填小写
           IMAGE_EXTENSIONS=.jpg,.jpeg,.png,.gif,.heic,.webp,.bmp
           # 支持的视频拓展名，逗号分隔，请填小写
@@ -102,8 +100,6 @@ jobs:
           HOST=127.0.0.1
           # 监听端口
           PORT=8085
-          # 推理设备，会自动选择独显或核显。如无显卡，则需要把下面的值从auto改成cpu。
-          DEVICE=auto
           # 下面的不要改
           TRANSFORMERS_OFFLINE=1
           HF_HUB_OFFLINE=1
