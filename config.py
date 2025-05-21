@@ -79,7 +79,7 @@ if DEVICE == 'auto':  # 自动选择设备，优先级：cuda > mps > directml >
             else:
                 DEVICE = 'cpu'
         except Exception as e:
-            print("使用CPU:", repr(e))
+            print(f"经检测，不支持使用directml加速({repr(e)})，因此使用CPU:")
             DEVICE = 'cpu'
     else:
         DEVICE = 'cpu'
