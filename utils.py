@@ -4,7 +4,7 @@ import platform
 import subprocess
 
 import numpy as np
-from PIL import Image, ImageOps
+from PIL import Image, ImageOps, ImageDraw
 from pillow_heif import register_heif_opener
 
 from config import LOG_LEVEL
@@ -109,10 +109,26 @@ def crop_video(input_file, output_file, start_time, end_time):
     subprocess.run(command)
 
 
+def create_checkerboard(size, block_size=16, color1=(220, 220, 220), color2=(255, 255, 255)):
+    w, h = size
+    bg = Image.new('RGB', size, color1)
+    draw = ImageDraw.Draw(bg)
+    for y in range(0, h, block_size):
+        for x in range(0, w, block_size):
+            if (x // block_size + y // block_size) % 2 == 0:
+                draw.rectangle([x, y, x + block_size - 1, y + block_size - 1], fill=color2)
+    return bg
+
+
 def resize_image_with_aspect_ratio(image_path, target_size, convert_rgb=False):
     image = Image.open(image_path)
     image = ImageOps.exif_transpose(image)  # 根据 EXIF 信息自动旋转图像
     if convert_rgb:
+        # 如果有透明通道，就添加棋盘格背景
+        if image.mode == 'RGBA':
+            checkerboard = create_checkerboard(image.size)
+            checkerboard.paste(image, mask=image.getchannel('A'))
+            image = checkerboard
         image = image.convert('RGB')
     # 计算调整后图像的目标大小及长宽比
     width, height = image.size
