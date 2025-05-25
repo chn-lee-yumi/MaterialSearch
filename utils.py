@@ -125,7 +125,7 @@ def resize_image_with_aspect_ratio(image_path, target_size, convert_rgb=False):
     image = ImageOps.exif_transpose(image)  # 根据 EXIF 信息自动旋转图像
     if convert_rgb:
         # 如果有透明通道，就添加棋盘格背景
-        if image.mode == 'RGBA':
+        if image.mode == 'RGBA':  # LA也是，但是暂不启用
             checkerboard = create_checkerboard(image.size)
             checkerboard.paste(image, mask=image.getchannel('A'))
             image = checkerboard
