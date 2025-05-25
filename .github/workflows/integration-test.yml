@@ -46,11 +46,10 @@ jobs:
 
       - name: Run main.py
         run: |
-          LOG_FILE=run_log.txt
           if [ "${{ matrix.os }}" == "ubuntu-latest" ]; then
-            nohup python main.py > $LOG_FILE 2>&1 &
+            nohup python main.py > run_log.txt 2>&1 &
           else
-            start /min cmd /c "python main.py > %GITHUB_WORKSPACE%\\$LOG_FILE 2>&1"
+            start /min cmd /c "python main.py > %GITHUB_WORKSPACE%\\run_log.txt 2>&1"
           fi
         shell: bash
 
@@ -61,5 +60,8 @@ jobs:
         shell: bash
 
       - name: Test API
-        run: pytest
+        run: |
+          pytest
+          echo "========== Run log: =========="
+          cat run_log.txt
         shell: bash
