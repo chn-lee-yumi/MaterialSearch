@@ -206,7 +206,7 @@ def api_get_image(image_id):
         image_io = BytesIO()
         image.save(image_io, 'JPEG', quality=60)
         image_io.seek(0)
-        return send_file(image_io, mimetype='image/jpeg')
+        return send_file(image_io, mimetype='image/jpeg', download_name="thumbnail_" + os.path.basename(path))
     return send_file(path)
 
 
