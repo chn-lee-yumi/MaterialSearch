@@ -49,13 +49,13 @@ jobs:
           if [ "${{ matrix.os }}" == "ubuntu-latest" ]; then
             nohup python main.py > run_log.txt 2>&1 &
           else
-            start /min cmd /c "python main.py > run_log.txt 2>&1"
+            start /min python main.py > run_log.txt 2>&1
           fi
         shell: bash
 
       - name: Read run log
         run: |
-          sleep 60
+          sleep 30
           cat run_log.txt
         shell: bash
 
