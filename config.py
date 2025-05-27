@@ -63,9 +63,11 @@ FLASK_DEBUG = os.getenv('FLASK_DEBUG', 'False').lower() == 'true'  # flask 调�
 ENABLE_CHECKSUM = os.getenv('ENABLE_CHECKSUM', 'False').lower() == 'true'  # 是否启用文件校验（如果是，则通过文件校验来判断文件是否更新，否则通过修改时间判断）
 
 # *****DEVICE处理*****
-if DEVICE == 'auto':  # 自动选择设备，优先级：cuda > mps > directml > cpu
+if DEVICE == 'auto':  # 自动选择设备，优先级：cuda > xpu > mps > directml > cpu
     if torch.cuda.is_available():
         DEVICE = 'cuda'
+    elif hasattr(torch, 'xpu') and torch.xpu.is_available():
+        DEVICE = 'xpu'
     elif torch.backends.mps.is_available():
         DEVICE = 'mps'
     elif importlib.util.find_spec("torch_directml") is not None:
@@ -79,7 +81,7 @@ if DEVICE == 'auto':  # 自动选择设备，优先级：cuda > mps > directml >
             else:
                 DEVICE = 'cpu'
         except Exception as e:
-            print(f"经检测，不支持使用directml加速({repr(e)})，因此使用CPU:")
+            # print(f"经检测，不支持使用directml加速({repr(e)})，因此使用CPU:")
             DEVICE = 'cpu'
     else:
         DEVICE = 'cpu'
