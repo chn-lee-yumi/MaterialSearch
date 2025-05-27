@@ -65,6 +65,8 @@
     "searchContentEmpty": "At least one search content or search path must be entered",
     "textContentEmpty": "Text content cannot be empty",
     "clipboardCopySuccess": "Path copied to clipboard",
+    "clipboardReadFailed": "Read clipboard failed, please check browser security settings",
+    "clipboardNotSupported": "Clipboard not supported, please check browser security settings",
     "totalSearchResult": "Total search results: ",
     "photos": " photos",
     "videos": " videos",

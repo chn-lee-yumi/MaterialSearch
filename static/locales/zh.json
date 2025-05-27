@@ -65,6 +65,8 @@
     "searchContentEmpty": "搜索内容或搜索路径至少需要输入一个",
     "textContentEmpty": "文字内容不能为空",
     "clipboardCopySuccess": "路径已复制到剪贴板",
+    "clipboardReadFailed": "读取剪贴板失败，请检查浏览器安全设置",
+    "clipboardNotSupported": "不支持使用剪贴板，请检查浏览器安全设置",
     "totalSearchResult": "共搜索出来",
     "photos": "张图片",
     "videos": "条视频",
