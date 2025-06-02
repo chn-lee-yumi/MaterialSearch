@@ -4,7 +4,7 @@ SQLAlchemy>=2.0.20
 torch>=2.0
 Pillow>=8.1.0
 pillow-heif>=0.14.0
-transformers>=4.28.1,<=4.51.3
+transformers>=4.28.1,<=4.52.4
 accelerate>=1.5.0,<=1.7.0
 opencv-python-headless>=4.7.0.68
 python-dotenv>=0.19.2
