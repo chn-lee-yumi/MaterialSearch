@@ -32,8 +32,12 @@
         <el-tag size="large" v-if="status.total_pexels_videos != 0" type="success" effect="dark">
             {{ $t("statusLabels.totalPexelsVideos") }}: {{status.total_pexels_videos }}
         </el-tag>
-        <el-tag size="large" v-if="isScanning" type="info" effect="dark">{{ $t("statusLabels.scanningFiles") }}: {{ status.scanning_files }}</el-tag>
-        <el-tag size="large" v-if="isScanning" type="info" effect="dark">{{ $t("statusLabels.remainFiles") }}: {{ status.remain_files }}</el-tag>
+        <el-tag size="large" v-if="isScanning" type="info" effect="dark">
+            {{ $t("statusLabels.scanningFiles") }}: {{ status.scanning_files === 0 && status.remain_files === 0 ? $t('statusLabels.calculating') : status.scanning_files }}
+        </el-tag>
+        <el-tag size="large" v-if="isScanning" type="info" effect="dark">
+            {{ $t("statusLabels.remainFiles") }}: {{ status.scanning_files === 0 && status.remain_files === 0 ? $t('statusLabels.calculating') : status.remain_files }}
+        </el-tag>
         <el-tag size="large" v-if="isScanning" type="info" effect="dark">{{ $t("statusLabels.remainTime") }}: {{ status.remain_time }}</el-tag>
         <el-tag size="large" v-if="isScanning" type="danger" effect="dark">
             {{ $t("statusLabels.scanProgress") }}: {{ Math.trunc(status.progress * 100) }}%

@@ -13,7 +13,8 @@
     "scanningFiles": "Scanning Files",
     "remainFiles": "Remaining Files",
     "remainTime": "Estimated Remaining Time",
-    "scanProgress": "Scanning Progress"
+    "scanProgress": "Scanning Progress",
+    "calculating": "Calculating"
   },
   "buttons": {
     "scan": "Scan",
