@@ -32,12 +32,12 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install pytest
-          if [ "${{ matrix.os }}" == "ubuntu-latest" ]; then
-            sudo apt-get update && sudo apt-get install -y ffmpeg
-            pip install -r requirements.txt
-          else
+          if [ "${{ matrix.os }}" == "windows-latest" ]; then
             powershell -ExecutionPolicy Bypass ./install_ffmpeg.ps1
             pip install -r requirements_windows.txt
+          else
+            sudo apt-get update && sudo apt-get install -y ffmpeg
+            pip install -r requirements.txt
           fi
         shell: bash
 
@@ -46,11 +46,11 @@ jobs:
 
       - name: Run main.py
         run: |
-          if [ "${{ matrix.os }}" == "ubuntu-latest" ]; then
-            nohup python main.py > run_log.txt 2>&1 &
-          else
+          if [ "${{ matrix.os }}" == "windows-latest" ]; then
             set PYTHONUNBUFFERED=1
             start /min python main.py > run_log.txt 2>&1
+          else
+            nohup python main.py > run_log.txt 2>&1 &
           fi
         shell: bash
 
