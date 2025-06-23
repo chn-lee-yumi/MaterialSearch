@@ -18,12 +18,14 @@ Online Demo：https://chn-lee-yumi.github.io/MaterialSearchWebDemo/
 
 ### Deployment via Source Code
 
-First, install the Python environment and then download the code from this repository.
+First, install the Python environment (version 3.9 or higher) and then download the code from this repository.
 
 Note that the first run will automatically download the models. The download speed may be slow, so please be patient. If the network is poor, the model download may fail. In that case, simply rerun the program.
 
 1. Install the dependencies before first use: `pip install -U -r requirements.txt`. For Windows systems, use `requirements_windows.txt` instead, or you can double-click on `install.bat`.
 2. Start the program: `python main.py`. For Windows systems, you can double-click on `run.bat`.
+
+Note: The `requirements.txt` uses the CPU versions of `torch` and `faiss`. If you wish to enable GPU acceleration, please adjust the settings accordingly.
 
 If you encounter any issues with the version dependencies in `requirements.txt` (for example, if a library version is too new and causes errors), please provide feedback by opening an issue. I will add version range restrictions.
 
@@ -78,15 +80,6 @@ https_proxy=http://127.0.0.1:7070
 
 Note: It is no recommended to set `ASSETS_PATH` as remote directory such as SMB/NFS, which may slow your scanning speed.
 
-To adjust the default search thresholds, you need to modify the following two lines in the `static/index.html` file:
-
-```text
-                positive_threshold: 30,
-                negative_threshold: 30,
-```
-
-These lines represent the thresholds for positive and negative search respectively, both set to 30 by default. You can change them as needed.
-
 ## Troubleshooting
 
 If you encounter any issues, please read this documentation carefully first. If you cannot find an answer, search the issues to see if there are similar problems. If not, you can open a new issue and provide detailed information about the problem, including your attempted solutions and thoughts, error messages and screenshots, and the system you are using (Windows/Linux/MacOS) and the configuration (which will be printed while running `main.py`).
@@ -97,11 +90,11 @@ I am doing this project purely "for the love of it" (which means, in fact, I am 
 
 ## Hardware Requirements
 
-It is recommended to use a `amd64` or `arm64` architecture CPU. The minimum requirement is 2GB of memory, but it is recommended to have at least 4GB of memory. If you have a large number of photos, it is recommended to increase the amount of memory.
-
-Test environment: J3455 CPU, 8GB of memory. Allwinner H6, 2GB of memory.
+It is recommended to use a `amd64 (x86_64)` or `arm64 (aarch64)` architecture CPU. The minimum requirement is 2GB of memory, but it is recommended to have at least 4GB of memory. If you have a large number of photos, it is recommended to increase the amount of memory.
 
 ## Search Speed
+
+Test environment: J3455 CPU, 8GB of memory.
 
 On a J3455 CPU, approximately 31,000 image matches or 25,000 video frame matches can be performed in 1 second.
 
