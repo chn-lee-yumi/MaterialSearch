@@ -20,7 +20,7 @@
 
 注意：系统最低要求Win10，如果你还在用Win7，请换电脑或升级系统。
 
-B站视频教程：[点击这里，求三连支持](https://www.bilibili.com/video/BV1CKZmY4EqZ/)。
+B站视频教程：[点击这里，求三连支持](https://www.bilibili.com/video/BV1xXKfzCE3v/)。
 
 用户**互助**QQ群：1029566498（因作者精力有限，欢迎加群讨论，互相帮助。一言解惑，胜造七级浮屠；一念善行，自有千般福报。）
 
