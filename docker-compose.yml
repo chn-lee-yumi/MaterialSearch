@@ -11,6 +11,7 @@ services:
     environment: # 通过环境变量修改配置，注意下面填的路径是容器里面的路径，不是宿主的路径
       - ASSETS_PATH=/home,/mnt
       - SKIP_PATH=/tmp
+      - HOST=0.0.0.0
       #- DEVICE=cuda
     volumes: # 将宿主的目录挂载到容器里（宿主路径:容器路径）
       - /srv/MaterialSearch/db:/MaterialSearch/instance/ # 挂载宿主/srv/MaterialSearch/db到容器的/MaterialSearch/instance/
