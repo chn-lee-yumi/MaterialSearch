@@ -371,6 +371,7 @@ const app = Vue.createApp({
         'form.image_threshold'(val) { localStorage.setItem('form.image_threshold', val); },
     },
     mounted: function() {
+        fetchServerTimeAndSetOffset();  // 页面加载时获取服务器时间
         this.loadData();
         this.timer = setInterval(this.loadData, 5000);
         // 加载保存的表单设置

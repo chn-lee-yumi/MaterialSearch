@@ -256,7 +256,8 @@ class Scanner:
         self.is_scanning = False
 
 
+scanner = Scanner()
+
 if __name__ == '__main__':
-    scanner = Scanner()
     scanner.init()
     scanner.scan(False)

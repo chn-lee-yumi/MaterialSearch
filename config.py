@@ -4,6 +4,7 @@ import os
 import torch
 
 from env import *
+from init import *  # noqa
 
 pre_env()
 env()  # 函数定义在加密代码中，请忽略 Unresolved reference 'env'
