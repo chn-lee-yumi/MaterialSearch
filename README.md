@@ -1,132 +1,118 @@
-# MaterialSearch 本地素材搜索
+# MaterialSearch
 
-[**中文**](./README.md) | [**English**](./README_EN.md)
+[**中文**](./README_ZH.md) | [**English**](./README.md)
 
-扫描本地的图片以及视频，并且可以用自然语言进行查找。
+Search local photos and videos through natural language.
 
-在线Demo：https://chn-lee-yumi.github.io/MaterialSearchWebDemo/
+Online Demo：https://chn-lee-yumi.github.io/MaterialSearchWebDemo/
 
-## 功能
+Some parts of the source code in this repository have been intentionally obfuscated.
+This decision was made in response to previous incidents where individuals maliciously removed or altered copyright and attribution information, resulting in negative consequences.
+The obfuscation is meant solely to protect authorship and legal integrity, and does not restrict legitimate use under the GNU General Public License v3.0 (GPLv3).
 
-- 文字搜图
-- 以图搜图
-- 文字搜视频（会给出符合描述的视频片段）
-- 以图搜视频（通过视频截图搜索所在片段）
-- 图文相似度计算（只是给出一个分数，用处不大）
+We kindly ask users to respect the original authorship and retain all relevant notices.
 
-## 部署说明
+## Features
 
-### Windows整合包
+- Text-based image search
+- Image-based image search
+- Text-based video search (provides matching video clips based on descriptions)
+- Image-based video search (searches for video segments based on screenshots)
+- Calculation of image-text similarity (provides a score, not very useful)
 
-注意：系统最低要求Win10，如果你还在用Win7，请换电脑或升级系统。
+## Deploy Instructions
 
-B站视频教程：[点击这里，求三连支持](https://www.bilibili.com/video/BV1xXKfzCE3v/)。
+### Deployment via Source Code
 
-用户**互助**QQ群：1029566498（因作者精力有限，欢迎加群讨论，互相帮助。一言解惑，胜造七级浮屠；一念善行，自有千般福报。）
+First, install the Python environment (version 3.9 or higher) and then download the code from this repository.
 
-首先下载整合包（`MaterialSearchWindows.7z`或`MaterialSearchWindowsLarge.7z`），并使用 [7-Zip](https://www.7-zip.org/) 解压缩（注意：使用其它软件解压缩，可能会报错）。
+Note that the first run will automatically download the models. The download speed may be slow, so please be patient. If the network is poor, the model download may fail. In that case, simply rerun the program.
 
-下载方式：
-- [GitHub Release](https://github.com/chn-lee-yumi/MaterialSearch/releases/latest)
-- [夸克网盘](https://pan.quark.cn/s/ae137c439484)
-- [百度网盘](https://pan.baidu.com/s/1uQ8t-4mbYmcfi6FjwzdrrQ?pwd=CHNL) 提取码: CHNL
+1. Install the dependencies before first use: `pip install -U -r requirements.txt`. For Windows systems, use `requirements_windows.txt` instead, or you can double-click on `install.bat`.
+2. Start the program: `python main.py`. For Windows systems, you can double-click on `run.bat`.
 
-解压后请阅读里面的`使用说明.txt`。整合包会自动选择独显或核显进行加速。
+Note: The `requirements.txt` uses the CPU versions of `torch` and `faiss`. If you wish to enable GPU acceleration, please adjust the settings accordingly.
 
-`MaterialSearchWindows.7z`整合包自带`OFA-Sys/chinese-clip-vit-base-patch16`模型。`MaterialSearchWindowsLarge.7z`整合包则是`OFA-Sys/chinese-clip-vit-large-patch14-336px`模型。
+If you encounter any issues with the version dependencies in `requirements.txt` (for example, if a library version is too new and causes errors), please provide feedback by opening an issue. I will add version range restrictions.
 
-一般而言`OFA-Sys/chinese-clip-vit-base-patch16`模型已经足够日常使用，如果效果不佳并且显卡**显存足够大（16G以上）**，可以尝试`MaterialSearchWindowsLarge.7z`整合包。
+To use the "Download Video Segments" feature, you need to install `ffmpeg`. If you are using Windows, you can run `install_ffmpeg.bat` to install.
 
-### 通过源码部署
+### Deployment via Docker
 
-首先安装Python环境（版本3.9或以上），然后下载本仓库代码。
+Supports both `amd64` and `arm64` architectures. It includes the default models (`OFA-Sys/chinese-clip-vit-base-patch16`) and supports GPU acceleration (only for `amd64` architecture).
 
-注意，首次运行会自动下载模型。下载速度可能比较慢，请耐心等待。如果网络不好，模型可能会下载失败，这个时候重新执行程序即可。
-
-1. 首次使用前需要安装依赖：`pip install -U -r requirements.txt`。Windows系统使用`requirements_windows.txt`，或双击`install.bat`。
-2. 启动程序：`python main.py`，Windows系统可以双击`run.bat`。
-
-注意：`requirements.txt`使用的`torch`和`faiss`版本均为CPU版本，如果想用GPU加速，请自行调整。
-
-如遇到`requirements.txt`版本依赖问题（比如某个库版本过新会导致运行报错），请提issue反馈，我会添加版本范围限制。
-
-如果想使用"下载视频片段"的功能，需要安装`ffmpeg`。Windows系统可以运行`install_ffmpeg.bat`进行安装。
-
-### 通过Docker部署
-
-支持`amd64`和`arm64`，打包了默认模型（`OFA-Sys/chinese-clip-vit-base-patch16`）并且支持GPU（仅`amd64`架构的镜像支持）。
-
-镜像地址：
+Image repositories:
 - [yumilee/materialsearch](https://hub.docker.com/r/yumilee/materialsearch) (DockerHub)
-- registry.cn-hongkong.aliyuncs.com/chn-lee-yumi/materialsearch (阿里云，推荐中国大陆用户使用)
+- registry.cn-hongkong.aliyuncs.com/chn-lee-yumi/materialsearch (Aliyun, recommended for users in Mainland China)
 
-启动镜像前，你需要准备：
+Before starting the image, you need to prepare:
 
-1. 数据库的保存路径
-2. 你的扫描路径以及打算挂载到容器内的哪个路径
-3. 你可以通过修改`docker-compose.yml`里面的`environment`和`volumes`来进行配置。
-4. 如果打算使用GPU，则需要取消注释`docker-compose.yml`里面的对应部分
+1. The path to save the database
+2. The scan paths on your local machine and the paths to be mounted inside the container
+3. You can configure through modifying the `environment` and `volumes` sections in the `docker-compose.yml` file
+4. If you plan to use GPU acceleration, uncomment the corresponding section in the `docker-compose.yml` file
 
-具体请参考`docker-compose.yml`，已经写了详细注释。
+Please refer to the `docker-compose.yml` file for details, as it contains detailed comments.
 
-最后执行`docker-compose up -d`启动容器即可。
+Finally, execute `docker-compose up -d` to start the container.
 
-注意：
-- 不推荐对容器设置内存限制，否则可能会出现奇怪的问题。比如[这个issue](https://github.com/chn-lee-yumi/MaterialSearch/issues/6)。
-- 容器默认设置了环境变量`TRANSFORMERS_OFFLINE=1`，也就是说运行时不会连接huggingface检查模型版本。如果你想更换容器内默认的模型，需要修改`.env`覆盖该环境变量为`TRANSFORMERS_OFFLINE=0`。
+Note:
+- It is not recommended to set memory limits for the container, as it may cause strange issues. For example, refer to [this issue](https://github.com/chn-lee-yumi/MaterialSearch/issues/6).
+- Docker image has the default environment variables `TRANSFORMERS_OFFLINE=1`, which means it won't connect to huggingface to check the model version. If you want to change the default model in the container, you have to modify `.env` and set `TRANSFORMERS_OFFLINE=0`.
 
-## 配置说明
+## Configuration Instructions
 
-所有配置都在`config.py`文件中，里面已经写了详细的注释。
+All configurations are in the `config.py` file, which contains detailed comments.
 
-建议通过环境变量或在项目根目录创建`.env`文件修改配置。如果没有配置对应的变量，则会使用`config.py`中的默认值。例如`os.getenv('HOST', '127.0.0.1')`，如果没有配置`HOST`变量，则`HOST`默认为`127.0.0.1`。
+It is recommended to modify the configuration through environment variables or by creating a `.env` file in the project root directory. If a corresponding variable is not configured, the default value in `config.py` will be used. For example, `os.getenv('HOST', '127.0.0.1')` will default to `127.0.0.1` if the `HOST` variable is not configured.
 
-`.env`文件配置示例：
+Example `.env` file configuration:
 
 ```conf
 ASSETS_PATH=C:/Users/Administrator/Pictures,C:/Users/Administrator/Videos
 SKIP_PATH=C:/Users/Administrator/AppData
 ```
 
-如果你发现某些格式的图片或视频没有被扫描到，可以尝试在`IMAGE_EXTENSIONS`和`VIDEO_EXTENSIONS`增加对应的后缀。如果你发现一些支持的后缀没有被添加到代码中，欢迎提issue或pr增加。
+If you find that certain formats of images or videos are not being scanned, you can try adding the corresponding file extensions to `IMAGE_EXTENSIONS` and `VIDEO_EXTENSIONS`. If you find that some supported extensions have not been added to the code, please feel free to open an issue or submit a pull request to add them.
 
-小图片没被扫描到的话，可以调低`IMAGE_MIN_WIDTH`和`IMAGE_MIN_HEIGHT`重试。
+If small images are not being scanned, you can try reducing `IMAGE_MIN_WIDTH` and `IMAGE_MIN_HEIGHT` and try again.
 
-如果想使用代理，可以添加`http_proxy`和`https_proxy`，如：
+If you want to use proxy, you can use `http_proxy` and `https_proxy`. For example: 
 
 ```conf
 http_proxy=http://127.0.0.1:7070
 https_proxy=http://127.0.0.1:7070
 ```
 
-注意：`ASSETS_PATH`不推荐设置为远程目录（如SMB/NFS），可能会导致扫描速度变慢。
+Note: It is no recommended to set `ASSETS_PATH` as remote directory such as SMB/NFS, which may slow your scanning speed.
 
-## 问题解答
+## Troubleshooting
 
-如遇问题，请先仔细阅读本文档。如果找不到答案，请在issue中搜索是否有类似问题。如果没有，可以新开一个issue，**详细说明你遇到的问题，加上你做过的尝试和思考，附上报错内容和截图，并说明你使用的系统（Windows/Linux/MacOS）和你的配置（配置在执行`main.py`的时候会打印出来）**。
+If you encounter any issues, please read this documentation carefully first. If you cannot find an answer, search the issues to see if there are similar problems. If not, you can open a new issue and provide detailed information about the problem, including your attempted solutions and thoughts, error messages and screenshots, and the system you are using (Windows/Linux/MacOS) and the configuration (which will be printed while running `main.py`).
 
-本人只负责本项目的功能、代码和文档等相关问题（例如功能不正常、代码报错、文档内容有误等）。**运行环境问题请自行解决（例如：如何配置Python环境，无法使用GPU加速，如何安装ffmpeg等）。**
+I am only responsible for issues related to the functionality, code, and documentation of this project (such as malfunctions, code errors, and incorrect documentation). **Please resolve any runtime environment issues on your own (such as how to configure the Python environment, inability to use GPU acceleration, how to install ffmpeg, etc.).**
 
-本人做此项目纯属“为爱发电”（也就是说，其实本人并没有义务解答你的问题）。为了提高问题解决效率，请尽量在开issue时一次性提供尽可能多的信息。如问题已解决，请记得关闭issue。一个星期无人回复的issue会被关闭。如果在被回复前已自行解决问题，推荐留下解决步骤，赠人玫瑰，手有余香。
+I am doing this project purely "for the love of it" (which means, in fact, I am not obligated to answer your questions). To improve the efficiency of problem solving, please provide as much information as possible when opening an issue. If your issue has been resolved, please remember to close it. Issues that receive no response for one week will be closed. If you have resolved the issue on your own before receiving a response, it is recommended to leave the solution so that others may benefit.
 
-## 硬件要求
+## Hardware Requirements
 
-推荐使用 `amd64 (x86-64)` 或 `arm64 (aarch64)` 架构的CPU。内存最低2G，但推荐最少4G内存。如果照片数量很多，推荐增加更多内存。
+It is recommended to use a `amd64 (x86_64)` or `arm64 (aarch64)` architecture CPU. The minimum requirement is 2GB of memory, but it is recommended to have at least 4GB of memory. If you have a large number of photos, it is recommended to increase the amount of memory.
 
-## 搜索速度
+## Search Speed
 
-测试环境：J3455，8G内存。
+Test environment: J3455 CPU, 8GB of memory.
 
-在 J3455 CPU 上，1秒钟可以进行大约 31000 次图片匹配或 25000 次视频帧匹配。
+On a J3455 CPU, approximately 31,000 image matches or 25,000 video frame matches can be performed in 1 second.
 
-## 已知问题
+## Known Issues
 
-1. 部分视频无法在网页上显示，原因是浏览器不支持这一类型的文件（例如svq3编码的视频）。
-2. 点击图片进行放大时，部分图片无法显示，原因是浏览器不支持这一类型的文件（例如tiff格式的图片）。小图可以正常显示，因为转换成缩略图的时候使用了浏览器支持的格式。大图使用的是原文件。
-3. 搜视频时，如果显示的视频太多且视频体积太大，电脑可能会卡，这是正常现象。建议搜索视频时不要超过12个。
+1. Some videos cannot be displayed on the web page because the browser does not support that file type (e.g. videos encoded with SVQ3).
+2. When you click on an image to enlarge it, some images cannot be displayed because the browser does not support this type of file (e.g. images in tiff format). Small images can be displayed normally because they are converted into thumbnails in a format supported by the browser. Large images use the original file.
+3. When searching for videos, if too many videos are displayed and the video size is too large, the computer may freeze, which is normal. So it is suggested that do not select more than 12 results when you searching videos.
 
-## 关于PR
+## About Pull Requests
 
-欢迎提PR！不过为了避免无意义的劳动，建议先提issue讨论一下。
+Pull requests are welcome! However, to avoid meaningless work, it is recommended to open an issue for discussion before submitting a pull request.
 
-提PR前请确保代码已经格式化，并执行`api_test.py`确保所有测试都能通过。
+Before submitting a pull request, please ensure that the code has been formatted.
+
