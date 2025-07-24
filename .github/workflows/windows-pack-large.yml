@@ -46,20 +46,20 @@ jobs:
     - name: Optimise Code
       run: |
         cd MaterialSearchWindows
-        ./python.exe -m py_compile main.py config.py database.py init.py models.py process_assets.py scan.py search.py utils.py
+        ./python.exe -m py_compile main.py database.py init.py routes.py models.py process_assets.py scan.py search.py utils.py
         cp __pycache__/main.cpython-312.pyc main.pyc
-        cp __pycache__/config.cpython-312.pyc config.pyc
         cp __pycache__/database.cpython-312.pyc database.pyc
         cp __pycache__/init.cpython-312.pyc init.pyc
+        cp __pycache__/routes.cpython-312.pyc routes.pyc
         cp __pycache__/models.cpython-312.pyc models.pyc
         cp __pycache__/process_assets.cpython-312.pyc process_assets.pyc
         cp __pycache__/scan.cpython-312.pyc scan.pyc
         cp __pycache__/search.cpython-312.pyc search.pyc
         cp __pycache__/utils.cpython-312.pyc utils.pyc
         rm main.py
-        rm config.py
         rm database.py
         rm init.py
+        rm routes.py
         rm models.py
         rm process_assets.py
         rm scan.py
@@ -101,6 +101,8 @@ jobs:
           HOST=127.0.0.1
           # 监听端口
           PORT=8085
+          # 运行模型的设备，默认自动选择(auto)。如果想强制使用cpu运行，则把值改成cpu。
+          DEVICE=auto
           # 下面的不要改
           TRANSFORMERS_OFFLINE=1
           HF_HUB_OFFLINE=1
