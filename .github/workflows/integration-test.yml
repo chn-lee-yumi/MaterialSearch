@@ -56,7 +56,7 @@ jobs:
 
       - name: Read run log
         run: |
-          sleep 30
+          sleep 90
           cat run_log.txt
         shell: bash
 
