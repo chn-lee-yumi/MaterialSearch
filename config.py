@@ -7,7 +7,7 @@ from env import *
 from init import *  # noqa
 
 pre_env()
-env()  # 函数定义在加密代码中，请忽略 Unresolved reference 'env'
+env()  # noqa
 post_env()
 
 # *****服务器配置*****
@@ -41,6 +41,7 @@ AUTO_SAVE_INTERVAL = int(os.getenv('AUTO_SAVE_INTERVAL', 100))  # 扫描自动�
 # 中文超大模型："OFA-Sys/chinese-clip-vit-huge-patch14"
 # 英文小模型： "openai/clip-vit-base-patch16"
 # 英文大模型："openai/clip-vit-large-patch14-336"
+# 也有人反馈这个模型不错：laion/CLIP-ViT-H-14-laion2B-s32B-b79K
 MODEL_NAME = os.getenv('MODEL_NAME', "OFA-Sys/chinese-clip-vit-base-patch16")  # CLIP模型
 DEVICE = os.getenv('DEVICE', 'auto')  # 推理设备，auto/cpu/cuda/mps
 
