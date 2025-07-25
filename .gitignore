@@ -159,3 +159,4 @@ index_*.js
 *.bk
 recover.sh
 routes_*.py
+tmp*
