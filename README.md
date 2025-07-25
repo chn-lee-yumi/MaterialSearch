@@ -12,6 +12,8 @@ The obfuscation is meant solely to protect authorship and legal integrity, and d
 
 We kindly ask users to respect the original authorship and retain all relevant notices.
 
+If you’ve made any useful changes to the code (bug fixes, new features, etc.), please consider contributing them back via a pull request — so the whole community can benefit!
+
 ## Features
 
 - Text-based image search
@@ -109,10 +111,3 @@ On a J3455 CPU, approximately 31,000 image matches or 25,000 video frame matches
 1. Some videos cannot be displayed on the web page because the browser does not support that file type (e.g. videos encoded with SVQ3).
 2. When you click on an image to enlarge it, some images cannot be displayed because the browser does not support this type of file (e.g. images in tiff format). Small images can be displayed normally because they are converted into thumbnails in a format supported by the browser. Large images use the original file.
 3. When searching for videos, if too many videos are displayed and the video size is too large, the computer may freeze, which is normal. So it is suggested that do not select more than 12 results when you searching videos.
-
-## About Pull Requests
-
-Pull requests are welcome! However, to avoid meaningless work, it is recommended to open an issue for discussion before submitting a pull request.
-
-Before submitting a pull request, please ensure that the code has been formatted.
-
