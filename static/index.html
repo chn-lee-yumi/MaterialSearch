@@ -75,6 +75,7 @@
                                 <el-option :label="$t('formPlaceholders.topnAll')" value="1000000"></el-option>
                             </el-select>
                             <el-button type="success" icon="Search" @click="search(0)">{{ $t('searchButtons.search') }}</el-button>
+                            <el-button type="primary" icon="DocumentCopy" @click="copyAllPaths">{{ $t('messages.copyAllPaths') }}</el-button>
                         </el-col>
                     </el-row>
                     <el-collapse v-model="activeCollapse">
@@ -119,6 +120,7 @@
                             </el-select>
                             <el-button type="success" icon="Search" @click="search(1)">{{ $t('searchButtons.search') }}</el-button>
                             <el-button type="success" icon="Pointer" @click="pasteImg">{{ $t('searchButtons.paste') }}</el-button>
+                            <el-button type="primary" icon="DocumentCopy" @click="copyAllPaths">{{ $t('messages.copyAllPaths') }}</el-button>
                             <el-collapse v-model="activeCollapse">
                                 <el-collapse-item :title="$t('formPlaceholders.advanceSearch')" name="1" icon="CaretRight">
                                     <el-input :placeholder="$t('formPlaceholders.path')" v-model="form.path" class="input-with-select"
@@ -153,6 +155,7 @@
                                 <el-option :label="$t('formPlaceholders.topnAll')" value="1000000"></el-option>
                             </el-select>
                             <el-button type="success" icon="Search" @click="search(2)">{{ $t('searchButtons.search') }}</el-button>
+                            <el-button type="primary" icon="DocumentCopy" @click="copyAllPaths">{{ $t('messages.copyAllPaths') }}</el-button>
                         </el-col>
                     </el-row>
                     <el-collapse v-model="activeCollapse">
@@ -197,6 +200,7 @@
                             </el-select>
                             <el-button type="success" icon="Search" @click="search(3)">{{ $t('searchButtons.search') }}</el-button>
                             <el-button type="success" icon="Pointer" @click="pasteImg">{{ $t('searchButtons.paste') }}</el-button>
+                            <el-button type="primary" icon="DocumentCopy" @click="copyAllPaths">{{ $t('messages.copyAllPaths') }}</el-button>
                             <el-collapse v-model="activeCollapse">
                                 <el-collapse-item :title="$t('formPlaceholders.advanceSearch')" name="1" icon="CaretRight">
                                     <el-input :placeholder="$t('formPlaceholders.path')" v-model="form.path" class="input-with-select"
@@ -229,6 +233,7 @@
                         <el-row style="margin-top:10px;">
                             <el-button type="success" icon="Search" @click="search(4)">{{ $t('searchButtons.calculateSimilarity') }}</el-button>
                             <el-button type="success" icon="Pointer" @click="pasteImg">{{ $t('searchButtons.paste') }}</el-button>
+                            <el-button type="primary" icon="DocumentCopy" @click="copyAllPaths">{{ $t('messages.copyAllPaths') }}</el-button>
                         </el-row>
                     </el-col>
                 </el-row>
@@ -571,6 +576,35 @@ const app = Vue.createApp({
         },
         blobToFile(blob, fileName) {
             return new File([blob], fileName, { type: blob.type });
+        },
+        copyAllPaths() {
+            if (!this.files || this.files.length === 0) {
+                ElementPlus.ElMessage.warning(this.$t('messages.noFilesToCopy'));
+                return;
+            }
+            const allPaths = this.files.map(f => f.path).join('\n');
+            if (window.Clipboard && window.Clipboard.copy) {
+                window.Clipboard.copy(allPaths);
+            } else if (navigator.clipboard) {
+                navigator.clipboard.writeText(allPaths).then(() => {
+                    ElementPlus.ElMessage.success(this.$t('messages.clipboardCopySuccess'));
+                }, () => {
+                    ElementPlus.ElMessage.error(this.$t('messages.clipboardReadFailed'));
+                });
+            } else {
+                // fallback
+                const textarea = document.createElement('textarea');
+                textarea.value = allPaths;
+                document.body.appendChild(textarea);
+                textarea.select();
+                try {
+                    document.execCommand('copy');
+                    ElementPlus.ElMessage.success(this.$t('messages.clipboardCopySuccess'));
+                } catch (err) {
+                    ElementPlus.ElMessage.error(this.$t('messages.clipboardReadFailed'));
+                }
+                document.body.removeChild(textarea);
+            }
         },
     },
     setup() {

@@ -75,7 +75,9 @@
     "uploadSuccess": "上传成功",
     "imgIdNotFound": "无法从img_url取得图片id，这个情况不应该出现，请报告给开发者",
     "searching": "搜索中……",
-    "matching": "匹配中……"
+    "matching": "匹配中……",
+    "copyAllPaths": "复制全部路径",
+    "noFilesToCopy": "没有可复制的文件路径"
   },
   "footer": {
     "description1": "本项目在GitHub上开源，可以免费下载使用：",
