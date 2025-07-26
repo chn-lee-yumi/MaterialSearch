@@ -4,7 +4,6 @@ import threading
 
 import routes
 from config import *
-from init import *
 from scan import scanner
 
 logger = logging.getLogger(__name__)
@@ -30,8 +29,6 @@ def init():
 
 
 if __name__ == "__main__":
-    pre_init()
     init()
     logging.getLogger('werkzeug').setLevel(LOG_LEVEL)
-    post_init()
     routes.app.run(port=PORT, host=HOST, debug=FLASK_DEBUG)

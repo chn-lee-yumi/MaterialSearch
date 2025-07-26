@@ -158,5 +158,6 @@ enc_*.py
 index_*.js
 *.bk
 recover.sh
-routes_*.py
+routes_origin.py
+routes_need_to_be_encrypted.py
 tmp*

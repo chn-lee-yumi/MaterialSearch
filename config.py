@@ -3,12 +3,9 @@ import os
 
 import torch
 
-from env import *
-from init import *  # noqa
+from env import *  # noqa
 
-pre_env()
 env()  # noqa
-post_env()
 
 # *****服务器配置*****
 HOST = os.getenv('HOST', '127.0.0.1')  # 监听IP，如果想允许远程访问，把这个改成0.0.0.0

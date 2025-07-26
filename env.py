@@ -20,17 +20,3 @@ del OoOo
 del III
 del Ooo
 del I1
-
-
-def pre_env():
-    print("本项目在GitHub上开源，可以免费下载使用，切勿付费受骗：https://github.com/chn-lee-yumi/MaterialSearch/")
-    print("This project is open source on GitHub and can be downloaded and used for free. "
-          "Please be cautious not to fall for any paid scams. "
-          "https://github.com/chn-lee-yumi/MaterialSearch/")
-
-
-def post_env():
-    print("本项目在GitHub上开源，可以免费下载使用，切勿付费受骗：https://github.com/chn-lee-yumi/MaterialSearch/")
-    print("This project is open source on GitHub and can be downloaded and used for free. "
-          "Please be cautious not to fall for any paid scams. "
-          "https://github.com/chn-lee-yumi/MaterialSearch/")
