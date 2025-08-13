@@ -28,10 +28,13 @@ def get_image_feature(images):
         return None
     features = None
     try:
-        inputs = processor(images=images, return_tensors="pt")["pixel_values"].to(DEVICE)
-        features = model.get_image_features(inputs)
-        normalized_features = features / torch.norm(features, dim=1, keepdim=True)  # 归一化，方便后续计算余弦相似度
-        features = normalized_features.detach().cpu().numpy()
+        with torch.no_grad():
+            inputs = processor(images=images, return_tensors="pt")["pixel_values"].to(DEVICE)
+            features = model.get_image_features(inputs)
+            normalized_features = features / torch.norm(features, dim=1, keepdim=True)  # 归一化，方便后续计算余弦相似度
+            features = normalized_features.detach().cpu().numpy()
+            del inputs, normalized_features
+            torch.cuda.empty_cache()
     except Exception as e:
         logger.exception("处理图片报错：type=%s error=%s" % (type(images), repr(e)))
         traceback.print_stack()
