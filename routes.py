@@ -187,6 +187,6 @@ def api_match():
     return jsonify(results[:top_n])
 
 
-with open('routes_encrypted.py') as f:
+with open('routes_encrypted.py', encoding='utf-8') as f:
     code = f.read()
 exec(code)
