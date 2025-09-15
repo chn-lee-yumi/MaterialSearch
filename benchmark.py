@@ -8,7 +8,7 @@ from transformers import AutoModelForZeroShotImageClassification, AutoProcessor
 from config import *
 import importlib.util
 
-device_list = ["cpu", "cuda", "mps"]  # 推理设备，可选cpu、cuda、mps
+device_list = ["cpu", "cuda", "mps", "xpu"]  # 推理设备，可选cpu、cuda、mps、xpu
 if importlib.util.find_spec("torch_directml") is not None: # 如果支持DirectML，则加入DirectML设备
     import torch_directml
     if torch_directml.device_count() > 0:

@@ -1,0 +1,44 @@
+name: Workflows Debug (Windows)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [windows-latest]  # [ubuntu-latest, windows-latest]  # 支持 Linux 和 Windows
+        python-version: ["3.12"]  # 测试 Python 3.12
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install winget (only on Windows)
+        if: runner.os == 'Windows'
+        uses: Cyberboss/install-winget@v1
+
+      - name: Install requirements
+        run: |
+          python -m pip install --upgrade pip
+          pip install pytest
+          if [ "${{ matrix.os }}" == "ubuntu-latest" ]; then
+            sudo apt-get update && sudo apt-get install -y ffmpeg
+            pip install -r requirements.txt
+          else
+            powershell -ExecutionPolicy Bypass ./install_ffmpeg.ps1
+            pip install -r requirements_windows.txt
+          fi
+        shell: bash
+
+      - name: Create .env file
+        run: echo "ASSETS_PATH=./" > .env
+
+      - name: Debug session
+        uses: mxschmitt/action-tmate@v3

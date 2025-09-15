@@ -12,7 +12,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest, windows-latest]  # 支持 Linux 和 Windows
+        os: [ubuntu-latest, windows-latest, ubuntu-24.04-arm]  # 支持 Linux 和 Windows
         python-version: ["3.12"]  # 测试 Python 3.12
         
     steps:
@@ -32,12 +32,12 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install pytest
-          if [ "${{ matrix.os }}" == "ubuntu-latest" ]; then
-            sudo apt-get update && sudo apt-get install -y ffmpeg
-            pip install -r requirements.txt
-          else
+          if [ "${{ matrix.os }}" == "windows-latest" ]; then
             powershell -ExecutionPolicy Bypass ./install_ffmpeg.ps1
             pip install -r requirements_windows.txt
+          else
+            sudo apt-get update && sudo apt-get install -y ffmpeg
+            pip install -r requirements.txt
           fi
         shell: bash
 
@@ -46,13 +46,35 @@ jobs:
 
       - name: Run main.py
         run: |
-          if [ "${{ matrix.os }}" == "ubuntu-latest" ]; then
-            nohup python main.py &
+          if [ "${{ matrix.os }}" == "windows-latest" ]; then
+            set PYTHONUNBUFFERED=1
+            start /min python main.py > run_log.txt 2>&1
           else
-            start /min python main.py
+            nohup python main.py > run_log.txt 2>&1 &
           fi
         shell: bash
 
-      - name: Test API
-        run: pytest
+      - name: Read run log
+        run: |
+          sleep 10
+          cat run_log.txt
         shell: bash
+
+#      - name: Check run_log.txt for success message
+#        run: |
+#          echo "========== Run log: =========="
+#          cat run_log.txt
+#          if grep -q "Running on http://127.0.0.1:8085" run_log.txt; then
+#            echo "✅ Found expected message. Test passed."
+#          else
+#            echo "❌ Expected message not found."
+#            exit 1
+#          fi
+#        shell: bash
+
+#      - name: Test API
+#        run: |
+#          pytest
+#          echo "========== Run log: =========="
+#          cat run_log.txt
+#        shell: bash

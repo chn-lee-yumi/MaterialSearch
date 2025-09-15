@@ -151,9 +151,13 @@ config.local.py
 pyvenv.cfg
 .venv
 pip-selfcheck.json
+
 env_*.py
 init_*.py
 enc_*.py
 index_*.js
 *.bk
 recover.sh
+routes_origin.py
+routes_need_to_be_encrypted.py
+tmp*

@@ -13,7 +13,8 @@
     "scanningFiles": "Scanning Files",
     "remainFiles": "Remaining Files",
     "remainTime": "Estimated Remaining Time",
-    "scanProgress": "Scanning Progress"
+    "scanProgress": "Scanning Progress",
+    "calculating": "Calculating"
   },
   "buttons": {
     "scan": "Scan",
@@ -65,6 +66,8 @@
     "searchContentEmpty": "At least one search content or search path must be entered",
     "textContentEmpty": "Text content cannot be empty",
     "clipboardCopySuccess": "Path copied to clipboard",
+    "clipboardReadFailed": "Read clipboard failed, please check browser security settings",
+    "clipboardNotSupported": "Clipboard not supported, please check browser security settings",
     "totalSearchResult": "Total search results: ",
     "photos": " photos",
     "videos": " videos",
@@ -72,7 +75,9 @@
     "uploadSuccess": "Upload successful",
     "imgIdNotFound": "Unable to extract image ID from img_url. This should not happen. Please report to the developer.",
     "searching": "Searching...",
-    "matching": "Matching……"
+    "matching": "Matching……",
+    "copyAllPaths": "Copy All Paths",
+    "noFilesToCopy": "No file paths to copy"
   },
   "footer": {
     "description1": "This project is open-sourced on GitHub: ",

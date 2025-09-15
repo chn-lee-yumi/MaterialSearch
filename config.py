@@ -3,11 +3,9 @@ import os
 
 import torch
 
-from env import *
+from env import *  # noqa
 
-pre_env()
-env()  # 函数定义在加密代码中，请忽略 Unresolved reference 'env'
-post_env()
+env()  # noqa
 
 # *****服务器配置*****
 HOST = os.getenv('HOST', '127.0.0.1')  # 监听IP，如果想允许远程访问，把这个改成0.0.0.0
@@ -34,13 +32,13 @@ AUTO_SAVE_INTERVAL = int(os.getenv('AUTO_SAVE_INTERVAL', 100))  # 扫描自动�
 # 如果显存较小且用了较大的模型，并在扫描的时候出现了"CUDA out of memory"，请换成较小的模型。如果显存充足，可以调大上面的SCAN_PROCESS_BATCH_SIZE来提高扫描速度。
 # 4G显存推荐参数：小模型，SCAN_PROCESS_BATCH_SIZE=6
 # 8G显存推荐参数：小模型，SCAN_PROCESS_BATCH_SIZE=12
-# 超大模型最低显存要求是6G，且SCAN_PROCESS_BATCH_SIZE=1
-# 其余显存大小请自行摸索搭配。
+# 不同模型不同显存大小请自行摸索搭配。
 # 中文小模型： "OFA-Sys/chinese-clip-vit-base-patch16"
 # 中文大模型："OFA-Sys/chinese-clip-vit-large-patch14-336px"
 # 中文超大模型："OFA-Sys/chinese-clip-vit-huge-patch14"
 # 英文小模型： "openai/clip-vit-base-patch16"
 # 英文大模型："openai/clip-vit-large-patch14-336"
+# 也有人反馈这个模型不错：laion/CLIP-ViT-H-14-laion2B-s32B-b79K
 MODEL_NAME = os.getenv('MODEL_NAME', "OFA-Sys/chinese-clip-vit-base-patch16")  # CLIP模型
 DEVICE = os.getenv('DEVICE', 'auto')  # 推理设备，auto/cpu/cuda/mps
 
@@ -64,9 +62,11 @@ FLASK_DEBUG = os.getenv('FLASK_DEBUG', 'False').lower() == 'true'  # flask 调�
 ENABLE_CHECKSUM = os.getenv('ENABLE_CHECKSUM', 'False').lower() == 'true'  # 是否启用文件校验（如果是，则通过文件校验来判断文件是否更新，否则通过修改时间判断）
 
 # *****DEVICE处理*****
-if DEVICE == 'auto':  # 自动选择设备，优先级：cuda > mps > directml > cpu
+if DEVICE == 'auto':  # 自动选择设备，优先级：cuda > xpu > mps > directml > cpu
     if torch.cuda.is_available():
         DEVICE = 'cuda'
+    elif hasattr(torch, 'xpu') and torch.xpu.is_available():
+        DEVICE = 'xpu'
     elif torch.backends.mps.is_available():
         DEVICE = 'mps'
     elif importlib.util.find_spec("torch_directml") is not None:
@@ -75,11 +75,12 @@ if DEVICE == 'auto':  # 自动选择设备，优先级：cuda > mps > directml >
 
             if torch_directml.device_count() > 0:
                 DEVICE = torch_directml.device()
-                torch.rand((1, 1), device=DEVICE)  # 测试是否可用
+                x = torch.rand((1, 1), device=DEVICE)  # 测试是否可用
+                x = 1.0 - x
             else:
                 DEVICE = 'cpu'
         except Exception as e:
-            print("import torch_directml 失败，使用CPU:", repr(e))
+            # print(f"经检测，不支持使用directml加速({repr(e)})，因此使用CPU:")
             DEVICE = 'cpu'
     else:
         DEVICE = 'cpu'

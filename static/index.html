@@ -32,8 +32,12 @@
         <el-tag size="large" v-if="status.total_pexels_videos != 0" type="success" effect="dark">
             {{ $t("statusLabels.totalPexelsVideos") }}: {{status.total_pexels_videos }}
         </el-tag>
-        <el-tag size="large" v-if="isScanning" type="info" effect="dark">{{ $t("statusLabels.scanningFiles") }}: {{ status.scanning_files }}</el-tag>
-        <el-tag size="large" v-if="isScanning" type="info" effect="dark">{{ $t("statusLabels.remainFiles") }}: {{ status.remain_files }}</el-tag>
+        <el-tag size="large" v-if="isScanning" type="info" effect="dark">
+            {{ $t("statusLabels.scanningFiles") }}: {{ status.scanning_files === 0 && status.remain_files === 0 ? $t('statusLabels.calculating') : status.scanning_files }}
+        </el-tag>
+        <el-tag size="large" v-if="isScanning" type="info" effect="dark">
+            {{ $t("statusLabels.remainFiles") }}: {{ status.scanning_files === 0 && status.remain_files === 0 ? $t('statusLabels.calculating') : status.remain_files }}
+        </el-tag>
         <el-tag size="large" v-if="isScanning" type="info" effect="dark">{{ $t("statusLabels.remainTime") }}: {{ status.remain_time }}</el-tag>
         <el-tag size="large" v-if="isScanning" type="danger" effect="dark">
             {{ $t("statusLabels.scanProgress") }}: {{ Math.trunc(status.progress * 100) }}%
@@ -68,9 +72,11 @@
                                 <el-option label="Top 12" value="12"></el-option>
                                 <el-option label="Top 30" value="30"></el-option>
                                 <el-option label="Top 150" value="150"></el-option>
+                                <el-option label="Top 600" value="600"></el-option>
                                 <el-option :label="$t('formPlaceholders.topnAll')" value="1000000"></el-option>
                             </el-select>
                             <el-button type="success" icon="Search" @click="search(0)">{{ $t('searchButtons.search') }}</el-button>
+                            <el-button type="primary" icon="DocumentCopy" @click="copyAllPaths">{{ $t('messages.copyAllPaths') }}</el-button>
                         </el-col>
                     </el-row>
                     <el-collapse v-model="activeCollapse">
@@ -111,10 +117,12 @@
                                 <el-option label="Top 12" value="12"></el-option>
                                 <el-option label="Top 30" value="30"></el-option>
                                 <el-option label="Top 150" value="150"></el-option>
+                                <el-option label="Top 600" value="600"></el-option>
                                 <el-option :label="$t('formPlaceholders.topnAll')" value="1000000"></el-option>
                             </el-select>
                             <el-button type="success" icon="Search" @click="search(1)">{{ $t('searchButtons.search') }}</el-button>
                             <el-button type="success" icon="Pointer" @click="pasteImg">{{ $t('searchButtons.paste') }}</el-button>
+                            <el-button type="primary" icon="DocumentCopy" @click="copyAllPaths">{{ $t('messages.copyAllPaths') }}</el-button>
                             <el-collapse v-model="activeCollapse">
                                 <el-collapse-item :title="$t('formPlaceholders.advanceSearch')" name="1" icon="CaretRight">
                                     <el-input :placeholder="$t('formPlaceholders.path')" v-model="form.path" class="input-with-select"
@@ -146,9 +154,11 @@
                                 <el-option label="Top 12" value="12"></el-option>
                                 <el-option label="Top 30" value="30"></el-option>
                                 <el-option label="Top 150" value="150"></el-option>
+                                <el-option label="Top 600" value="600"></el-option>
                                 <el-option :label="$t('formPlaceholders.topnAll')" value="1000000"></el-option>
                             </el-select>
                             <el-button type="success" icon="Search" @click="search(2)">{{ $t('searchButtons.search') }}</el-button>
+                            <el-button type="primary" icon="DocumentCopy" @click="copyAllPaths">{{ $t('messages.copyAllPaths') }}</el-button>
                         </el-col>
                     </el-row>
                     <el-collapse v-model="activeCollapse">
@@ -189,10 +199,12 @@
                                 <el-option label="Top 12" value="12"></el-option>
                                 <el-option label="Top 30" value="30"></el-option>
                                 <el-option label="Top 150" value="150"></el-option>
+                                <el-option label="Top 600" value="600"></el-option>
                                 <el-option :label="$t('formPlaceholders.topnAll')" value="1000000"></el-option>
                             </el-select>
                             <el-button type="success" icon="Search" @click="search(3)">{{ $t('searchButtons.search') }}</el-button>
                             <el-button type="success" icon="Pointer" @click="pasteImg">{{ $t('searchButtons.paste') }}</el-button>
+                            <el-button type="primary" icon="DocumentCopy" @click="copyAllPaths">{{ $t('messages.copyAllPaths') }}</el-button>
                             <el-collapse v-model="activeCollapse">
                                 <el-collapse-item :title="$t('formPlaceholders.advanceSearch')" name="1" icon="CaretRight">
                                     <el-input :placeholder="$t('formPlaceholders.path')" v-model="form.path" class="input-with-select"
@@ -225,6 +237,7 @@
                         <el-row style="margin-top:10px;">
                             <el-button type="success" icon="Search" @click="search(4)">{{ $t('searchButtons.calculateSimilarity') }}</el-button>
                             <el-button type="success" icon="Pointer" @click="pasteImg">{{ $t('searchButtons.paste') }}</el-button>
+                            <el-button type="primary" icon="DocumentCopy" @click="copyAllPaths">{{ $t('messages.copyAllPaths') }}</el-button>
                         </el-row>
                     </el-col>
                 </el-row>
@@ -242,6 +255,7 @@
                         <el-option label="Top 12" value="12"></el-option>
                         <el-option label="Top 30" value="30"></el-option>
                         <el-option label="Top 150" value="150"></el-option>
+                        <el-option label="Top 600" value="600"></el-option>
                         <el-option :label="$t('formPlaceholders.topnAll')" value="1000000"></el-option>
                     </el-select>
                     <el-button type="success" icon="Search" @click="search(9)">{{ $t('searchButtons.search') }}</el-button>
@@ -342,8 +356,8 @@ const app = Vue.createApp({
                 negative: '',
                 top_n: '6',
                 search_type: 0,
-                positive_threshold: 36,
-                negative_threshold: 36,
+                positive_threshold: 20,
+                negative_threshold: 30,
                 image_threshold: 75,
                 img_id: -1,
                 path: '',
@@ -359,9 +373,33 @@ const app = Vue.createApp({
             activeCollapse: [],
         }
     },
+    watch: {
+        'currentTab'(val) { localStorage.setItem('currentTab', val); },
+        'form.top_n'(val) { localStorage.setItem('form.top_n', val); },
+        'form.positive_threshold'(val) { localStorage.setItem('form.positive_threshold', val); },
+        'form.negative_threshold'(val) { localStorage.setItem('form.negative_threshold', val); },
+        'form.image_threshold'(val) { localStorage.setItem('form.image_threshold', val); },
+    },
     mounted: function() {
+        fetchServerTimeAndSetOffset();  // 页面加载时获取服务器时间
         this.loadData();
         this.timer = setInterval(this.loadData, 5000);
+        // 加载保存的表单设置
+        this.currentTab = localStorage.getItem('currentTab') || '0';
+        const keys = ['form.top_n', 'form.positive_threshold',  'form.negative_threshold', 'form.image_threshold'];
+        keys.forEach(k => {
+            const val = localStorage.getItem(k);
+            if (val !== null) {
+                const field = k.split('.')[1];
+                this.form[field] = field.includes('threshold') ? Number(val) : val;
+            }
+        });
+        // 添加全局粘贴事件监听，实现 Ctrl+V 粘贴图片
+        window.addEventListener('paste', async (event) => {
+            console.log(event)
+            if (!["1", "3"].includes(this.currentTab)) return; // 6不做自动粘贴，因为会覆盖文本框粘贴功能
+            await this.pasteImg();
+        });
     },
     created() {
         var that = this
@@ -543,6 +581,35 @@ const app = Vue.createApp({
         },
         blobToFile(blob, fileName) {
             return new File([blob], fileName, { type: blob.type });
+        },
+        copyAllPaths() {
+            if (!this.files || this.files.length === 0) {
+                ElementPlus.ElMessage.warning(this.$t('messages.noFilesToCopy'));
+                return;
+            }
+            const allPaths = this.files.map(f => f.path).join('\n');
+            if (window.Clipboard && window.Clipboard.copy) {
+                window.Clipboard.copy(allPaths);
+            } else if (navigator.clipboard) {
+                navigator.clipboard.writeText(allPaths).then(() => {
+                    ElementPlus.ElMessage.success(this.$t('messages.clipboardCopySuccess'));
+                }, () => {
+                    ElementPlus.ElMessage.error(this.$t('messages.clipboardReadFailed'));
+                });
+            } else {
+                // fallback
+                const textarea = document.createElement('textarea');
+                textarea.value = allPaths;
+                document.body.appendChild(textarea);
+                textarea.select();
+                try {
+                    document.execCommand('copy');
+                    ElementPlus.ElMessage.success(this.$t('messages.clipboardCopySuccess'));
+                } catch (err) {
+                    ElementPlus.ElMessage.error(this.$t('messages.clipboardReadFailed'));
+                }
+                document.body.removeChild(textarea);
+            }
         },
     },
     setup() {

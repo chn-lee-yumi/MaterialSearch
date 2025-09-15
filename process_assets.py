@@ -42,6 +42,9 @@ def get_image_feature(images):
         if features is not None:
             print("feature.shape:", features.shape)
             print("feature:", features)
+        # 如果报错内容包含 not enough GPU video memory，就打印额外的日志
+        if "not enough GPU video memory" in repr(e) and MODEL_NAME != "OFA-Sys/chinese-clip-vit-base-patch16":
+            logger.error("显存不足，请使用小模型（OFA-Sys/chinese-clip-vit-base-patch16）！！！")
     return features
 
 
