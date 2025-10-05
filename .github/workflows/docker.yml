@@ -41,9 +41,8 @@ jobs:
       uses: docker/build-push-action@v6
       with:
         context: .
-        platforms: linux/amd64,linux/arm64
+        platforms: linux/amd64
         push: true
-        no-cache: true
         tags: |
           yumilee/materialsearch:latest
           registry.cn-hongkong.aliyuncs.com/chn-lee-yumi/materialsearch:latest
