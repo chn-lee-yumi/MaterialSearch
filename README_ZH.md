@@ -62,7 +62,7 @@ B站视频教程：[点击这里，求三连支持](https://www.bilibili.com/vid
 
 ### 通过Docker部署
 
-支持`amd64`和`arm64`，打包了默认模型（`OFA-Sys/chinese-clip-vit-base-patch16`）并且支持GPU（仅`amd64`架构的镜像支持）。
+支持`amd64`，打包了默认模型（`OFA-Sys/chinese-clip-vit-base-patch16`）并且支持GPU。
 
 镜像地址：
 - [yumilee/materialsearch](https://hub.docker.com/r/yumilee/materialsearch) (DockerHub)
