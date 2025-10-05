@@ -5,6 +5,7 @@ import traceback
 import cv2
 import numpy as np
 import requests
+import torch.cuda
 from PIL import Image
 from tqdm import trange
 from transformers import AutoModelForZeroShotImageClassification, AutoProcessor
@@ -103,6 +104,8 @@ def process_images(path_list, ignore_small_images=True):
     if not images:
         return None, None
     feature = get_image_feature(images)
+    if torch.cuda.is_available() and LOW_CUDA_MEM:
+        torch.cuda.empty_cache()
     return path_list, feature
 
 
@@ -181,6 +184,9 @@ def process_video(path):
             print(f"fps: {frame_rate} total: {total_frames}")
             video.release()
         return
+    finally:
+        if torch.cuda.is_available() and LOW_CUDA_MEM:
+            torch.cuda.empty_cache()
 
 
 def process_text(input_text):

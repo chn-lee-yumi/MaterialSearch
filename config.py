@@ -60,6 +60,7 @@ USERNAME = os.getenv('USERNAME', 'admin')  # 登录用户名
 PASSWORD = os.getenv('PASSWORD', 'MaterialSearch')  # 登录密码
 FLASK_DEBUG = os.getenv('FLASK_DEBUG', 'False').lower() == 'true'  # flask 调试开关（热重载）
 ENABLE_CHECKSUM = os.getenv('ENABLE_CHECKSUM', 'False').lower() == 'true'  # 是否启用文件校验（如果是，则通过文件校验来判断文件是否更新，否则通过修改时间判断）
+LOW_CUDA_MEM = os.getenv('LOW_CUDA_MEM', 'False').lower() == 'true'  # 是否启用低显存模式（如果是，则定期清理cuda cache，仅在支持cuda时有效）
 
 # *****DEVICE处理*****
 if DEVICE == 'auto':  # 自动选择设备，优先级：cuda > xpu > mps > directml > cpu
