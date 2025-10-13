@@ -1,6 +1,6 @@
 # 本Dockerfile构建对应的参数为：
 # MODEL_NAME = "OFA-Sys/chinese-clip-vit-base-patch16"
-FROM python:3.12
+FROM python:3.14
 WORKDIR /MaterialSearch/
 ENV HF_HOME=/MaterialSearch/transformers/
 RUN apt update && apt install -y ffmpeg && apt clean
