@@ -57,7 +57,6 @@ jobs:
         cp __pycache__/utils.cpython-312.pyc utils.pyc
         rm main.py
         rm database.py
-        rm init.py
         rm routes.py
         rm models.py
         rm process_assets.py
