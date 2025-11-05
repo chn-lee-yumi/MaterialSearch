@@ -321,10 +321,43 @@ def delete_video_by_path(session: Session, path: str):
     session.commit()
 
 
-def add_image(session: Session, path: str, modify_time: datetime.datetime, checksum: str, features: bytes):
-    """添加图片到数据库"""
+def add_image(session: Session, path: str, modify_time: datetime.datetime, checksum: str, features: bytes,
+              width: int = None, height: int = None, aspect_ratio: float = None,
+              aspect_ratio_standard: str = None, file_size: int = None, file_format: str = None,
+              phash: str = None, **kwargs):
+    """
+    添加图片到数据库
+
+    Args:
+        session: 数据库 session
+        path: 文件路径
+        modify_time: 修改时间
+        checksum: 文件校验和
+        features: 特征向量
+        width: 图片宽度
+        height: 图片高度
+        aspect_ratio: 宽高比
+        aspect_ratio_standard: 标准宽高比
+        file_size: 文件大小
+        file_format: 文件格式
+        phash: 感知哈希
+        **kwargs: 其他字段
+    """
     logger.info(f"新增文件：{path}")
-    image = Image(path=path, modify_time=modify_time, features=features, checksum=checksum)
+    image = Image(
+        path=path,
+        modify_time=modify_time,
+        features=features,
+        checksum=checksum,
+        width=width,
+        height=height,
+        aspect_ratio=aspect_ratio,
+        aspect_ratio_standard=aspect_ratio_standard,
+        file_size=file_size,
+        file_format=file_format,
+        phash=phash,
+        upload_time=datetime.datetime.now()
+    )
     session.add(image)
     session.commit()
 

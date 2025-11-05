@@ -19,6 +19,7 @@ from models import create_tables, DatabaseSession
 from process_assets import process_images, process_video
 from search import clean_cache
 from utils import get_file_hash
+from utils_image import calculate_image_properties
 
 
 class Scanner:
@@ -171,7 +172,22 @@ class Scanner:
             # 写入数据库
             features = features.tobytes()
             modify_time, checksum = image_batch_dict[path]
-            add_image(session, path, modify_time, checksum, features)
+
+            # 计算图片属性
+            props = calculate_image_properties(path)
+            if props:
+                add_image(session, path, modify_time, checksum, features,
+                         width=props.get('width'),
+                         height=props.get('height'),
+                         aspect_ratio=props.get('aspect_ratio'),
+                         aspect_ratio_standard=props.get('aspect_ratio_standard'),
+                         file_size=props.get('file_size'),
+                         file_format=props.get('file_format'),
+                         phash=props.get('phash'))
+            else:
+                # 如果属性计算失败，仍然添加图片（只是没有扩展属性）
+                add_image(session, path, modify_time, checksum, features)
+
             del self.assets[path]
         self.total_images = get_image_count(session)
 
