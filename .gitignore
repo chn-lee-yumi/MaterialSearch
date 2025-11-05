@@ -4,10 +4,6 @@ sitemaps/
 PexelsVideo.db
 PexelsPhoto.db
 
-# Claude Code 本地配置
-.claude/
-.augment/
-
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

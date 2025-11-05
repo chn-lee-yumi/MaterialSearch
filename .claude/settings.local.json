@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git clone:*)",
+      "Bash(git init:*)",
+      "Bash(git remote add:*)",
+      "Bash(git fetch:*)",
+      "Bash(git checkout:*)",
+      "Bash(git push:*)",
+      "Bash(openspec list:*)",
+      "Bash(openspec validate:*)",
+      "Bash(openspec show:*)",
+      "Bash(git add:*)",
+      "Bash(git commit -m \"$(cat <<''EOF''\n添加 OpenSpec 项目数据库架构提案和项目文档\n\n- 添加 OpenSpec 双数据库架构提案（add-project-database-architecture）\n  - proposal.md: 提案说明和影响分析\n  - design.md: 技术设计和架构决策\n  - tasks.md: 142 个详细实施任务\n  - specs/: 项目管理、图片存储、搜索功能规范\n\n- 添加项目文档\n  - openspec/project.md: 项目技术栈和约定\n  - AGENTS.md: OpenSpec 工作流说明\n  - CLAUDE.md: 项目级 AI 助手指令\n  - docs/临时沟通/: 需求讨论文档\n\n- 添加 OpenSpec 命令提示词\n  - .github/prompts/: proposal、apply、archive 提示词\n\n- 更新 .gitignore\n  - 排除 .claude/ 和 .augment/ 本地配置目录\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
