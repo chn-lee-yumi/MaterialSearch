@@ -32,6 +32,8 @@ from search import (
     search_pexels_video_by_text,
 )
 from utils import crop_video, get_hash, resize_image_with_aspect_ratio
+from project_manager import get_project_manager
+from archive import get_archive_manager
 
 logger = logging.getLogger(__name__)
 
@@ -185,6 +187,256 @@ def api_match():
         logger.warning(f"search_type不正确：{search_type}")
         abort(400)
     return jsonify(results[:top_n])
+
+
+# ============================================
+# 项目管理 API
+# ============================================
+
+@app.route("/api/projects", methods=["GET", "POST"])
+@login_required
+def api_projects():
+    """获取项目列表或创建新项目"""
+    pm = get_project_manager()
+
+    if request.method == "GET":
+        # 获取项目列表
+        status = request.args.get("status")
+        include_deleted = request.args.get("include_deleted", "false").lower() == "true"
+
+        try:
+            projects = pm.list_projects(status=status, include_deleted=include_deleted)
+            return jsonify({
+                "success": True,
+                "data": [
+                    {
+                        "id": p.id,
+                        "name": p.name,
+                        "client_name": p.client_name,
+                        "description": p.description,
+                        "status": p.status,
+                        "image_count": p.image_count,
+                        "video_count": p.video_count,
+                        "total_size": p.total_size,
+                        "created_time": p.created_time.isoformat() if p.created_time else None,
+                        "updated_time": p.updated_time.isoformat() if p.updated_time else None,
+                    }
+                    for p in projects
+                ]
+            })
+        except Exception as e:
+            logger.error(f"获取项目列表失败: {e}")
+            return jsonify({"success": False, "error": str(e)}), 500
+
+    elif request.method == "POST":
+        # 创建新项目
+        data = request.get_json()
+        name = data.get("name")
+        client_name = data.get("client_name")
+        description = data.get("description")
+
+        if not name:
+            return jsonify({"success": False, "error": "项目名称不能为空"}), 400
+
+        try:
+            project = pm.create_project(
+                name=name,
+                client_name=client_name,
+                description=description
+            )
+            return jsonify({
+                "success": True,
+                "data": {
+                    "id": project.id,
+                    "name": project.name,
+                    "client_name": project.client_name,
+                    "description": project.description,
+                    "status": project.status,
+                    "created_time": project.created_time.isoformat() if project.created_time else None,
+                }
+            })
+        except ValueError as e:
+            return jsonify({"success": False, "error": str(e)}), 400
+        except Exception as e:
+            logger.error(f"创建项目失败: {e}")
+            return jsonify({"success": False, "error": str(e)}), 500
+
+
+@app.route("/api/projects/<project_id>", methods=["GET", "PUT", "DELETE"])
+@login_required
+def api_project_detail(project_id):
+    """获取、更新或删除项目"""
+    pm = get_project_manager()
+
+    if request.method == "GET":
+        # 获取项目详情
+        try:
+            project = pm.get_project(project_id)
+            if not project:
+                return jsonify({"success": False, "error": "项目不存在"}), 404
+
+            return jsonify({
+                "success": True,
+                "data": {
+                    "id": project.id,
+                    "name": project.name,
+                    "client_name": project.client_name,
+                    "description": project.description,
+                    "status": project.status,
+                    "image_count": project.image_count,
+                    "video_count": project.video_count,
+                    "total_size": project.total_size,
+                    "created_time": project.created_time.isoformat() if project.created_time else None,
+                    "updated_time": project.updated_time.isoformat() if project.updated_time else None,
+                }
+            })
+        except Exception as e:
+            logger.error(f"获取项目详情失败: {e}")
+            return jsonify({"success": False, "error": str(e)}), 500
+
+    elif request.method == "PUT":
+        # 更新项目
+        data = request.get_json()
+        try:
+            project = pm.update_project(
+                project_id=project_id,
+                name=data.get("name"),
+                client_name=data.get("client_name"),
+                description=data.get("description"),
+                status=data.get("status")
+            )
+            return jsonify({
+                "success": True,
+                "data": {
+                    "id": project.id,
+                    "name": project.name,
+                    "client_name": project.client_name,
+                    "description": project.description,
+                    "status": project.status,
+                    "updated_time": project.updated_time.isoformat() if project.updated_time else None,
+                }
+            })
+        except ValueError as e:
+            return jsonify({"success": False, "error": str(e)}), 400
+        except Exception as e:
+            logger.error(f"更新项目失败: {e}")
+            return jsonify({"success": False, "error": str(e)}), 500
+
+    elif request.method == "DELETE":
+        # 删除项目
+        hard_delete = request.args.get("hard_delete", "false").lower() == "true"
+        try:
+            pm.delete_project(project_id, hard_delete=hard_delete)
+            return jsonify({"success": True, "message": "项目已删除"})
+        except ValueError as e:
+            return jsonify({"success": False, "error": str(e)}), 404
+        except Exception as e:
+            logger.error(f"删除项目失败: {e}")
+            return jsonify({"success": False, "error": str(e)}), 500
+
+
+@app.route("/api/projects/<project_id>/stats", methods=["GET"])
+@login_required
+def api_project_stats(project_id):
+    """获取项目统计信息"""
+    pm = get_project_manager()
+
+    try:
+        stats = pm.get_project_stats(project_id)
+        return jsonify({"success": True, "data": stats})
+    except ValueError as e:
+        return jsonify({"success": False, "error": str(e)}), 404
+    except Exception as e:
+        logger.error(f"获取项目统计失败: {e}")
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@app.route("/api/projects/<project_id>/update_stats", methods=["POST"])
+@login_required
+def api_project_update_stats(project_id):
+    """更新项目统计信息"""
+    pm = get_project_manager()
+
+    try:
+        pm.update_project_stats(project_id)
+        return jsonify({"success": True, "message": "统计信息已更新"})
+    except ValueError as e:
+        return jsonify({"success": False, "error": str(e)}), 404
+    except Exception as e:
+        logger.error(f"更新项目统计失败: {e}")
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+# ============================================
+# 归档功能 API
+# ============================================
+
+@app.route("/api/projects/<project_id>/archive", methods=["POST"])
+@login_required
+def api_archive_images(project_id):
+    """归档项目图片到永久库"""
+    am = get_archive_manager()
+
+    data = request.get_json()
+    image_ids = data.get("image_ids", [])
+    mark_archived = data.get("mark_archived", True)
+
+    if not image_ids:
+        return jsonify({"success": False, "error": "未指定要归档的图片"}), 400
+
+    try:
+        result = am.archive_images_to_permanent(
+            project_id=project_id,
+            image_ids=image_ids,
+            mark_archived=mark_archived
+        )
+        return jsonify({
+            "success": True,
+            "data": result
+        })
+    except Exception as e:
+        logger.error(f"归档失败: {e}")
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@app.route("/api/projects/<project_id>/archived", methods=["GET"])
+@login_required
+def api_get_archived_images(project_id):
+    """获取项目中已归档的图片列表"""
+    am = get_archive_manager()
+
+    try:
+        archived_images = am.get_archived_images(project_id)
+        return jsonify({
+            "success": True,
+            "data": archived_images
+        })
+    except Exception as e:
+        logger.error(f"获取归档列表失败: {e}")
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@app.route("/api/projects/<project_id>/unarchive", methods=["POST"])
+@login_required
+def api_unarchive_images(project_id):
+    """取消归档标记"""
+    am = get_archive_manager()
+
+    data = request.get_json()
+    image_ids = data.get("image_ids", [])
+
+    if not image_ids:
+        return jsonify({"success": False, "error": "未指定要取消归档的图片"}), 400
+
+    try:
+        result = am.unarchive_images(project_id, image_ids)
+        return jsonify({
+            "success": True,
+            "data": result
+        })
+    except Exception as e:
+        logger.error(f"取消归档失败: {e}")
+        return jsonify({"success": False, "error": str(e)}), 500
 
 
 with open('routes_encrypted.py', encoding='utf-8') as f:

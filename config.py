@@ -52,8 +52,15 @@ IMAGE_THRESHOLD = int(os.getenv('IMAGE_THRESHOLD', 85))  # 图片搜出来的素
 LOG_LEVEL = os.getenv('LOG_LEVEL', 'INFO')  # 日志等级：NOTSET/DEBUG/INFO/WARNING/ERROR/CRITICAL
 
 # *****其它配置*****
-SQLALCHEMY_DATABASE_URL = os.getenv('SQLALCHEMY_DATABASE_URL', 'sqlite:///./instance/assets.db')  # 数据库保存路径
+SQLALCHEMY_DATABASE_URL = os.getenv('SQLALCHEMY_DATABASE_URL', 'sqlite:///./instance/assets.db')  # 数据库保存路径（向后兼容，现改用永久库）
 TEMP_PATH = os.getenv('TEMP_PATH', './tmp')  # 临时目录路径
+
+# *****项目数据库配置*****
+PERMANENT_DATABASE_PATH = os.getenv('PERMANENT_DATABASE_PATH', './instance/permanent.db')  # 永久库路径
+METADATA_DATABASE_PATH = os.getenv('METADATA_DATABASE_PATH', './instance/projects_metadata.db')  # 项目元信息库路径
+PROJECT_DATABASE_DIR = os.getenv('PROJECT_DATABASE_DIR', './instance/projects')  # 项目数据库目录
+BACKUP_DIR = os.getenv('BACKUP_DIR', './backups')  # 备份目录
+BACKUP_RETENTION_DAYS = int(os.getenv('BACKUP_RETENTION_DAYS', 30))  # 备份保留天数
 VIDEO_EXTENSION_LENGTH = int(os.getenv('VIDEO_EXTENSION_LENGTH', 0))  # 下载视频片段时，视频前后增加的时长，单位为秒
 ENABLE_LOGIN = os.getenv('ENABLE_LOGIN', 'False').lower() == 'true'  # 是否启用登录
 USERNAME = os.getenv('USERNAME', 'admin')  # 登录用户名

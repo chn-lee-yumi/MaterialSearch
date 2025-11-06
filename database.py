@@ -1,12 +1,208 @@
 import datetime
 import logging
+import os
+from typing import Optional, Dict
 
-from sqlalchemy import asc
-from sqlalchemy.orm import Session
+from sqlalchemy import asc, create_engine, text
+from sqlalchemy.orm import Session, sessionmaker
 
-from models import Image, Video, PexelsVideo
+from models import Image, Video, PexelsVideo, Project, ProjectImage, ProjectVideo, BaseModel, BaseModelProject
 
 logger = logging.getLogger(__name__)
+
+
+class ProjectDatabaseManager:
+    """
+    多数据库管理器
+    管理永久库、项目元信息库、以及多个项目数据库的连接
+    """
+
+    def __init__(self,
+                 permanent_db_path: str = './instance/permanent.db',
+                 metadata_db_path: str = './instance/projects_metadata.db',
+                 project_db_dir: str = './instance/projects'):
+        """
+        初始化数据库管理器
+
+        Args:
+            permanent_db_path: 永久库数据库路径
+            metadata_db_path: 项目元信息库路径
+            project_db_dir: 项目数据库目录
+        """
+        self.permanent_db_path = permanent_db_path
+        self.metadata_db_path = metadata_db_path
+        self.project_db_dir = project_db_dir
+
+        # 确保目录存在
+        os.makedirs(os.path.dirname(permanent_db_path), exist_ok=True)
+        os.makedirs(os.path.dirname(metadata_db_path), exist_ok=True)
+        os.makedirs(project_db_dir, exist_ok=True)
+
+        # 数据库引擎和会话工厂
+        self.permanent_engine = None
+        self.metadata_engine = None
+        self.permanent_session_factory = None
+        self.metadata_session_factory = None
+        self.project_engines: Dict[str, any] = {}
+        self.project_session_factories: Dict[str, sessionmaker] = {}
+
+        # 初始化永久库和元信息库
+        self._init_permanent_db()
+        self._init_metadata_db()
+
+    def _create_engine_with_wal(self, db_url: str):
+        """创建启用 WAL 模式的数据库引擎"""
+        engine = create_engine(
+            db_url,
+            connect_args={
+                "check_same_thread": False,
+                "timeout": 30
+            }
+        )
+        # 启用 WAL 模式
+        with engine.connect() as conn:
+            conn.execute(text("PRAGMA journal_mode=WAL"))
+            conn.execute(text("PRAGMA synchronous=NORMAL"))
+            conn.commit()
+        return engine
+
+    def _init_permanent_db(self):
+        """初始化永久库"""
+        db_url = f'sqlite:///{self.permanent_db_path}'
+        self.permanent_engine = self._create_engine_with_wal(db_url)
+        self.permanent_session_factory = sessionmaker(
+            autocommit=False,
+            autoflush=False,
+            bind=self.permanent_engine
+        )
+        # 创建表结构
+        BaseModel.metadata.create_all(bind=self.permanent_engine)
+        logger.info(f"永久库已初始化: {self.permanent_db_path}")
+
+    def _init_metadata_db(self):
+        """初始化项目元信息库"""
+        db_url = f'sqlite:///{self.metadata_db_path}'
+        self.metadata_engine = self._create_engine_with_wal(db_url)
+        self.metadata_session_factory = sessionmaker(
+            autocommit=False,
+            autoflush=False,
+            bind=self.metadata_engine
+        )
+        # 创建表结构
+        BaseModel.metadata.create_all(bind=self.metadata_engine)
+        logger.info(f"项目元信息库已初始化: {self.metadata_db_path}")
+
+    def get_permanent_session(self) -> Session:
+        """获取永久库 session"""
+        return self.permanent_session_factory()
+
+    def get_metadata_session(self) -> Session:
+        """获取项目元信息库 session"""
+        return self.metadata_session_factory()
+
+    def get_project_session(self, project_id: str) -> Session:
+        """
+        获取指定项目的 session
+
+        Args:
+            project_id: 项目ID
+
+        Returns:
+            Session: 项目数据库 session
+        """
+        if project_id not in self.project_session_factories:
+            self._load_project_db(project_id)
+        return self.project_session_factories[project_id]()
+
+    def _load_project_db(self, project_id: str):
+        """加载项目数据库"""
+        db_path = os.path.join(self.project_db_dir, f'{project_id}.db')
+        if not os.path.exists(db_path):
+            raise FileNotFoundError(f"项目数据库不存在: {db_path}")
+
+        db_url = f'sqlite:///{db_path}'
+        engine = self._create_engine_with_wal(db_url)
+        session_factory = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+
+        self.project_engines[project_id] = engine
+        self.project_session_factories[project_id] = session_factory
+        logger.info(f"项目数据库已加载: {project_id}")
+
+    def create_project_database(self, project_id: str) -> str:
+        """
+        创建项目数据库
+
+        Args:
+            project_id: 项目ID
+
+        Returns:
+            str: 数据库文件路径
+        """
+        db_path = os.path.join(self.project_db_dir, f'{project_id}.db')
+        if os.path.exists(db_path):
+            logger.warning(f"项目数据库已存在: {db_path}")
+            return db_path
+
+        db_url = f'sqlite:///{db_path}'
+        engine = self._create_engine_with_wal(db_url)
+
+        # 创建表结构
+        BaseModelProject.metadata.create_all(bind=engine)
+
+        # 缓存连接
+        session_factory = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+        self.project_engines[project_id] = engine
+        self.project_session_factories[project_id] = session_factory
+
+        logger.info(f"项目数据库已创建: {db_path}")
+        return db_path
+
+    def close_project_db(self, project_id: str):
+        """关闭项目数据库连接"""
+        if project_id in self.project_engines:
+            self.project_engines[project_id].dispose()
+            del self.project_engines[project_id]
+            del self.project_session_factories[project_id]
+            logger.info(f"项目数据库连接已关闭: {project_id}")
+
+    def close_all(self):
+        """关闭所有数据库连接"""
+        if self.permanent_engine:
+            self.permanent_engine.dispose()
+        if self.metadata_engine:
+            self.metadata_engine.dispose()
+        for engine in self.project_engines.values():
+            engine.dispose()
+        logger.info("所有数据库连接已关闭")
+
+
+# 全局数据库管理器实例
+db_manager: Optional[ProjectDatabaseManager] = None
+
+
+def init_database_manager(**kwargs):
+    """初始化全局数据库管理器"""
+    global db_manager
+    db_manager = ProjectDatabaseManager(**kwargs)
+    return db_manager
+
+
+def get_db_manager() -> ProjectDatabaseManager:
+    """获取全局数据库管理器"""
+    global db_manager
+    if db_manager is None:
+        # 从配置文件读取路径，确保一致性
+        try:
+            from config import PERMANENT_DATABASE_PATH, METADATA_DATABASE_PATH, PROJECT_DATABASE_DIR
+            db_manager = ProjectDatabaseManager(
+                permanent_db_path=PERMANENT_DATABASE_PATH,
+                metadata_db_path=METADATA_DATABASE_PATH,
+                project_db_dir=PROJECT_DATABASE_DIR
+            )
+        except ImportError:
+            # 如果配置文件不可用，使用默认值
+            db_manager = ProjectDatabaseManager()
+    return db_manager
 
 
 def get_image_features_by_id(session: Session, image_id: int):
@@ -135,10 +331,43 @@ def delete_video_by_path(session: Session, path: str):
     session.commit()
 
 
-def add_image(session: Session, path: str, modify_time: datetime.datetime, checksum: str, features: bytes):
-    """添加图片到数据库"""
+def add_image(session: Session, path: str, modify_time: datetime.datetime, checksum: str, features: bytes,
+              width: int = None, height: int = None, aspect_ratio: float = None,
+              aspect_ratio_standard: str = None, file_size: int = None, file_format: str = None,
+              phash: str = None, **kwargs):
+    """
+    添加图片到数据库
+
+    Args:
+        session: 数据库 session
+        path: 文件路径
+        modify_time: 修改时间
+        checksum: 文件校验和
+        features: 特征向量
+        width: 图片宽度
+        height: 图片高度
+        aspect_ratio: 宽高比
+        aspect_ratio_standard: 标准宽高比
+        file_size: 文件大小
+        file_format: 文件格式
+        phash: 感知哈希
+        **kwargs: 其他字段
+    """
     logger.info(f"新增文件：{path}")
-    image = Image(path=path, modify_time=modify_time, features=features, checksum=checksum)
+    image = Image(
+        path=path,
+        modify_time=modify_time,
+        features=features,
+        checksum=checksum,
+        width=width,
+        height=height,
+        aspect_ratio=aspect_ratio,
+        aspect_ratio_standard=aspect_ratio_standard,
+        file_size=file_size,
+        file_format=file_format,
+        phash=phash,
+        upload_time=datetime.datetime.now()
+    )
     session.add(image)
     session.commit()
 
