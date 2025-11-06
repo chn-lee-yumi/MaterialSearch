@@ -252,7 +252,10 @@ class ProjectManager:
                 raise ValueError(f"项目不存在: {project_id}")
 
             if hard_delete:
-                # 硬删除：删除数据库文件
+                # 硬删除：先关闭数据库连接，避免 Windows 文件锁定
+                self.db_manager.close_project_db(project_id)
+
+                # 删除数据库文件
                 if project.database_path and os.path.exists(project.database_path):
                     os.remove(project.database_path)
                     logger.info(f"项目数据库文件已删除: {project.database_path}")

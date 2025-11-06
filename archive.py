@@ -120,9 +120,22 @@ class ArchiveManager:
                         project_image.archived_to_id = permanent_image.id
                         project_image.archived_time = datetime.now()
 
-                    # 每个图片成功后立即提交，保证原子性
-                    permanent_session.commit()
-                    project_session.commit()
+                    # 原子提交：先提交 permanent，如果成功再提交 project
+                    try:
+                        permanent_session.commit()
+                        try:
+                            project_session.commit()
+                        except Exception as project_error:
+                            # project 提交失败，删除已提交的 permanent 记录
+                            logger.error(f"项目库提交失败，回滚永久库记录: {project_error}")
+                            permanent_session.delete(permanent_image)
+                            permanent_session.commit()
+                            raise
+                    except Exception as commit_error:
+                        # 任一提交失败，回滚未提交的会话
+                        permanent_session.rollback()
+                        project_session.rollback()
+                        raise
 
                     success_count += 1
                     logger.info(f"归档成功: {project_image.path} -> {permanent_image.id}")
