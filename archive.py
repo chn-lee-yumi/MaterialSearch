@@ -124,6 +124,9 @@ class ArchiveManager:
                     logger.info(f"归档成功: {project_image.path} -> {permanent_image.id}")
 
                 except Exception as e:
+                    # 回滚会话以避免 PendingRollbackError
+                    permanent_session.rollback()
+                    project_session.rollback()
                     logger.error(f"归档图片失败 ID={image_id}: {e}")
                     errors.append(f"ID={image_id}: {str(e)}")
                     failed_count += 1
