@@ -191,7 +191,17 @@ def get_db_manager() -> ProjectDatabaseManager:
     """获取全局数据库管理器"""
     global db_manager
     if db_manager is None:
-        db_manager = ProjectDatabaseManager()
+        # 从配置文件读取路径，确保一致性
+        try:
+            from config import PERMANENT_DATABASE_PATH, METADATA_DATABASE_PATH, PROJECT_DATABASE_DIR
+            db_manager = ProjectDatabaseManager(
+                permanent_db_path=PERMANENT_DATABASE_PATH,
+                metadata_db_path=METADATA_DATABASE_PATH,
+                project_db_dir=PROJECT_DATABASE_DIR
+            )
+        except ImportError:
+            # 如果配置文件不可用，使用默认值
+            db_manager = ProjectDatabaseManager()
     return db_manager
 
 
