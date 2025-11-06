@@ -3,7 +3,7 @@ import logging
 import os
 from typing import Optional, Dict
 
-from sqlalchemy import asc, create_engine
+from sqlalchemy import asc, create_engine, text
 from sqlalchemy.orm import Session, sessionmaker
 
 from models import Image, Video, PexelsVideo, Project, ProjectImage, ProjectVideo, BaseModel, BaseModelProject
@@ -61,8 +61,8 @@ class ProjectDatabaseManager:
         )
         # 启用 WAL 模式
         with engine.connect() as conn:
-            conn.execute("PRAGMA journal_mode=WAL")
-            conn.execute("PRAGMA synchronous=NORMAL")
+            conn.execute(text("PRAGMA journal_mode=WAL"))
+            conn.execute(text("PRAGMA synchronous=NORMAL"))
             conn.commit()
         return engine
 

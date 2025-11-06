@@ -120,20 +120,20 @@ class ArchiveManager:
                         project_image.archived_to_id = permanent_image.id
                         project_image.archived_time = datetime.now()
 
+                    # 每个图片成功后立即提交，保证原子性
+                    permanent_session.commit()
+                    project_session.commit()
+
                     success_count += 1
                     logger.info(f"归档成功: {project_image.path} -> {permanent_image.id}")
 
                 except Exception as e:
-                    # 回滚会话以避免 PendingRollbackError
+                    # 回滚当前图片的失败操作
                     permanent_session.rollback()
                     project_session.rollback()
                     logger.error(f"归档图片失败 ID={image_id}: {e}")
                     errors.append(f"ID={image_id}: {str(e)}")
                     failed_count += 1
-
-            # 提交事务
-            permanent_session.commit()
-            project_session.commit()
 
             logger.info(f"归档完成: 成功 {success_count}, 失败 {failed_count}")
 
