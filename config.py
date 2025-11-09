@@ -1,5 +1,6 @@
 import importlib.util
 import os
+from pathlib import PureWindowsPath
 
 import torch
 
@@ -26,6 +27,39 @@ AUTO_SCAN = os.getenv('AUTO_SCAN', 'False').lower() == 'true'  # 是否自动扫
 AUTO_SCAN_START_TIME = tuple(map(int, os.getenv('AUTO_SCAN_START_TIME', '22:30').split(':')))  # 自动扫描开始时间
 AUTO_SCAN_END_TIME = tuple(map(int, os.getenv('AUTO_SCAN_END_TIME', '8:00').split(':')))  # 自动扫描结束时间
 AUTO_SAVE_INTERVAL = int(os.getenv('AUTO_SAVE_INTERVAL', 100))  # 扫描自动保存间隔，默认为每 100 个文件自动保存一次
+
+
+def _build_path_mappings():
+    """解析 PATH_MAPPINGS 环境变量，支持驱动器/映射盘符转换。
+    写法示例：PATH_MAPPINGS="Z:=\\Nas\\Share;Y:\\Projects=\\Nas\\Projects"""
+    raw = os.getenv('PATH_MAPPINGS', '').strip()
+    mappings = []
+    if not raw:
+        return mappings
+    for item in raw.split(';'):
+        item = item.strip()
+        if not item or '=' not in item:
+            continue
+        source_raw, target_raw = item.split('=', 1)
+        source_raw = source_raw.strip()
+        target_raw = target_raw.strip()
+        if not source_raw or not target_raw:
+            continue
+        source_norm = str(PureWindowsPath(source_raw))
+        source_std = source_norm.upper()
+        if not source_std.endswith('\\'):
+            source_std = f"{source_std}\\"
+            if not source_norm.endswith('\\'):
+                source_norm = f"{source_norm}\\"
+        mappings.append({
+            'source_norm': source_norm,
+            'source_std': source_std,
+            'target': str(PureWindowsPath(target_raw)) if target_raw.startswith('\\\\') else target_raw
+        })
+    return mappings
+
+
+PATH_MAPPINGS = _build_path_mappings()
 
 # *****模型配置*****
 # 更换模型需要删库重新扫描！否则搜索会报错。数据库路径见下面SQLALCHEMY_DATABASE_URL参数。模型越大，扫描速度越慢，且占用的内存和显存越大。

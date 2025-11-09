@@ -24,6 +24,31 @@
         -->
     </el-row>
 
+    <!-- 项目选择器 -->
+    <el-row justify="center" style="margin: 10px 0;">
+        <el-select v-model="currentLibrary" @change="handleLibraryChange" style="width: 300px; margin-right: 10px;">
+            <el-option label="永久素材库" value="permanent">
+                <template #default>
+                    <span><i class="el-icon-collection" style="margin-right: 5px;"></i>永久素材库</span>
+                </template>
+            </el-option>
+            <el-option v-for="project in projects" :key="project.id" :label="'项目: ' + project.name" :value="project.id">
+                <template #default>
+                    <span><i class="el-icon-folder" style="margin-right: 5px;"></i>项目: {{ project.name }}</span>
+                </template>
+            </el-option>
+            <el-option label="+ 新建项目" value="__new__">
+                <template #default>
+                    <span style="color: #409EFF;"><i class="el-icon-plus" style="margin-right: 5px;"></i>新建项目</span>
+                </template>
+            </el-option>
+        </el-select>
+        <el-button @click="showProjectManager = true">项目管理</el-button>
+        <el-button v-if="currentLibrary !== 'permanent'" type="primary" @click="showAddMaterialDialog = true">
+            <i class="el-icon-upload"></i> 添加素材
+        </el-button>
+    </el-row>
+
     <el-row justify="center">
         <el-tag size="large" effect="dark">{{ $t("scanStatus." + (isScanning ? "scanning" : "scanComplete")) }}</el-tag>
         <el-tag size="large" type="success" effect="dark">{{ $t("statusLabels.totalImages") }}: {{ status.total_images }}</el-tag>
@@ -96,6 +121,16 @@
                                                 format="YYYY-MM-DD HH:mm:ss" date-format="YYYY/MM/DD ddd" time-format="A hh:mm:ss"></el-date-picker>
                             </el-form-item>
                         </el-collapse-item>
+                        <!-- 搜索范围选择 -->
+                        <el-row style="margin-top: 10px;">
+                            <el-col :span="24">
+                                <el-divider content-position="left">搜索范围</el-divider>
+                                <el-radio-group v-model="searchScope">
+                                    <el-radio label="permanent">永久库</el-radio>
+                                    <el-radio label="project" v-if="currentLibrary !== 'permanent'">当前项目</el-radio>
+                                </el-radio-group>
+                            </el-col>
+                        </el-row>
                     </el-collapse>
                 </el-form>
             </el-tab-pane>
@@ -178,6 +213,16 @@
                                                 format="YYYY-MM-DD HH:mm:ss" date-format="YYYY/MM/DD ddd" time-format="A hh:mm:ss"></el-date-picker>
                             </el-form-item>
                         </el-collapse-item>
+                        <!-- 搜索范围选择 -->
+                        <el-row style="margin-top: 10px;">
+                            <el-col :span="24">
+                                <el-divider content-position="left">搜索范围</el-divider>
+                                <el-radio-group v-model="searchScope">
+                                    <el-radio label="permanent">永久库</el-radio>
+                                    <el-radio label="project" v-if="currentLibrary !== 'permanent'">当前项目</el-radio>
+                                </el-radio-group>
+                            </el-col>
+                        </el-row>
                     </el-collapse>
                 </el-form>
             </el-tab-pane>
@@ -273,13 +318,17 @@
                 <el-row>
                     <el-image loading="lazy"
                               v-if="form.search_type === 0 || form.search_type === 1 || form.search_type === 5 || form.search_type === 7"
-                              fit="contain" :src="file.url + '?thumbnail=1'" :preview-src-list="image_url_list" :initial-index="index"
+                              fit="contain" :src="file.url + '&thumbnail=1'" :preview-src-list="image_url_list" :initial-index="index"
                               :hide-on-click-modal="true"></el-image>
                     <video preload="metadata"
                            v-if="form.search_type === 2 || form.search_type === 3 || form.search_type === 6 || form.search_type === 8"
                            :src="file.url" controls></video>
                 </el-row>
                 <el-row justify="center">
+                    <!-- 来源标签 -->
+                    <el-tooltip content="来源库" placement="bottom" v-if="file.source">
+                        <el-tag size="default" :type="file.source === '永久库' ? 'primary' : 'success'" effect="dark">{{file.source}}</el-tag>
+                    </el-tooltip>
                     <el-tooltip :content="$t('fileResults.matchingProbability')" placement="bottom" v-if="file.score">
                         <el-tag size="default" effect="dark">{{(file.score * 100).toFixed(1)}}%</el-tag>
                     </el-tooltip>
@@ -329,6 +378,288 @@
         </el-row>
     </el-row>
 
+    <!-- 新建项目对话框 -->
+    <el-dialog v-model="createProjectDialogVisible" title="新建项目" width="500px">
+        <el-form :model="newProject" :rules="projectRules" ref="projectForm" label-width="100px">
+            <el-form-item label="项目名称" prop="name" required>
+                <el-input v-model="newProject.name" placeholder="请输入项目名称"></el-input>
+            </el-form-item>
+            <el-form-item label="客户名称">
+                <el-input v-model="newProject.client_name" placeholder="可选"></el-input>
+            </el-form-item>
+            <el-form-item label="项目描述">
+                <el-input v-model="newProject.description" type="textarea" :rows="3" placeholder="可选"></el-input>
+            </el-form-item>
+        </el-form>
+        <template #footer>
+            <el-button @click="createProjectDialogVisible = false">取消</el-button>
+            <el-button type="primary" @click="createProject" :loading="creatingProject">创建</el-button>
+        </template>
+    </el-dialog>
+
+    <el-dialog v-model="duplicateDialogVisible" title="检测到重复文件" width="600px" :close-on-click-modal="false">
+        <div v-if="pendingDuplicate">
+            <div class="duplicate-block">
+                <h4>新文件</h4>
+                <p class="duplicate-path">{{ pendingDuplicate.new_file?.path }}</p>
+                <div class="duplicate-preview">
+                    <img :src="pendingDuplicate.new_file?.thumbnail" alt="new" v-if="pendingDuplicate.new_file?.thumbnail">
+                    <span v-else class="thumb-placeholder"><i class="el-icon-picture-outline"></i></span>
+                    <div>
+                        <div>名称：{{ pendingDuplicate.new_file?.filename }}</div>
+                        <div>大小：{{ formatFileSize(pendingDuplicate.new_file?.size || 0) }}</div>
+                    </div>
+                </div>
+            </div>
+            <div class="duplicate-block">
+                <h4>已有文件</h4>
+                <p class="duplicate-path">{{ pendingDuplicate.existing_file?.path }}</p>
+                <div class="duplicate-preview">
+                    <img :src="pendingDuplicate.existing_file?.thumbnail" alt="existing" v-if="pendingDuplicate.existing_file?.thumbnail">
+                    <span v-else class="thumb-placeholder"><i class="el-icon-picture-outline"></i></span>
+                    <div>
+                        <div>名称：{{ pendingDuplicate.existing_file?.filename }}</div>
+                        <div>大小：{{ formatFileSize(pendingDuplicate.existing_file?.size || 0) }}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <template #footer>
+            <el-checkbox v-model="duplicateRememberChoice">应用到本次剩余文件</el-checkbox>
+            <span class="dialog-spacer"></span>
+            <el-button @click="submitDuplicateDecision('skip')" :loading="duplicateDecisionLoading">跳过</el-button>
+            <el-button type="danger" @click="submitDuplicateDecision('overwrite')" :loading="duplicateDecisionLoading">覆盖</el-button>
+        </template>
+    </el-dialog>
+
+    <!-- 项目管理对话框 -->
+    <el-dialog v-model="showProjectManager" title="项目管理" width="800px">
+        <el-table :data="projects" style="width: 100%" v-loading="loadingProjects">
+            <el-table-column prop="name" label="项目名称" width="180"></el-table-column>
+            <el-table-column prop="client_name" label="客户" width="150"></el-table-column>
+            <el-table-column label="状态" width="100">
+                <template #default="{ row }">
+                    <el-tag :type="row.status === 'active' ? 'success' : 'info'">
+                        {{ row.status === 'active' ? '进行中' : '已完成' }}
+                    </el-tag>
+                </template>
+            </el-table-column>
+            <el-table-column label="素材数量" width="120">
+                <template #default="{ row }">
+                    <el-tag type="info">{{ row.stats?.image_count || 0 }} 张图</el-tag>
+                </template>
+            </el-table-column>
+            <el-table-column label="操作" width="150">
+                <template #default="{ row }">
+                    <el-button size="small" @click="switchToProject(row.id)">切换</el-button>
+                    <el-popconfirm
+                        title="确定要删除这个项目吗？"
+                        @confirm="deleteProject(row.id)">
+                        <template #reference>
+                            <el-button size="small" type="danger">删除</el-button>
+                        </template>
+                    </el-popconfirm>
+                </template>
+            </el-table-column>
+        </el-table>
+    </el-dialog>
+
+    <!-- 扫描对话框（项目库专用） -->
+    <el-dialog v-model="scanDialogVisible" title="扫描到项目" width="600px">
+        <el-alert title="项目库扫描需要指定路径，支持多个路径" type="info" :closable="false" style="margin-bottom: 15px;"></el-alert>
+        <el-form label-width="80px">
+            <el-form-item label="目标项目">
+                <el-tag type="success">{{ currentLibrary === 'permanent' ? '永久库' : projects.find(p => p.id === currentLibrary)?.name || '未知项目' }}</el-tag>
+            </el-form-item>
+            <el-form-item label="扫描路径" required>
+                <el-input v-model="newScanPath" placeholder="输入文件夹路径，例如: F:/项目/output" style="margin-bottom: 10px;">
+                    <template #append>
+                        <el-button @click="addScanPath" type="primary">添加</el-button>
+                    </template>
+                </el-input>
+                <el-table :data="scanPaths" style="width: 100%;" height="200" v-if="scanPaths.length > 0">
+                    <el-table-column prop="path" label="路径列表">
+                        <template #default="{ row, $index }">
+                            <span style="font-size: 12px;">{{ row }}</span>
+                            <el-button size="small" type="text" style="float: right; color: #f56c6c;" @click="removeScanPath($index)">删除</el-button>
+                        </template>
+                    </el-table-column>
+                </el-table>
+                <el-empty description="暂无路径" :image-size="60" v-else></el-empty>
+                <el-button size="small" @click="clearScanPaths" v-if="scanPaths.length > 0" style="margin-top: 10px;" type="info">清空所有</el-button>
+            </el-form-item>
+        </el-form>
+        <template #footer>
+            <el-button @click="scanDialogVisible = false">取消</el-button>
+            <el-button type="primary" @click="startScanFromDialog" :disabled="scanPaths.length === 0" :loading="isScanning">开始扫描</el-button>
+        </template>
+    </el-dialog>
+
+    <!-- 添加素材对话框 -->
+    <el-dialog v-model="showAddMaterialDialog" :title="'为项目添加素材：' + (projects.find(p => p.id === currentLibrary)?.name || '')" width="90%" top="5vh">
+        <el-steps :active="addMaterialStep" align-center style="margin-bottom: 20px;">
+            <el-step title="输入路径" description="粘贴文件/文件夹路径"></el-step>
+            <el-step title="预览文件" description="查看并筛选文件"></el-step>
+            <el-step title="索引中" description="正在处理文件"></el-step>
+            <el-step title="完成" description="查看索引结果"></el-step>
+        </el-steps>
+
+        <!-- 步骤1: 路径输入 -->
+        <div v-show="addMaterialStep === 0">
+            <el-alert title="使用说明：在资源管理器中选择文件/文件夹,按 Shift+右键 → 复制为路径,然后粘贴到下方" type="info" :closable="false" style="margin-bottom: 15px;"></el-alert>
+            <el-input
+                type="textarea"
+                v-model="materialPathInput"
+                placeholder="粘贴文件或文件夹路径(支持多行)"
+                :rows="6"
+                @paste="handlePathPaste">
+            </el-input>
+            <div class="add-material-actions">
+                <div>
+                    <el-button @click="handlePreviewFiles" type="primary" :loading="loadingPreview">
+                        <i class="el-icon-view"></i> 预览文件
+                    </el-button>
+                    <el-button @click="materialPathInput = ''">清空</el-button>
+                </div>
+                <el-dropdown v-if="historyPaths.length" trigger="click" @command="applyHistoryPath">
+                    <span class="el-dropdown-link">
+                        历史路径<i class="el-icon-arrow-down el-icon--right"></i>
+                    </span>
+                    <template #dropdown>
+                        <el-dropdown-menu class="history-dropdown">
+                            <el-dropdown-item v-for="item in historyPaths" :key="item.path" :command="item.path">
+                                <div class="history-entry">
+                                    <span class="history-path">{{ item.path }}</span>
+                                    <span class="history-time">{{ item.timeLabel }}</span>
+                                </div>
+                            </el-dropdown-item>
+                        </el-dropdown-menu>
+                    </template>
+                </el-dropdown>
+            </div>
+        </div>
+
+        <!-- 步骤2: 文件预览列表 -->
+        <div v-show="addMaterialStep === 1">
+            <div style="margin-bottom: 10px;">
+                <el-button-group>
+                    <el-button size="small" @click="selectAllFiles">全选</el-button>
+                    <el-button size="small" @click="invertSelection">反选</el-button>
+                    <el-button size="small" @click="filterImageOnly">仅图片</el-button>
+                    <el-button size="small" @click="filterVideoOnly">仅视频</el-button>
+                    <el-button size="small" @click="showAllFiles">显示全部</el-button>
+                </el-button-group>
+                <span style="margin-left: 20px; color: #606266;">
+                    已选择 <strong>{{ selectedFilesCount }}</strong> 个文件，
+                    总大小 <strong>{{ formatFileSize(selectedFilesSize) }}</strong>
+                </span>
+            </div>
+
+                <el-table
+                ref="fileTable"
+                :data="filteredFiles"
+                style="width: 100%"
+                height="400"
+                @selection-change="handleSelectionChange">
+                <el-table-column type="selection" width="55"></el-table-column>
+                <el-table-column label="类型" width="60">
+                    <template #default="{ row }">
+                        <i :class="row.type === 'image' ? 'el-icon-picture' : 'el-icon-video-camera'"
+                           :style="{ color: row.type === 'image' ? '#409EFF' : '#67C23A', fontSize: '20px' }"></i>
+                    </template>
+                </el-table-column>
+                <el-table-column label="缩略图" width="80">
+                    <template #default="{ row }">
+                        <img v-if="row.thumbnailUrl" :src="row.thumbnailUrl" style="width: 60px; height: 60px; object-fit: cover;">
+                        <div v-else style="width: 60px; height: 60px; background: #f5f7fa; display: flex; align-items: center; justify-content: center;">
+                            <i class="el-icon-picture-outline" style="font-size: 20px; color: #909399;"></i>
+                        </div>
+                    </template>
+                </el-table-column>
+                <el-table-column label="文件名" min-width="200">
+                    <template #default="{ row }">
+                        <span :style="{ color: row.is_indexed ? '#C0C4CC' : '#303133' }">{{ row.filename }}</span>
+                        <el-tag v-if="row.is_indexed" size="small" type="info" style="margin-left: 5px;">已索引</el-tag>
+                    </template>
+                </el-table-column>
+                <el-table-column label="大小" width="100">
+                    <template #default="{ row }">
+                        {{ formatFileSize(row.size) }}
+                    </template>
+                </el-table-column>
+                <el-table-column label="路径" min-width="250" show-overflow-tooltip>
+                    <template #default="{ row }">
+                        <span style="font-size: 12px; color: #909399;">{{ row.path }}</span>
+                    </template>
+                </el-table-column>
+            </el-table>
+
+            <div style="margin-top: 15px;">
+                <el-button @click="addMaterialStep = 0">上一步</el-button>
+                <el-button type="primary" @click="startBatchIndex" :disabled="selectedFiles.length === 0">
+                    开始索引 ({{ selectedFiles.length }} 个文件)
+                </el-button>
+            </div>
+        </div>
+
+        <!-- 步骤3: 索引进度 -->
+        <div v-show="addMaterialStep === 2">
+            <div style="text-align: center; padding: 40px 20px;">
+                <el-progress
+                    type="circle"
+                    :percentage="indexProgress"
+                    :width="150"
+                    :status="indexStatus === 'success' ? 'success' : (indexStatus === 'failed' ? 'exception' : undefined)">
+                </el-progress>
+                <div style="margin-top: 20px; font-size: 16px; color: #606266;">
+                    正在索引: <strong>{{ currentIndexingFile }}</strong>
+                </div>
+                <div style="margin-top: 10px; color: #909399;">
+                    进度: {{ indexTaskInfo.processed || 0 }} / {{ indexTaskInfo.total || 0 }}
+                </div>
+                <div v-if="indexTaskInfo.remain_time" style="margin-top: 5px; color: #909399;">
+                    预计剩余时间: {{ formatTime(indexTaskInfo.remain_time) }}
+                </div>
+                <div style="margin-top: 30px;">
+                    <el-button type="danger" @click="cancelBatchIndex" :loading="cancelling">取消索引</el-button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 步骤4: 完成报告 -->
+        <div v-show="addMaterialStep === 3">
+            <el-result
+                :icon="indexTaskInfo.failed?.length > 0 ? 'warning' : 'success'"
+                :title="indexTaskInfo.failed?.length > 0 ? '索引完成(部分失败)' : '索引完成'"
+                :sub-title="'成功: ' + (indexTaskInfo.success || 0) + ' 个 | 失败: ' + (indexTaskInfo.failed?.length || 0) + ' 个 | 重复: ' + (indexTaskInfo.duplicates?.length || 0) + ' 个'">
+                <template #extra>
+                    <el-button type="primary" @click="closeAddMaterialDialog">关闭</el-button>
+                    <el-button @click="showIndexDetails = !showIndexDetails">
+                        {{ showIndexDetails ? '隐藏' : '查看' }}详情
+                    </el-button>
+                </template>
+            </el-result>
+
+            <div v-if="showIndexDetails" style="margin-top: 20px;">
+                <el-collapse v-model="activeCollapseNames">
+                    <el-collapse-item title="失败文件" name="failed" v-if="indexTaskInfo.failed?.length > 0">
+                        <el-table :data="indexTaskInfo.failed" style="width: 100%">
+                            <el-table-column prop="path" label="文件路径" show-overflow-tooltip></el-table-column>
+                            <el-table-column prop="error" label="错误原因" width="200"></el-table-column>
+                        </el-table>
+                    </el-collapse-item>
+                    <el-collapse-item title="重复文件" name="duplicates" v-if="indexTaskInfo.duplicates?.length > 0">
+                        <el-table :data="indexTaskInfo.duplicates" style="width: 100%">
+                            <el-table-column prop="path" label="新文件路径" show-overflow-tooltip></el-table-column>
+                            <el-table-column prop="existing_path" label="已存在路径" show-overflow-tooltip></el-table-column>
+                            <el-table-column prop="action" label="处理方式" width="100"></el-table-column>
+                        </el-table>
+                    </el-collapse-item>
+                </el-collapse>
+            </div>
+        </div>
+    </el-dialog>
+
     <el-footer style="text-align: center; color: gray; padding: 10px 0; font-size: 14px;">
         <span style="vertical-align: middle;">{{ $t('footer.description1') }}</span>
         <el-link style="vertical-align: middle;" href="https://github.com/chn-lee-yumi/MaterialSearch/" type="info" target="_blank">
@@ -363,6 +694,8 @@ const app = Vue.createApp({
                 path: '',
                 start_time: 0,
                 end_time: 0,
+                library_type: 'permanent',
+                project_id: null
             },
             time_filter: null,
             files: [],
@@ -371,6 +704,69 @@ const app = Vue.createApp({
             timer: null,
             imageSearchUrl: null,
             activeCollapse: [],
+            currentLibrary: localStorage.getItem('currentLibrary') || 'permanent',
+            projects: [],
+            createProjectDialogVisible: false,
+            creatingProject: false,
+            newProject: {
+                name: '',
+                client_name: '',
+                description: ''
+            },
+            projectRules: {
+                name: [{required: true, message: '请输入项目名称', trigger: 'blur'}]
+            },
+            showProjectManager: false,
+            loadingProjects: false,
+            searchScope: 'permanent',
+            scanDialogVisible: false,
+            scanTarget: 'permanent',
+            scanPaths: [],
+            newScanPath: '',
+            // 添加素材对话框相关
+            showAddMaterialDialog: false,
+            addMaterialStep: 0,
+            materialPathInput: '',
+            previewFiles: [],
+            selectedFiles: [],
+            loadingPreview: false,
+            fileFilter: 'all',
+            indexTaskId: null,
+            indexTaskInfo: {},
+            indexProgress: 0,
+            indexStatus: '',
+            currentIndexingFile: '',
+            indexingInterval: null,
+            cancelling: false,
+            showIndexDetails: false,
+            activeCollapseNames: [],
+            historyPaths: [],
+            historyStoreKey: 'materialPathHistory',
+            thumbnailQueue: [],
+            thumbnailTimer: null,
+            thumbnailScrollHandler: null,
+            duplicateDialogVisible: false,
+            pendingDuplicate: null,
+            duplicateDecisionLoading: false,
+            duplicateRememberChoice: false
+        }
+    },
+    computed: {
+        selectedFilesCount() {
+            return this.selectedFiles.length;
+        },
+        selectedFilesSize() {
+            return this.selectedFiles.reduce((sum, file) => sum + file.size, 0);
+        },
+        filteredFiles() {
+            if (this.fileFilter === 'all') {
+                return this.previewFiles;
+            } else if (this.fileFilter === 'image') {
+                return this.previewFiles.filter(f => f.type === 'image');
+            } else if (this.fileFilter === 'video') {
+                return this.previewFiles.filter(f => f.type === 'video');
+            }
+            return this.previewFiles;
         }
     },
     watch: {
@@ -379,13 +775,20 @@ const app = Vue.createApp({
         'form.positive_threshold'(val) { localStorage.setItem('form.positive_threshold', val); },
         'form.negative_threshold'(val) { localStorage.setItem('form.negative_threshold', val); },
         'form.image_threshold'(val) { localStorage.setItem('form.image_threshold', val); },
+        'currentLibrary'(val) {
+            localStorage.setItem('currentLibrary', val);
+            this.refreshRecentPaths();
+        },
     },
     mounted: function() {
         fetchServerTimeAndSetOffset();  // 页面加载时获取服务器时间
         this.loadData();
+        this.loadProjects();
         this.timer = setInterval(this.loadData, 5000);
         // 加载保存的表单设置
         this.currentTab = localStorage.getItem('currentTab') || '0';
+        this.currentLibrary = localStorage.getItem('currentLibrary') || 'permanent';
+        this.refreshRecentPaths();
         const keys = ['form.top_n', 'form.positive_threshold',  'form.negative_threshold', 'form.image_threshold'];
         keys.forEach(k => {
             const val = localStorage.getItem(k);
@@ -430,6 +833,64 @@ const app = Vue.createApp({
             var hashPart = lastPart.split('#')[0];
             window.open(`/api/download_video_clip/${hashPart}/${start_time}/${end_time}`, "_blank");
         },
+        loadHistoryStore() {
+            try {
+                return JSON.parse(localStorage.getItem(this.historyStoreKey) || '[]');
+            } catch (e) {
+                console.warn('无法解析历史路径', e);
+                return [];
+            }
+        },
+        saveHistoryStore(store) {
+            localStorage.setItem(this.historyStoreKey, JSON.stringify(store));
+        },
+        refreshRecentPaths() {
+            const store = this.loadHistoryStore();
+            const entry = store.find(item => item.project === this.currentLibrary);
+            const paths = entry ? entry.paths : [];
+            this.historyPaths = paths.map(item => ({
+                path: item.path,
+                updatedAt: item.updatedAt,
+                timeLabel: this.formatHistoryTime(item.updatedAt)
+            }));
+        },
+        persistRecentPaths(paths) {
+            if (!paths || paths.length === 0) return;
+            const store = this.loadHistoryStore();
+            const project = this.currentLibrary;
+            let entry = store.find(item => item.project === project);
+            if (!entry) {
+                entry = { project, paths: [] };
+                store.push(entry);
+            }
+            const now = Date.now();
+            paths.forEach(p => {
+                const normalized = p.trim();
+                if (!normalized) return;
+                entry.paths = entry.paths.filter(item => item.path !== normalized);
+                entry.paths.unshift({ path: normalized, updatedAt: now });
+            });
+            entry.paths = entry.paths.slice(0, 10);
+            this.saveHistoryStore(store);
+            this.refreshRecentPaths();
+        },
+        applyHistoryPath(path) {
+            if (!path) return;
+            var lines = this.materialPathInput ? this.materialPathInput.split('\n').map(line => line.trim()).filter(Boolean) : [];
+            if (!lines.includes(path)) {
+                lines.push(path);
+            }
+            this.materialPathInput = lines.join('\n');
+        },
+        formatHistoryTime(timestamp) {
+            if (!timestamp) return '';
+            var date = new Date(timestamp);
+            var mm = (date.getMonth() + 1).toString().padStart(2, '0');
+            var dd = date.getDate().toString().padStart(2, '0');
+            var hh = date.getHours().toString().padStart(2, '0');
+            var mi = date.getMinutes().toString().padStart(2, '0');
+            return `${mm}-${dd} ${hh}:${mi}`;
+        },
         loadData() {
             var that = this;
             axios.get('api/status')
@@ -447,15 +908,58 @@ const app = Vue.createApp({
         },
         scan() {
             var that = this;
-            axios.get('api/scan')
+
+            // 如果是项目库，显示路径输入对话框
+            if (that.currentLibrary !== 'permanent') {
+                that.scanDialogVisible = true;
+                that.scanTarget = that.currentLibrary;
+                return;
+            }
+
+            // 永久库保持简单确认
+            ElementPlus.ElMessageBox.confirm('请选择扫描目标', '扫描确认', {
+                confirmButtonText: '扫描到永久库',
+                cancelButtonText: '取消',
+                type: 'info',
+                showCancelButton: true
+            }).then(() => {
+                axios.get('api/scan?target=permanent')
+                    .then(function(response) {
+                        console.log(response);
+                        that.loadData();
+                        ElementPlus.ElMessage.success('已开始扫描到永久库');
+                    })
+                    .catch(function(error) {
+                        console.log(error);
+                        ElementPlus.ElMessage.error(error.response.data);
+                    });
+            });
+        },
+        startScanFromDialog() {
+            var that = this;
+
+            if (that.scanPaths.length === 0) {
+                ElementPlus.ElMessage.warning('请至少添加一个扫描路径');
+                return;
+            }
+
+            // 构建请求URL
+            var url = `api/scan?target=${that.scanTarget}`;
+            that.scanPaths.forEach(function(path) {
+                url += `&path=${encodeURIComponent(path)}`;
+            });
+
+            axios.get(url)
                 .then(function(response) {
                     console.log(response);
                     that.loadData();
+                    that.scanDialogVisible = false;
+                    ElementPlus.ElMessage.success(response.data.message);
                 })
                 .catch(function(error) {
                     console.log(error);
                     ElementPlus.ElMessage.error(error.response.data);
-                })
+                });
         },
         search(search_type) {
             var that = this;
@@ -484,6 +988,11 @@ const app = Vue.createApp({
                 that.form.start_time = null;
                 that.form.end_time = null;
             }
+
+            // 设置搜索范围
+            that.form.library_type = that.searchScope;
+            that.form.project_id = (that.searchScope === 'project') ? that.currentLibrary : null;
+
             axios.post('/api/match', that.form)
                 .then(function(response) {
                     console.log(response);
@@ -611,6 +1120,409 @@ const app = Vue.createApp({
                 document.body.removeChild(textarea);
             }
         },
+        handleLibraryChange(value) {
+            if (value === '__new__') {
+                this.createProjectDialogVisible = true;
+                this.$nextTick(() => {
+                    this.currentLibrary = this.currentLibrary || 'permanent';
+                });
+            } else {
+                this.currentLibrary = value;
+                // 自动更新搜索范围：永久库时为permanent，项目库时为project
+                if (this.currentLibrary === 'permanent') {
+                    this.searchScope = 'permanent';
+                } else {
+                    this.searchScope = 'project';
+                }
+                ElementPlus.ElMessage.success(`已切换到 ${value === 'permanent' ? '永久素材库' : '项目'}`);
+            }
+        },
+        async loadProjects() {
+            var that = this;
+            try {
+                const response = await axios.get('/api/projects');
+                that.projects = response.data.data || [];
+            } catch (error) {
+                console.error('加载项目列表失败:', error);
+                ElementPlus.ElMessage.error('加载项目列表失败');
+            }
+        },
+        async createProject() {
+            var that = this;
+            await that.$refs.projectForm.validate(async(valid) => {
+                if (valid) {
+                    that.creatingProject = true;
+                    try {
+                        const response = await axios.post('/api/projects', {
+                            name: that.newProject.name,
+                            client_name: that.newProject.client_name,
+                            description: that.newProject.description,
+                            status: 'active'
+                        });
+                        ElementPlus.ElMessage.success('项目创建成功');
+                        that.createProjectDialogVisible = false;
+                        that.newProject = {name: '', client_name: '', description: ''};
+                        await that.loadProjects();
+                        that.currentLibrary = response.data.id;
+                    } catch (error) {
+                        console.error('创建项目失败:', error);
+                        ElementPlus.ElMessage.error(error.response?.data?.error || '创建项目失败');
+                    } finally {
+                        that.creatingProject = false;
+                    }
+                }
+            });
+        },
+        switchToProject(projectId) {
+            this.currentLibrary = projectId;
+            this.showProjectManager = false;
+            ElementPlus.ElMessage.success('已切换到项目');
+        },
+        async deleteProject(projectId) {
+            var that = this;
+            try {
+                await axios.delete(`/api/projects/${projectId}`);
+                ElementPlus.ElMessage.success('项目已删除');
+                await that.loadProjects();
+                if (that.currentLibrary === projectId) {
+                    that.currentLibrary = 'permanent';
+                    if (that.searchScope === 'project') {
+                        that.searchScope = 'permanent';
+                    }
+                }
+            } catch (error) {
+                console.error('删除项目失败:', error);
+                ElementPlus.ElMessage.error(error.response?.data?.error || '删除项目失败');
+            }
+        },
+        addScanPath() {
+            var that = this;
+            var path = that.newScanPath.trim();
+            if (!path) {
+                ElementPlus.ElMessage.warning('请输入有效路径');
+                return;
+            }
+            if (that.scanPaths.includes(path)) {
+                ElementPlus.ElMessage.warning('路径已存在');
+                return;
+            }
+            that.scanPaths.push(path);
+            that.newScanPath = '';
+            ElementPlus.ElMessage.success('路径已添加');
+        },
+        removeScanPath(index) {
+            this.scanPaths.splice(index, 1);
+            ElementPlus.ElMessage.info('路径已删除');
+        },
+        clearScanPaths() {
+            this.scanPaths = [];
+            ElementPlus.ElMessage.info('已清空所有路径');
+        },
+        // ========== 添加素材对话框方法 ==========
+        handlePathPaste(event) {
+            // 粘贴事件处理 - 自动解析路径
+            setTimeout(() => {
+                var input = this.materialPathInput;
+                // 去除引号并按行分割
+                var lines = input.split('\n').map(line => line.trim().replace(/^["']|["']$/g, '')).filter(line => line);
+                this.materialPathInput = lines.join('\n');
+            }, 10);
+        },
+                async handlePreviewFiles() {
+            var that = this;
+            var input = that.materialPathInput.trim();
+            if (!input) {
+                ElementPlus.ElMessage.warning('请输入文件或文件夹路径');
+                return;
+            }
+
+            that.loadingPreview = true;
+            var paths = input.split('\n').map(line => line.trim()).filter(line => line);
+            that.detachThumbnailHelpers();
+
+            try {
+                const response = await axios.post('/api/preview_files', {
+                    paths: paths,
+                    target: that.currentLibrary
+                });
+                that.persistRecentPaths(paths);
+                that.previewFiles = (response.data || []).map(item => ({
+                    ...item,
+                    thumbnailUrl: item.thumbnailUrl || null
+                }));
+                that.selectedFiles = that.previewFiles.filter(f => !f.is_indexed);
+                that.fileFilter = 'all';
+                that.addMaterialStep = 1;
+                ElementPlus.ElMessage.success(`已扫描到 ${response.data.length} 个文件`);
+
+                that.$nextTick(() => {
+                    that.$refs.fileTable?.clearSelection();
+                    that.previewFiles.forEach(row => {
+                        that.$refs.fileTable?.toggleRowSelection(row, !row.is_indexed);
+                    });
+                    that.initThumbnailLoader();
+                });
+            } catch (error) {
+                console.error('预览文件失败:', error);
+                ElementPlus.ElMessage.error(error.response?.data?.error || '预览文件失败');
+            } finally {
+                that.loadingPreview = false;
+            }
+        },        selectAllFiles() {
+            this.$refs.fileTable?.clearSelection();
+            this.filteredFiles.forEach(row => {
+                this.$refs.fileTable?.toggleRowSelection(row, true);
+            });
+        },
+        invertSelection() {
+            var currentSelected = new Set(this.selectedFiles.map(f => f.path));
+            this.filteredFiles.forEach(row => {
+                var shouldSelect = !currentSelected.has(row.path);
+                this.$refs.fileTable?.toggleRowSelection(row, shouldSelect);
+            });
+        },        filterImageOnly() {
+            this.fileFilter = 'image';
+        },
+        filterVideoOnly() {
+            this.fileFilter = 'video';
+        },
+        showAllFiles() {
+            this.fileFilter = 'all';
+        },
+        handleSelectionChange(selection) {
+            this.selectedFiles = selection;
+        },
+        async startBatchIndex() {
+            var that = this;
+            if (that.selectedFiles.length === 0) {
+                ElementPlus.ElMessage.warning('请选择要索引的文件');
+                return;
+            }
+
+            try {
+                that.duplicateDialogVisible = false;
+                that.pendingDuplicate = null;
+                that.duplicateRememberChoice = false;
+                const response = await axios.post('/api/batch_index', {
+                    files: that.selectedFiles,
+                    target: that.currentLibrary,
+                    duplicate_strategy: 'ask'
+                });
+
+                that.indexTaskId = response.data.task_id;
+                that.addMaterialStep = 2;
+                that.indexProgress = 0;
+                that.indexStatus = 'running';
+                that.currentIndexingFile = '准备中...';
+
+                // 开始轮询进度
+                that.pollIndexProgress();
+            } catch (error) {
+                console.error('启动批量索引失败:', error);
+                ElementPlus.ElMessage.error(error.response?.data?.error || '启动批量索引失败');
+            }
+        },
+        async pollIndexProgress() {
+            var that = this;
+            if (!that.indexTaskId) return;
+
+            that.indexingInterval = setInterval(async () => {
+                try {
+                    const response = await axios.get(`/api/batch_index/${that.indexTaskId}/status`);
+                    that.indexTaskInfo = response.data;
+                    that.indexProgress = Math.round(((response.data.progress || 0) * 100));
+                    that.currentIndexingFile = response.data.current_file || '处理中...';
+                    that.indexStatus = response.data.status;
+
+                    if (response.data.status === 'waiting_duplicate' && response.data.pending_duplicate) {
+                        that.pendingDuplicate = response.data.pending_duplicate;
+                        that.duplicateDialogVisible = true;
+                        that.duplicateDecisionLoading = false;
+                    } else if (that.duplicateDialogVisible && response.data.status !== 'waiting_duplicate') {
+                        that.duplicateDialogVisible = false;
+                        that.pendingDuplicate = null;
+                        that.duplicateRememberChoice = false;
+                    }
+
+                    if (['completed', 'failed', 'cancelled'].includes(response.data.status)) {
+                        clearInterval(that.indexingInterval);
+                        that.indexingInterval = null;
+                        that.addMaterialStep = 3;
+
+                        await that.loadProjects();
+                        await that.loadData();
+                    }
+                } catch (error) {
+                    console.error('查询索引进度失败:', error);
+                    clearInterval(that.indexingInterval);
+                    that.indexingInterval = null;
+                    ElementPlus.ElMessage.error('查询索引进度失败');
+                }
+            }, 500);
+        },
+        async cancelBatchIndex() {
+            var that = this;
+            if (!that.indexTaskId) return;
+
+            try {
+                that.cancelling = true;
+                await axios.delete(`/api/batch_index/${that.indexTaskId}`);
+                ElementPlus.ElMessage.info('索引任务已取消');
+                that.duplicateDialogVisible = false;
+                that.pendingDuplicate = null;
+                that.duplicateRememberChoice = false;
+
+                if (that.indexingInterval) {
+                    clearInterval(that.indexingInterval);
+                    that.indexingInterval = null;
+                }
+
+                that.addMaterialStep = 3;
+                that.indexStatus = 'cancelled';
+            } catch (error) {
+                console.error('取消索引失败:', error);
+                ElementPlus.ElMessage.error(error.response?.data?.error || '取消索引失败');
+            } finally {
+                that.cancelling = false;
+            }
+        },
+        async submitDuplicateDecision(action) {
+            if (!this.indexTaskId || !action) return;
+            this.duplicateDecisionLoading = true;
+            try {
+                await axios.post(`/api/batch_index/${this.indexTaskId}/decision`, {
+                    action: action,
+                    apply_to_all: this.duplicateRememberChoice
+                });
+                ElementPlus.ElMessage.success(action === 'skip' ? '已跳过当前文件' : '已覆盖当前文件');
+                this.duplicateDialogVisible = false;
+                this.pendingDuplicate = null;
+                this.duplicateRememberChoice = false;
+            } catch (error) {
+                console.error('提交决策失败:', error);
+                ElementPlus.ElMessage.error(error.response?.data?.error || '提交决策失败');
+            } finally {
+                this.duplicateDecisionLoading = false;
+            }
+        },        closeAddMaterialDialog() {
+            var that = this;
+            if (that.indexingInterval) {
+                clearInterval(that.indexingInterval);
+                that.indexingInterval = null;
+            }
+            that.detachThumbnailHelpers();
+
+            // 重置状态
+            that.showAddMaterialDialog = false;
+            that.addMaterialStep = 0;
+            that.materialPathInput = '';
+            that.previewFiles = [];
+            that.selectedFiles = [];
+            that.fileFilter = 'all';
+            that.indexTaskId = null;
+            that.indexTaskInfo = {};
+            that.indexProgress = 0;
+            that.indexStatus = '';
+            that.currentIndexingFile = '';
+            that.cancelling = false;
+            that.showIndexDetails = false;
+            that.activeCollapseNames = [];
+        },
+        initThumbnailLoader() {
+            var that = this;
+            if (!that.previewFiles.length) return;
+            that.detachThumbnailHelpers();
+            var immediate = that.previewFiles.slice(0, 20);
+            immediate.forEach(file => {
+                if (!file.thumbnailUrl) {
+                    that.$set(file, 'thumbnailUrl', `/api/thumbnail?path=${encodeURIComponent(file.path)}&size=128`);
+                }
+            });
+            that.thumbnailQueue = that.previewFiles.slice(20);
+            that.scheduleThumbnailLoading();
+            that.$nextTick(() => {
+                const body = that.$refs.fileTable?.$el?.querySelector('.el-table__body-wrapper');
+                if (!body) return;
+                if (!that.thumbnailScrollHandler) {
+                    that.thumbnailScrollHandler = that.handleThumbnailScroll.bind(that);
+                }
+                body.addEventListener('scroll', that.thumbnailScrollHandler);
+            });
+        },
+        scheduleThumbnailLoading() {
+            if (!this.thumbnailQueue.length || this.thumbnailTimer) return;
+            const batch = this.thumbnailQueue.splice(0, 5);
+            batch.forEach(file => {
+                if (!file.thumbnailUrl) {
+                    this.$set(file, 'thumbnailUrl', `/api/thumbnail?path=${encodeURIComponent(file.path)}&size=128`);
+                }
+            });
+            if (this.thumbnailQueue.length) {
+                this.thumbnailTimer = setTimeout(() => {
+                    this.thumbnailTimer = null;
+                    this.scheduleThumbnailLoading();
+                }, 400);
+            }
+        },
+        handleThumbnailScroll() {
+            const body = this.$refs.fileTable?.$el?.querySelector('.el-table__body-wrapper');
+            if (!body || !this.thumbnailQueue.length) return;
+            if (body.scrollTop + body.clientHeight >= body.scrollHeight - 120) {
+                if (!this.thumbnailTimer) {
+                    this.scheduleThumbnailLoading();
+                }
+            }
+        },
+        closeAddMaterialDialog() {
+            var that = this;
+            if (that.indexingInterval) {
+                clearInterval(that.indexingInterval);
+                that.indexingInterval = null;
+            }
+            that.detachThumbnailHelpers();
+
+            that.showAddMaterialDialog = false;
+            that.addMaterialStep = 0;
+            that.materialPathInput = '';
+            that.previewFiles = [];
+            that.selectedFiles = [];
+            that.fileFilter = 'all';
+            that.indexTaskId = null;
+            that.indexTaskInfo = {};
+            that.indexProgress = 0;
+            that.indexStatus = '';
+            that.currentIndexingFile = '';
+            that.cancelling = false;
+            that.showIndexDetails = false;
+            that.activeCollapseNames = [];
+            that.duplicateDialogVisible = false;
+            that.pendingDuplicate = null;
+            that.duplicateRememberChoice = false;
+        },
+        detachThumbnailHelpers() {
+            if (this.thumbnailTimer) {
+                clearTimeout(this.thumbnailTimer);
+                this.thumbnailTimer = null;
+            }
+            const body = this.$refs.fileTable?.$el?.querySelector('.el-table__body-wrapper');
+            if (body && this.thumbnailScrollHandler) {
+                body.removeEventListener('scroll', this.thumbnailScrollHandler);
+            }
+            this.thumbnailScrollHandler = null;
+            this.thumbnailQueue = [];
+        },        formatFileSize(bytes) {
+            if (bytes === 0) return '0 B';
+            const k = 1024;
+            const sizes = ['B', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return (bytes / Math.pow(k, i)).toFixed(2) + ' ' + sizes[i];
+        },
+        formatDuration(seconds) {
+            if (seconds < 60) return `${seconds}秒`;
+            const minutes = Math.floor(seconds / 60);
+            const secs = seconds % 60;
+            return `${minutes}分${secs}秒`;
+        }
     },
     setup() {
         const upload = Vue.ref();
@@ -669,6 +1581,67 @@ const app = Vue.createApp({
     max-height: 240px;
     margin-bottom: 2px;
 }
+.add-material-actions {
+    margin-top: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+.history-dropdown {
+    max-height: 240px;
+    overflow-y: auto;
+    width: 320px;
+}
+.history-entry {
+    display: flex;
+    flex-direction: column;
+}
+.history-path {
+    font-size: 13px;
+    color: #303133;
+}
+.history-time {
+    font-size: 11px;
+    color: #909399;
+}
+.duplicate-block {
+    margin-bottom: 16px;
+}
+.duplicate-block h4 {
+    margin: 0 0 4px 0;
+    font-size: 14px;
+    color: #303133;
+}
+.duplicate-path {
+    font-size: 12px;
+    color: #909399;
+    word-break: break-all;
+}
+.duplicate-preview {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-top: 8px;
+}
+.duplicate-preview img,
+.thumb-placeholder {
+    width: 64px;
+    height: 64px;
+    border-radius: 4px;
+    object-fit: cover;
+    background: #f5f7fa;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.thumb-placeholder i {
+    font-size: 20px;
+    color: #909399;
+}
+.dialog-spacer {
+    flex: 1;
+}
 video {
     width: 100%;
     max-height: 240px;
@@ -676,3 +1649,13 @@ video {
 }
 </style>
 </html>
+
+
+
+
+
+
+
+
+
+
