@@ -2,6 +2,7 @@
 <html>
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Material Search Engine</title>
     <link rel="stylesheet" href="static/assets/index.css"/>
     <script src="static/assets/vue.global.prod.js"></script>
@@ -66,7 +67,7 @@
                             <el-input :placeholder="$t('formPlaceholders.positiveSearch')" v-model="form.positive" class="input-with-select"
                                   @keyup.enter.native="search(0)"></el-input>
                         </el-col>
-                        <el-col :span="6">
+                        <el-col :span="6" class="mobile-button-row">
                             <el-select v-model="form.top_n" :placeholder="$t('formPlaceholders.topNResults')" style="width:100px">
                                 <el-option label="Top 6" value="6"></el-option>
                                 <el-option label="Top 12" value="12"></el-option>
@@ -101,28 +102,34 @@
             </el-tab-pane>
 
             <el-tab-pane :label="$t('searchTabs.imageSearch')" name="1">
-                <el-row>
-                    <el-col :span="6" style="display: flex; justify-content: center; padding-right: 10px">
-                        <el-image fit="contain" :src="imageSearchUrl"></el-image>
+                <!-- 图片预览单独一行 -->
+                <el-row class="image-preview-row">
+                    <el-col :span="24">
+                        <el-image fit="contain" :src="imageSearchUrl" class="preview-image"></el-image>
                     </el-col>
-                    <el-col :span="18">
+                </el-row>
+                <!-- 其他内容左右拉通显示 -->
+                <el-row>
+                    <el-col :span="24">
                         <el-upload ref="upload" drag action="api/upload" :multiple=false :limit="1" :on-exceed="handleExceed" :on-success="handleSuccess" :before-upload="handleBeforeUpload">
                             <i class="el-icon-upload"></i>
                             <div class="el-upload__text">{{ $t('uploader.drag') }}<em>{{ $t('uploader.click') }}</em></div>
                         </el-upload>
                         <el-form ref="form" :model="form" :inline="true" style="margin-top:5px;">
-                            <el-select v-model="form.top_n" :placeholder="$t('formPlaceholders.topNResults')" style="width:100px"
-                                       @keyup.enter.native="search(1)">
-                                <el-option label="Top 6" value="6"></el-option>
-                                <el-option label="Top 12" value="12"></el-option>
-                                <el-option label="Top 30" value="30"></el-option>
-                                <el-option label="Top 150" value="150"></el-option>
-                                <el-option label="Top 600" value="600"></el-option>
-                                <el-option :label="$t('formPlaceholders.topnAll')" value="1000000"></el-option>
-                            </el-select>
-                            <el-button type="success" icon="Search" @click="search(1)">{{ $t('searchButtons.search') }}</el-button>
-                            <el-button type="success" icon="Pointer" @click="pasteImg">{{ $t('searchButtons.paste') }}</el-button>
-                            <el-button type="primary" icon="DocumentCopy" @click="copyAllPaths">{{ $t('messages.copyAllPaths') }}</el-button>
+                            <div class="mobile-button-row">
+                                <el-select v-model="form.top_n" :placeholder="$t('formPlaceholders.topNResults')" style="width:100px"
+                                           @keyup.enter.native="search(1)">
+                                    <el-option label="Top 6" value="6"></el-option>
+                                    <el-option label="Top 12" value="12"></el-option>
+                                    <el-option label="Top 30" value="30"></el-option>
+                                    <el-option label="Top 150" value="150"></el-option>
+                                    <el-option label="Top 600" value="600"></el-option>
+                                    <el-option :label="$t('formPlaceholders.topnAll')" value="1000000"></el-option>
+                                </el-select>
+                                <el-button type="success" icon="Search" @click="search(1)">{{ $t('searchButtons.search') }}</el-button>
+                                <el-button type="success" icon="Pointer" @click="pasteImg">{{ $t('searchButtons.paste') }}</el-button>
+                                <el-button type="primary" icon="DocumentCopy" @click="copyAllPaths">{{ $t('messages.copyAllPaths') }}</el-button>
+                            </div>
                             <el-collapse v-model="activeCollapse">
                                 <el-collapse-item :title="$t('formPlaceholders.advanceSearch')" name="1" icon="CaretRight">
                                     <el-input :placeholder="$t('formPlaceholders.path')" v-model="form.path" class="input-with-select"
@@ -148,7 +155,7 @@
                             <el-input :placeholder="$t('formPlaceholders.positiveSearch')" v-model="form.positive" class="input-with-select"
                               @keyup.enter.native="search(2)"></el-input>
                         </el-col>
-                        <el-col :span="6">
+                        <el-col :span="6" class="mobile-button-row">
                             <el-select v-model="form.top_n" :placeholder="$t('formPlaceholders.topNResults')" style="width:100px">
                                 <el-option label="Top 6" value="6"></el-option>
                                 <el-option label="Top 12" value="12"></el-option>
@@ -183,28 +190,34 @@
             </el-tab-pane>
 
             <el-tab-pane :label="$t('searchTabs.imageVideoSearch')" name="3">
-                <el-row>
-                    <el-col :span="6" style="display: flex; justify-content: center; padding-right: 10px">
-                        <el-image fit="contain" :src="imageSearchUrl"></el-image>
+                <!-- 图片预览单独一行 -->
+                <el-row class="image-preview-row">
+                    <el-col :span="24">
+                        <el-image fit="contain" :src="imageSearchUrl" class="preview-image"></el-image>
                     </el-col>
-                    <el-col :span="18">
+                </el-row>
+                <!-- 其他内容左右拉通显示 -->
+                <el-row>
+                    <el-col :span="24">
                         <el-upload ref="upload" drag action="api/upload" :multiple=false :limit="1" :on-exceed="handleExceed" :on-success="handleSuccess" :before-upload="handleBeforeUpload">
                             <i class="el-icon-upload"></i>
                             <div class="el-upload__text">{{ $t('uploader.drag') }}<em>{{ $t('uploader.click') }}</em></div>
                         </el-upload>
                         <el-form ref="form" :model="form" :inline="true" style="margin-top:5px;">
-                            <el-select v-model="form.top_n" :placeholder="$t('formPlaceholders.topNResults')" style="width:100px"
-                                       @keyup.enter.native="search(1)">
-                                <el-option label="Top 6" value="6"></el-option>
-                                <el-option label="Top 12" value="12"></el-option>
-                                <el-option label="Top 30" value="30"></el-option>
-                                <el-option label="Top 150" value="150"></el-option>
-                                <el-option label="Top 600" value="600"></el-option>
-                                <el-option :label="$t('formPlaceholders.topnAll')" value="1000000"></el-option>
-                            </el-select>
-                            <el-button type="success" icon="Search" @click="search(3)">{{ $t('searchButtons.search') }}</el-button>
-                            <el-button type="success" icon="Pointer" @click="pasteImg">{{ $t('searchButtons.paste') }}</el-button>
-                            <el-button type="primary" icon="DocumentCopy" @click="copyAllPaths">{{ $t('messages.copyAllPaths') }}</el-button>
+                            <div class="mobile-button-row">
+                                <el-select v-model="form.top_n" :placeholder="$t('formPlaceholders.topNResults')" style="width:100px"
+                                           @keyup.enter.native="search(1)">
+                                    <el-option label="Top 6" value="6"></el-option>
+                                    <el-option label="Top 12" value="12"></el-option>
+                                    <el-option label="Top 30" value="30"></el-option>
+                                    <el-option label="Top 150" value="150"></el-option>
+                                    <el-option label="Top 600" value="600"></el-option>
+                                    <el-option :label="$t('formPlaceholders.topnAll')" value="1000000"></el-option>
+                                </el-select>
+                                <el-button type="success" icon="Search" @click="search(3)">{{ $t('searchButtons.search') }}</el-button>
+                                <el-button type="success" icon="Pointer" @click="pasteImg">{{ $t('searchButtons.paste') }}</el-button>
+                                <el-button type="primary" icon="DocumentCopy" @click="copyAllPaths">{{ $t('messages.copyAllPaths') }}</el-button>
+                            </div>
                             <el-collapse v-model="activeCollapse">
                                 <el-collapse-item :title="$t('formPlaceholders.advanceSearch')" name="1" icon="CaretRight">
                                     <el-input :placeholder="$t('formPlaceholders.path')" v-model="form.path" class="input-with-select"
@@ -224,21 +237,25 @@
             </el-tab-pane>
 
             <el-tab-pane :label="$t('searchTabs.textImageSimilarity')" name="6">
-                <el-input :placeholder="$t('formPlaceholders.textMatch')" v-model="form.positive" class="input-with-select"></el-input>
-                <el-row>
-                    <el-col :span="6" style="display: flex; justify-content: center; padding-right: 10px">
-                        <el-image fit="contain" :src="imageSearchUrl"></el-image>
+                <el-input :placeholder="$t('formPlaceholders.textMatch')" v-model="form.positive" class="input-with-select" style="margin-bottom: 15px;"></el-input>
+                <!-- 图片预览单独一行 -->
+                <el-row class="image-preview-row">
+                    <el-col :span="24">
+                        <el-image fit="contain" :src="imageSearchUrl" class="preview-image"></el-image>
                     </el-col>
-                    <el-col :span="18">
+                </el-row>
+                <!-- 其他内容左右拉通显示 -->
+                <el-row>
+                    <el-col :span="24">
                         <el-upload ref="upload" drag action="api/upload" :multiple=false :limit="1" :on-exceed="handleExceed" :on-success="handleSuccess" :before-upload="handleBeforeUpload">
                             <i class="el-icon-upload"></i>
                             <div class="el-upload__text">{{ $t('uploader.drag') }}<em>{{ $t('uploader.click') }}</em></div>
                         </el-upload>
-                        <el-row style="margin-top:10px;">
+                        <div class="mobile-button-row">
                             <el-button type="success" icon="Search" @click="search(4)">{{ $t('searchButtons.calculateSimilarity') }}</el-button>
                             <el-button type="success" icon="Pointer" @click="pasteImg">{{ $t('searchButtons.paste') }}</el-button>
                             <el-button type="primary" icon="DocumentCopy" @click="copyAllPaths">{{ $t('messages.copyAllPaths') }}</el-button>
-                        </el-row>
+                        </div>
                     </el-col>
                 </el-row>
             </el-tab-pane>
@@ -673,6 +690,667 @@ video {
     width: 100%;
     max-height: 240px;
     margin-bottom: 2px;
+}
+
+/* PC端图片预览区域样式 */
+.image-preview-row {
+    margin-bottom: 15px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.image-preview-row .el-col {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.preview-image {
+    max-width: 100%;
+    max-height: 800px;
+    width: auto;
+    height: auto;
+    border: 1px solid #e4e7ed;
+    border-radius: 6px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.12);
+    object-fit: contain;
+    background-color: #f8f9fa;
+    display: block;
+    margin: 0 auto;
+}
+
+/* 未加载图片时的预览区占位样式 */
+.preview-image:not([src]), 
+.preview-image[src=""], 
+.preview-image[src="null"],
+.preview-image[src="undefined"] {
+    width: 100%;
+    height: 200px;
+    min-height: 200px;
+    background-color: #f5f7fa;
+    border: 2px dashed #dcdfe6;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+}
+
+/* 空状态提示文字 */
+.preview-image:not([src]):after,
+.preview-image[src=""]:after,
+.preview-image[src="null"]:after,
+.preview-image[src="undefined"]:after {
+    content: "图片预览区域";
+    color: #909399;
+    font-size: 14px;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+}
+
+/* 移动端适配样式 (412*915分辨率) */
+@media screen and (max-width: 480px) {
+    /* 主体内容区域调整 */
+    .el-main {
+        padding: 10px !important;
+    }
+    
+    /* 标题优化 */
+    h1 {
+        font-size: 20px !important;
+        margin: 10px 0 !important;
+        text-align: center;
+    }
+    
+    /* 状态标签行优化 - 一排显示，均分按钮大小 */
+    .el-row:nth-child(2) {
+        display: flex !important;
+        flex-wrap: nowrap !important;
+        align-items: center !important;
+        gap: 2px !important;
+        padding: 5px 0 !important;
+    }
+    
+    .el-tag {
+        flex: 1 !important;
+        margin: 0 1px !important;
+        font-size: 10px !important;
+        padding: 0 4px !important;
+        height: 28px !important;
+        line-height: 26px !important;
+        text-align: center !important;
+        min-width: 0 !important;
+        word-break: keep-all !important;
+        white-space: nowrap !important;
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
+    }
+    
+    /* 按钮组优化 - 融入同一行 */
+    .el-button-group {
+        flex: 1 !important;
+        margin: 0 1px !important;
+        display: flex !important;
+    }
+    
+    .el-button {
+        flex: 1 !important;
+        padding: 6px 4px !important;
+        font-size: 10px !important;
+        border-radius: 4px !important;
+        margin: 0 !important;
+        min-width: 0 !important;
+        height: 28px !important;
+        line-height: 16px !important;
+    }
+    
+    /* 进度条优化 */
+    .el-progress {
+        margin-top: 10px !important;
+    }
+    
+    /* 标签页优化 */
+    .el-tabs {
+        margin-top: 10px !important;
+    }
+    
+    .el-tabs__nav-wrap {
+        padding: 0 5px !important;
+    }
+    
+    .el-tabs__item {
+        padding: 0 8px !important;
+        font-size: 12px !important;
+        height: 36px !important;
+        line-height: 36px !important;
+    }
+    
+    .el-tabs__content {
+        padding: 5px 10px !important;
+    }
+    
+    /* 搜索表单优化 */
+    .el-form-item {
+        margin-bottom: 8px !important;
+    }
+    
+    .el-input {
+        margin-bottom: 5px !important;
+        font-size: 14px !important;
+    }
+    
+    .el-input__inner {
+        height: 36px !important;
+        line-height: 36px !important;
+    }
+    
+    .el-select {
+        width: 100% !important;
+        margin-bottom: 5px !important;
+        margin-right: 0 !important;
+    }
+    
+    .el-select .el-input__inner {
+        height: 36px !important;
+    }
+    
+    /* 搜索栏布局调整为垂直布局 */
+    .el-form .el-row .el-col {
+        width: 100% !important;
+        max-width: 100% !important;
+        flex: none !important;
+    }
+    
+    /* 高级搜索优化 */
+    .el-collapse {
+        margin-top: 10px !important;
+    }
+    
+    .el-slider {
+        width: 100% !important;
+        margin: 10px 0 !important;
+    }
+    
+    .el-date-editor {
+        width: 100% !important;
+    }
+    
+    /* 图片上传区域优化 */
+    .el-upload {
+        margin-bottom: 10px !important;
+    }
+    
+    .el-upload-dragger {
+        width: 100% !important;
+        height: 120px !important;
+        margin-bottom: 10px !important;
+    }
+    
+    .el-upload__text {
+        font-size: 12px !important;
+    }
+    
+    /* 结果展示区域优化 - 改为单列布局 */
+    .el-row[gutter="5"] .el-col {
+        width: 100% !important;
+        max-width: 100% !important;
+        flex: none !important;
+        margin-bottom: 10px !important;
+    }
+    
+    /* 卡片优化 */
+    .el-card {
+        margin-top: 10px !important;
+    }
+    
+    .el-card__body {
+        padding: 8px !important;
+    }
+    
+    /* 图片/视频尺寸优化 */
+    .el-image {
+        max-height: 200px !important;
+        margin-bottom: 8px !important;
+    }
+    
+    video {
+        max-height: 200px !important;
+        margin-bottom: 8px !important;
+    }
+    
+    /* 图片卡片信息区域优化 - 4排显示 */
+    .el-card .el-row:last-child {
+        display: flex !important;
+        flex-direction: column !important;
+        gap: 5px !important;
+        margin: 8px 0 !important;
+    }
+    
+    /* 百分比标签单独一行 */
+    .el-card .el-row:last-child .el-tooltip:first-child {
+        display: block !important;
+        text-align: center !important;
+        margin-bottom: 5px !important;
+    }
+    
+    /* 路径信息标签单独一行 */
+    .el-card .el-row:last-child .el-tooltip:nth-child(2) {
+        display: block !important;
+        text-align: center !important;
+        margin-bottom: 5px !important;
+    }
+    
+    /* 时间范围标签单独一行（如果存在） */
+    .el-card .el-row:last-child .el-tooltip:nth-child(3) {
+        display: block !important;
+        text-align: center !important;
+        margin-bottom: 5px !important;
+    }
+    
+    /* 以图搜索按钮单独一行 */
+    .el-card .el-row:last-child .el-button {
+        display: block !important;
+        width: 100% !important;
+        margin: 2px 0 !important;
+        text-align: center !important;
+        font-size: 12px !important;
+        padding: 6px 4px !important;
+        height: 32px !important;
+        line-height: 20px !important;
+    }
+    
+    .el-card .el-tag {
+        font-size: 11px !important;
+        margin: 0 !important;
+        padding: 4px 8px !important;
+        display: inline-block !important;
+        width: 100% !important;
+        text-align: center !important;
+        box-sizing: border-box !important;
+    }
+    
+    /* Pexels视频结果优化 */
+    .el-row .el-col {
+        width: 100% !important;
+        margin-bottom: 10px !important;
+    }
+    
+    /* 移动端触摸优化 */
+    .el-button, .el-tag, .el-input, .el-select {
+        -webkit-tap-highlight-color: rgba(0,0,0,0.1);
+        touch-action: manipulation;
+    }
+    
+    /* 移动端按钮一排均分显示 */
+    .mobile-button-row {
+        display: flex !important;
+        gap: 5px !important;
+        margin-top: 10px !important;
+    }
+    
+    .mobile-button-row .el-button {
+        flex: 1 !important;
+        margin: 0 !important;
+        padding: 8px 4px !important;
+        font-size: 11px !important;
+        height: 32px !important;
+        line-height: 16px !important;
+        min-width: 0 !important;
+        text-align: center !important;
+    }
+    
+    .mobile-button-row .el-select {
+        flex: 1 !important;
+        margin: 0 !important;
+        min-width: 0 !important;
+    }
+    
+    .mobile-button-row .el-select .el-input__inner {
+        height: 32px !important;
+        line-height: 32px !important;
+        font-size: 11px !important;
+        text-align: center !important;
+    }
+    
+    /* 文字搜索选项卡按钮布局 */
+    .el-tab-pane[name="0"] .el-form .el-row .el-col:nth-child(2) {
+        margin-top: 10px !important;
+    }
+    
+    .el-tab-pane[name="0"] .el-form .el-row .el-col:nth-child(2) .el-select,
+    .el-tab-pane[name="0"] .el-form .el-row .el-col:nth-child(2) .el-button {
+        display: inline-block !important;
+        width: auto !important;
+        margin: 0 2px 5px 0 !important;
+    }
+    
+    /* 文字搜视频选项卡按钮布局 */
+    .el-tab-pane[name="2"] .el-form .el-row .el-col:nth-child(2) {
+        margin-top: 10px !important;
+    }
+    
+    .el-tab-pane[name="2"] .el-form .el-row .el-col:nth-child(2) .el-select,
+    .el-tab-pane[name="2"] .el-form .el-row .el-col:nth-child(2) .el-button {
+        display: inline-block !important;
+        width: auto !important;
+        margin: 0 2px 5px 0 !important;
+    }
+    
+    /* 图片预览行样式优化 - 居中显示完整图片 */
+    .image-preview-row {
+        margin-bottom: 15px !important;
+    }
+    
+    .image-preview-row .el-col {
+        padding: 0 !important;
+        display: flex !important;
+        justify-content: center !important;
+        align-items: center !important;
+        min-height: 200px !important;
+        position: relative !important;
+    }
+    
+    .preview-image {
+        max-width: 100% !important;
+        max-height: 600px !important;
+        width: auto !important;
+        height: auto !important;
+        border: 1px solid #e4e7ed !important;
+        border-radius: 6px !important;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.12) !important;
+        object-fit: contain !important;
+        background-color: #f8f9fa !important;
+        display: block !important;
+        margin: 0 auto !important;
+    }
+    
+    /* 未加载图片时的预览区占位样式 */
+    .preview-image:not([src]), 
+    .preview-image[src=""], 
+    .preview-image[src="null"],
+    .preview-image[src="undefined"] {
+        width: 100% !important;
+        height: 180px !important;
+        min-height: 180px !important;
+        background-color: #f5f7fa !important;
+        border: 2px dashed #dcdfe6 !important;
+        border-radius: 6px !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        position: relative !important;
+    }
+    
+    /* 空状态提示文字 */
+    .preview-image:not([src]):after,
+    .preview-image[src=""]:after,
+    .preview-image[src="null"]:after,
+    .preview-image[src="undefined"]:after {
+        content: "图片预览区域" !important;
+        color: #909399 !important;
+        font-size: 14px !important;
+        position: absolute !important;
+        top: 50% !important;
+        left: 50% !important;
+        transform: translate(-50%, -50%) !important;
+        pointer-events: none !important;
+    }
+    
+    /* 图像搜索选项卡内容左右拉通 */
+    .el-tab-pane[name="1"] .el-col[span="24"],
+    .el-tab-pane[name="3"] .el-col[span="24"],
+    .el-tab-pane[name="6"] .el-col[span="24"] {
+        width: 100% !important;
+        padding: 0 !important;
+    }
+    
+    /* 统一所有区域的上下间距 */
+    .el-tab-pane[name="1"] .el-row,
+    .el-tab-pane[name="3"] .el-row,
+    .el-tab-pane[name="6"] .el-row {
+        margin-bottom: 15px !important;
+    }
+    
+    .el-tab-pane[name="1"] .el-row:last-child,
+    .el-tab-pane[name="3"] .el-row:last-child,
+    .el-tab-pane[name="6"] .el-row:last-child {
+        margin-bottom: 0 !important;
+    }
+    
+    /* 优化collapse组件 */
+    .el-collapse-item__header {
+        padding: 10px 0 !important;
+        font-size: 14px !important;
+        height: auto !important;
+    }
+    
+    .el-collapse-item__content {
+        padding: 10px 0 !important;
+    }
+    
+    /* 高级搜索区域整体优化 */
+    .el-collapse-item__content {
+        padding: 15px 10px !important;
+    }
+    
+    .el-collapse-item__content .el-form-item {
+        margin-bottom: 20px !important;
+        width: 100% !important;
+        display: block !important;
+    }
+    
+    /* 高级搜索输入框优化 */
+    .el-collapse-item__content .el-input {
+        width: 100% !important;
+        margin-bottom: 10px !important;
+    }
+    
+    .el-collapse-item__content .el-input .el-input__inner {
+        height: 36px !important;
+        font-size: 14px !important;
+        padding: 8px 12px !important;
+    }
+    
+    /* 滑动器标签优化 */
+    .el-form-item__label {
+        font-size: 13px !important;
+        margin-bottom: 8px !important;
+        display: block !important;
+        width: 100% !important;
+        text-align: left !important;
+    }
+    
+    /* 滑动器容器优化 */
+    .el-collapse-item__content .el-form-item__content {
+        width: 100% !important;
+        margin-left: 0 !important;
+        padding: 0 10px !important;
+    }
+    
+    /* 滑动器宽度优化 - 适应移动端屏幕 */
+    .el-collapse-item__content .el-slider {
+        width: 100% !important;
+        max-width: calc(100vw - 60px) !important;
+        margin: 0 !important;
+    }
+    
+    /* 滑动器轨道优化 */
+    .el-slider__runway {
+        margin: 16px 0 !important;
+        height: 6px !important;
+    }
+    
+    /* 滑动器按钮优化 - 增大触摸区域 */
+    .el-slider__button {
+        width: 20px !important;
+        height: 20px !important;
+        border: 2px solid #409EFF !important;
+    }
+    
+    /* 滑动器tooltip优化 */
+    .el-slider__button-wrapper {
+        z-index: 100 !important;
+    }
+    
+    /* 工具提示优化 */
+    .el-tooltip__popper {
+        font-size: 12px !important;
+        max-width: 250px !important;
+    }
+    
+    /* 日期选择器优化 - 移动端适配 */
+    .el-collapse-item__content .el-date-editor {
+        width: 100% !important;
+        max-width: calc(100vw - 40px) !important;
+        margin: 0 !important;
+    }
+    
+    .el-date-editor .el-input__inner {
+        font-size: 12px !important;
+        padding: 8px 12px !important;
+        height: 36px !important;
+        line-height: 20px !important;
+    }
+    
+    /* 日期选择器图标优化 */
+    .el-date-editor .el-input__prefix {
+        left: 8px !important;
+    }
+    
+    .el-date-editor .el-input__suffix {
+        right: 8px !important;
+    }
+    
+    /* 日期选择器占位符文字适配 */
+    .el-date-editor input::-webkit-input-placeholder {
+        font-size: 11px !important;
+    }
+    
+    .el-date-editor input::-moz-placeholder {
+        font-size: 11px !important;
+    }
+    
+    /* 日期弹出框优化 - 完全适配移动端屏幕 */
+    .el-picker-panel {
+        width: 95vw !important;
+        max-width: 95vw !important;
+        height: auto !important;
+        max-height: 85vh !important;
+        margin: 0 auto !important;
+        transform-origin: center !important;
+        overflow-y: auto !important;
+    }
+    
+    /* 日期时间范围选择器弹出框特殊处理 */
+    .el-date-range-picker,
+    .el-datetime-range-picker {
+        width: 95vw !important;
+        max-width: 95vw !important;
+        height: auto !important;
+        max-height: 85vh !important;
+        overflow-y: auto !important;
+        font-size: 12px !important;
+    }
+    
+    /* 日期选择器内部组件缩放适配 */
+    .el-picker-panel .el-date-picker__header {
+        padding: 8px 12px !important;
+        font-size: 12px !important;
+    }
+    
+    .el-picker-panel .el-date-table {
+        font-size: 11px !important;
+    }
+    
+    .el-picker-panel .el-date-table td {
+        width: calc(95vw / 7 - 4px) !important;
+        height: calc(95vw / 7 - 4px) !important;
+        padding: 2px !important;
+    }
+    
+    .el-picker-panel .el-date-table td span {
+        width: 100% !important;
+        height: 100% !important;
+        font-size: 11px !important;
+        line-height: calc(95vw / 7 - 8px) !important;
+    }
+    
+    /* 时间选择器面板 */
+    .el-time-panel {
+        width: 95vw !important;
+        max-width: 95vw !important;
+        font-size: 12px !important;
+    }
+    
+    .el-time-panel__content {
+        max-height: 200px !important;
+        overflow-y: auto !important;
+    }
+    
+    /* 月份/年份选择器 */
+    .el-month-table,
+    .el-year-table {
+        font-size: 11px !important;
+    }
+    
+    .el-month-table td,
+    .el-year-table td {
+        width: calc(95vw / 4 - 8px) !important;
+        height: 40px !important;
+        font-size: 11px !important;
+    }
+    
+    /* 按钮区域 */
+    .el-picker-panel__footer {
+        padding: 8px 12px !important;
+        text-align: center !important;
+    }
+    
+    .el-picker-panel__footer .el-button {
+        font-size: 12px !important;
+        padding: 6px 12px !important;
+        margin: 0 4px !important;
+    }
+    
+    /* 时间范围选择器输入框 - 保持原有逻辑，只做基本适配 */
+    .el-date-editor--datetimerange {
+        width: 100% !important;
+        max-width: calc(100vw - 40px) !important;
+    }
+    
+    /* 进度百分比显示优化 */
+    .el-progress__text {
+        font-size: 12px !important;
+    }
+    
+    /* 消息框优化 */
+    .el-message {
+        max-width: 90vw !important;
+        font-size: 14px !important;
+    }
+    
+    /* Loading遮罩优化 */
+    .el-loading-text {
+        font-size: 14px !important;
+    }
+    
+    /* 页脚优化 */
+    .el-footer {
+        padding: 5px 10px !important;
+        font-size: 12px !important;
+        text-align: center !important;
+        flex-wrap: wrap !important;
+    }
+    
+    .el-footer .el-link {
+        display: block !important;
+        margin: 5px 0 !important;
+        word-break: break-all !important;
+    }
 }
 </style>
 </html>
