@@ -9,7 +9,6 @@
     "totalImages": "图片总数",
     "totalVideos": "视频总数",
     "totalVideoFrames": "视频帧总数",
-    "totalPexelsVideos": "pexels视频总数",
     "scanningFiles": "本次扫描文件数",
     "remainFiles": "待扫描文件数",
     "remainTime": "预估剩余时间",
@@ -26,8 +25,7 @@
     "imageSearch": "以图搜图",
     "textVideoSearch": "文字搜视频",
     "imageVideoSearch": "以图搜视频",
-    "textImageSimilarity": "图文相似度匹配",
-    "pexelsVideos": "pexels视频"
+    "textImageSimilarity": "图文相似度匹配"
   },
   "uploader": {
     "drag": "将文件拖到此处，或",
@@ -57,10 +55,6 @@
     "downloadVideoClip": "下载视频片段",
     "imageSearch": "以图搜图",
     "imageVideoSearch": "以图搜视频"
-  },
-  "pexelsResults": {
-    "viewCount": "播放量",
-    "sourcePage": "来源页面"
   },
   "messages": {
     "searchContentEmpty": "搜索内容或搜索路径至少需要输入一个",

@@ -1,2 +1,0 @@
-python benchmark.py
-pause

@@ -9,7 +9,6 @@
     "totalImages": "Total Images",
     "totalVideos": "Total Videos",
     "totalVideoFrames": "Total Video Frames",
-    "totalPexelsVideos": "Total Pexels Videos",
     "scanningFiles": "Scanning Files",
     "remainFiles": "Remaining Files",
     "remainTime": "Estimated Remaining Time",
@@ -26,8 +25,7 @@
     "imageSearch": "Image Search",
     "textVideoSearch": "Text Video Search",
     "imageVideoSearch": "Image Video Search",
-    "textImageSimilarity": "Text-Image Similarity Matching",
-    "pexelsVideos": "Pexels Videos"
+    "textImageSimilarity": "Text-Image Similarity Matching"
   },
   "uploader": {
     "drag": "Drag file to here, or ",
@@ -57,10 +55,6 @@
     "downloadVideoClip": "Download Video Clip",
     "imageSearch": "Search Images",
     "imageVideoSearch": "Search Videos"
-  },
-  "pexelsResults": {
-    "viewCount": "View Count",
-    "sourcePage": "Source Page"
   },
   "messages": {
     "searchContentEmpty": "At least one search content or search path must be entered",

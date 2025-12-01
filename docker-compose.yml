@@ -2,9 +2,8 @@ version: "3"
 
 services:
   MaterialSearch:
-    image: yumilee/materialsearch:latest # 托管在 DockerHub 的镜像，通过 GitHub Action 构建，支持amd64和arm64。
-    # image: registry.cn-hongkong.aliyuncs.com/chn-lee-yumi/materialsearch:latest # 托管在阿里云的镜像，通过 GitHub Action 构建，支持amd64和arm64。如果 DockerHub 无法访问，可以使用这个镜像。
-    # image: registry.cn-guangzhou.aliyuncs.com/chn-lee-yumi/materialsearch:latest # 通过阿里云容器镜像服务构建，仅支持amd64。如果你需要运行在arm64主机上，请使用上面的镜像（阿里云经常构建失败，所以这个镜像可能不是最新的，不推荐使用，仅作为备份）
+    image: yumilee/materialsearch:latest # 托管在 DockerHub 的镜像，通过 GitHub Action 构建，支持amd64。
+    # image: registry.cn-hongkong.aliyuncs.com/chn-lee-yumi/materialsearch:latest # 托管在阿里云的镜像，通过 GitHub Action 构建，支持amd64。如果 DockerHub 无法访问，可以使用这个镜像。
     restart: always # 容器重启规则设为always
     ports:
       - "8085:8085" # 映射容器的8085端口到宿主的8085端口（宿主端口:容器端口）
