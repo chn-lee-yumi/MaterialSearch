@@ -4,15 +4,20 @@
 
 扫描本地的图片以及视频，并且可以用自然语言进行查找。
 
-在线Demo：https://chn-lee-yumi.github.io/MaterialSearchWebDemo/
+本仓库现仅包含本项目的前端代码。核心逻辑已独立封装为一个 pip 包，并托管在另一个仓库（[materialsearch-core](https://github.com/chn-lee-yumi/MaterialSearch-core)），以便更好地管理版本与分发，并且方便大家进行直接调用和开发。
 
-本仓库中的部分源代码已被有意混淆。
-此前曾有人恶意删除或篡改版权与署名信息，造成了不良影响。
-因此本次处理的目的仅为保护原创归属与合法性，不会限制任何符合 GNU 通用公共许可证第 3 版（GPLv3）条款的正常使用。
+过去曾出现过恶意修改、删除版权信息等行为，对项目造成不良影响。因此，在新的架构中，API 核心实现部分经过加密与混淆，仅用于保护原创性与版权归属。此举不会影响任何依据 GNU 通用公共许可证第 3 版（GPLv3）进行的正常使用。
 
-我们诚挚地请求您尊重原创作者的劳动成果，并保留所有相关声明。
+我们真诚地希望使用者能够尊重作者的劳动成果，并保留相关声明。
 
 如果你对本项目的代码进行了任何有用的修改（例如修复错误、添加功能等），欢迎通过 Pull Request 回馈社区，让更多人受益！
+
+如果你想贡献：
+- 前端功能：请在本仓库提PR。
+- API相关：请在本仓库提需求issue。（API部分代码不公开，由作者维护）
+- 其它功能：请在本仓库提issue或在[materialsearch-core](https://github.com/chn-lee-yumi/MaterialSearch-core)仓库提PR。
+
+注意：不接受AI生成的代码贡献。请保证你是真正理解代码逻辑后所做的修改。
 
 ## 功能
 
@@ -32,7 +37,11 @@ B站视频教程：[点击这里，求三连支持](https://www.bilibili.com/vid
 
 用户**互助**QQ群：1029566498（因作者精力有限，欢迎加群讨论，互相帮助。一言解惑，胜造七级浮屠；一念善行，自有千般福报。）
 
-首先下载整合包（`MaterialSearchWindows.7z`或`MaterialSearchWindowsLarge.7z`），并使用 [7-Zip](https://www.7-zip.org/) 解压缩（注意：使用其它软件解压缩，可能会报错）。
+首先下载整合包，并使用 [7-Zip](https://www.7-zip.org/) 解压缩（注意：使用其它软件解压缩，可能会报错）。
+
+整合包有两个版本：
+- `MaterialSearchWindows.7z`: 不包含模型，适合专业用户
+- `MaterialSearchWindows_include_base_model.7z`: 包含基础模型（`OFA-Sys/chinese-clip-vit-base-patch16`），开箱即用，适合大部分用户【推荐下载这个】
 
 下载方式：
 - [GitHub Release](https://github.com/chn-lee-yumi/MaterialSearch/releases/latest)
@@ -41,28 +50,9 @@ B站视频教程：[点击这里，求三连支持](https://www.bilibili.com/vid
 
 解压后请阅读里面的`使用说明.txt`。整合包会自动选择独显或核显进行加速。
 
-`MaterialSearchWindows.7z`整合包自带`OFA-Sys/chinese-clip-vit-base-patch16`模型。`MaterialSearchWindowsLarge.7z`整合包则是`OFA-Sys/chinese-clip-vit-large-patch14-336px`模型。
-
-一般而言`OFA-Sys/chinese-clip-vit-base-patch16`模型已经足够日常使用，如果效果不佳并且显卡**显存足够大（16G以上）**，可以尝试`MaterialSearchWindowsLarge.7z`整合包。
-
-### 通过源码部署
-
-首先安装Python环境（版本3.9或以上），然后下载本仓库代码。
-
-注意，首次运行会自动下载模型。下载速度可能比较慢，请耐心等待。如果网络不好，模型可能会下载失败，这个时候重新执行程序即可。
-
-1. 首次使用前需要安装依赖：`pip install -U -r requirements.txt`。Windows系统使用`requirements_windows.txt`，或双击`install.bat`。
-2. 启动程序：`python main.py`，Windows系统可以双击`run.bat`。
-
-注意：`requirements.txt`使用的`torch`和`faiss`版本均为CPU版本，如果想用GPU加速，请自行调整。
-
-如遇到`requirements.txt`版本依赖问题（比如某个库版本过新会导致运行报错），请提issue反馈，我会添加版本范围限制。
-
-如果想使用"下载视频片段"的功能，需要安装`ffmpeg`。Windows系统可以运行`install_ffmpeg.bat`进行安装。
-
 ### 通过Docker部署
 
-支持`amd64`，打包了默认模型（`OFA-Sys/chinese-clip-vit-base-patch16`）并且支持GPU。
+支持`amd64`，打包了基础模型（`OFA-Sys/chinese-clip-vit-base-patch16`）并且支持GPU。
 
 镜像地址：
 - [yumilee/materialsearch](https://hub.docker.com/r/yumilee/materialsearch) (DockerHub)
@@ -85,7 +75,7 @@ B站视频教程：[点击这里，求三连支持](https://www.bilibili.com/vid
 
 ## 配置说明
 
-所有配置都在`config.py`文件中，里面已经写了详细的注释。
+所有配置都在[`config.py`文件](https://github.com/chn-lee-yumi/MaterialSearch-core/blob/main/src/materialsearch_core/config.py)中，里面已经写了详细的注释。
 
 建议通过环境变量或在项目根目录创建`.env`文件修改配置。如果没有配置对应的变量，则会使用`config.py`中的默认值。例如`os.getenv('HOST', '127.0.0.1')`，如果没有配置`HOST`变量，则`HOST`默认为`127.0.0.1`。
 
@@ -119,7 +109,7 @@ https_proxy=http://127.0.0.1:7070
 
 ## 硬件要求
 
-推荐使用 `amd64 (x86-64)` 或 `arm64 (aarch64)` 架构的CPU。内存最低2G，但推荐最少4G内存。如果照片数量很多，推荐增加更多内存。
+`amd64 (x86-64)`架构的CPU。内存最低2G，但推荐最少4G内存。如果照片数量很多，推荐增加更多内存。
 
 ## 搜索速度
 

@@ -4,15 +4,20 @@
 
 Search local photos and videos through natural language.
 
-Online Demo：https://chn-lee-yumi.github.io/MaterialSearchWebDemo/
+This repository now contains only the front-end code of the project. The core logic has been separated into a standalone pip package, which is hosted in another repository: [materialsearch-core](https://github.com/chn-lee-yumi/MaterialSearch-core). This structure makes version control and distribution easier, and also allows developers to use the core functions directly in their own projects.
 
-Some parts of the source code in this repository have been intentionally obfuscated.
-This decision was made in response to previous incidents where individuals maliciously removed or altered copyright and attribution information, resulting in negative consequences.
-The obfuscation is meant solely to protect authorship and legal integrity, and does not restrict legitimate use under the GNU General Public License v3.0 (GPLv3).
+Some parts of the source code in this repository have been intentionally obfuscated. In the past, there were incidents where individuals maliciously removed or altered copyright and attribution information, which caused negative impact to the project. The obfuscation is solely for protecting authorship and legal integrity, and does **not** restrict any legitimate usage permitted under the GNU General Public License v3.0 (GPLv3).
 
-We kindly ask users to respect the original authorship and retain all relevant notices.
+We kindly ask users to respect the original work and keep all relevant notices.
 
-If you’ve made any useful changes to the code (bug fixes, new features, etc.), please consider contributing them back via a pull request — so the whole community can benefit!
+If you make useful changes to the project (bug fixes, feature additions, etc.), you are welcome to contribute back through a pull request so that others can benefit.
+
+If you would like to contribute:
+- Frontend features: please submit a PR in this repository.
+- API-related requests: please submit an issue in this repository (the API implementation is not open-source and is maintained by the author).
+- Other features: please submit an issue here or a PR to the [materialsearch-core](https://github.com/chn-lee-yumi/MaterialSearch-core) repository.
+
+Note: AI-generated code contributions are not accepted. Please ensure that any submitted code is written and understood by yourself.
 
 ## Features
 
@@ -24,24 +29,40 @@ If you’ve made any useful changes to the code (bug fixes, new features, etc.),
 
 ## Deploy Instructions
 
-### Deployment via Source Code
+### Windows Bundle
 
-First, install the Python environment (version 3.9 or higher) and then download the code from this repository.
+Note: The minimum supported system is Windows 10.
+If you are still using Windows 7, please upgrade your system or switch to a newer computer.
 
-Note that the first run will automatically download the models. The download speed may be slow, so please be patient. If the network is poor, the model download may fail. In that case, simply rerun the program.
+Tutorial video on Bilibili (Chinese):
+[Click here](https://www.bilibili.com/video/BV1xXKfzCE3v/)
 
-1. Install the dependencies before first use: `pip install -U -r requirements.txt`. For Windows systems, use `requirements_windows.txt` instead, or you can double-click on `install.bat`.
-2. Start the program: `python main.py`. For Windows systems, you can double-click on `run.bat`.
+User support group (Chinese, community-driven): **1029566498**
+(The author has limited time, so the group is mainly for users to help each other.)
 
-Note: The `requirements.txt` uses the CPU versions of `torch` and `faiss`. If you wish to enable GPU acceleration, please adjust the settings accordingly.
+First, download the bundle and extract it using **[7-Zip](https://www.7-zip.org/)**.
+Using other extraction tools may cause errors.
 
-If you encounter any issues with the version dependencies in `requirements.txt` (for example, if a library version is too new and causes errors), please provide feedback by opening an issue. I will add version range restrictions.
+There are two versions of the bundle:
 
-To use the "Download Video Segments" feature, you need to install `ffmpeg`. If you are using Windows, you can run `install_ffmpeg.bat` to install.
+* `MaterialSearchWindows.7z`: does *not* include the model. Suitable for advanced users.
+* `MaterialSearchWindows_include_base_model.7z`: includes the base model (`OFA-Sys/chinese-clip-vit-base-patch16`) and works out of the box. **Recommended for most users.**
+
+Download links:
+
+* GitHub Release
+  [https://github.com/chn-lee-yumi/MaterialSearch/releases/latest](https://github.com/chn-lee-yumi/MaterialSearch/releases/latest)
+* Quark Cloud
+  [https://pan.quark.cn/s/ae137c439484](https://pan.quark.cn/s/ae137c439484)
+* Baidu Cloud
+  [https://pan.baidu.com/s/1uQ8t-4mbYmcfi6FjwzdrrQ](https://pan.baidu.com/s/1uQ8t-4mbYmcfi6FjwzdrrQ) (code: CHNL)
+
+After extracting, please read the included `使用说明.txt` (Chinese) file.
+The bundle will automatically choose between integrated or dedicated GPU for acceleration.
 
 ### Deployment via Docker
 
-Supports `amd64` architectures. It includes the default models (`OFA-Sys/chinese-clip-vit-base-patch16`) and supports GPU acceleration.
+Supports `amd64` architectures. It includes the base models (`OFA-Sys/chinese-clip-vit-base-patch16`) and supports GPU acceleration.
 
 Image repositories:
 - [yumilee/materialsearch](https://hub.docker.com/r/yumilee/materialsearch) (DockerHub)
@@ -64,7 +85,7 @@ Note:
 
 ## Configuration Instructions
 
-All configurations are in the `config.py` file, which contains detailed comments.
+All configurations are in the [`config.py` file](https://github.com/chn-lee-yumi/MaterialSearch-core/blob/main/src/materialsearch_core/config.py), which contains detailed comments.
 
 It is recommended to modify the configuration through environment variables or by creating a `.env` file in the project root directory. If a corresponding variable is not configured, the default value in `config.py` will be used. For example, `os.getenv('HOST', '127.0.0.1')` will default to `127.0.0.1` if the `HOST` variable is not configured.
 
@@ -98,7 +119,7 @@ I am doing this project purely "for the love of it" (which means, in fact, I am 
 
 ## Hardware Requirements
 
-It is recommended to use a `amd64 (x86_64)` or `arm64 (aarch64)` architecture CPU. The minimum requirement is 2GB of memory, but it is recommended to have at least 4GB of memory. If you have a large number of photos, it is recommended to increase the amount of memory.
+`amd64 (x86_64)` architecture CPU. The minimum requirement is 2GB of memory, but it is recommended to have at least 4GB of memory. If you have a large number of photos, it is recommended to increase the amount of memory.
 
 ## Search Speed
 
