@@ -2,6 +2,7 @@
 <html>
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
     <title>Material Search Engine</title>
     <link rel="stylesheet" href="static/assets/index.css"/>
     <script src="static/assets/vue.global.prod.js"></script>
@@ -58,11 +59,11 @@
             <el-tab-pane :label="$t('searchTabs.textSearch')" name="0">
                 <el-form ref="form" :model="form" :inline="true">
                     <el-row>
-                        <el-col :span="18">
+                        <el-col :sm="24" :lg="17">
                             <el-input :placeholder="$t('formPlaceholders.positiveSearch')" v-model="form.positive" class="input-with-select"
                                   @keyup.enter.native="search(0)"></el-input>
                         </el-col>
-                        <el-col :span="6">
+                        <el-col :sm="24" :lg="7">
                             <el-select v-model="form.top_n" :placeholder="$t('formPlaceholders.topNResults')" style="width:100px">
                                 <el-option label="Top 6" value="6"></el-option>
                                 <el-option label="Top 12" value="12"></el-option>
@@ -98,10 +99,10 @@
 
             <el-tab-pane :label="$t('searchTabs.imageSearch')" name="1">
                 <el-row>
-                    <el-col :span="6" style="display: flex; justify-content: center; padding-right: 10px">
+                    <el-col :sm="24" :lg="6" style="display: flex; justify-content: center; padding-right: 10px">
                         <el-image fit="contain" :src="imageSearchUrl"></el-image>
                     </el-col>
-                    <el-col :span="18">
+                    <el-col :sm="24" :lg="18">
                         <el-upload ref="upload" drag action="api/upload" :multiple=false :limit="1" :on-exceed="handleExceed" :on-success="handleSuccess" :before-upload="handleBeforeUpload">
                             <i class="el-icon-upload"></i>
                             <div class="el-upload__text">{{ $t('uploader.drag') }}<em>{{ $t('uploader.click') }}</em></div>
@@ -140,11 +141,11 @@
             <el-tab-pane :label="$t('searchTabs.textVideoSearch')" name="2">
                 <el-form ref="form" :model="form" :inline="true">
                     <el-row>
-                        <el-col :span="18">
+                        <el-col :sm="24" :lg="17">
                             <el-input :placeholder="$t('formPlaceholders.positiveSearch')" v-model="form.positive" class="input-with-select"
                               @keyup.enter.native="search(2)"></el-input>
                         </el-col>
-                        <el-col :span="6">
+                        <el-col :sm="24" :lg="7">
                             <el-select v-model="form.top_n" :placeholder="$t('formPlaceholders.topNResults')" style="width:100px">
                                 <el-option label="Top 6" value="6"></el-option>
                                 <el-option label="Top 12" value="12"></el-option>
@@ -180,10 +181,10 @@
 
             <el-tab-pane :label="$t('searchTabs.imageVideoSearch')" name="3">
                 <el-row>
-                    <el-col :span="6" style="display: flex; justify-content: center; padding-right: 10px">
+                    <el-col :sm="24" :lg="6" style="display: flex; justify-content: center; padding-right: 10px">
                         <el-image fit="contain" :src="imageSearchUrl"></el-image>
                     </el-col>
-                    <el-col :span="18">
+                    <el-col :sm="24" :lg="18">
                         <el-upload ref="upload" drag action="api/upload" :multiple=false :limit="1" :on-exceed="handleExceed" :on-success="handleSuccess" :before-upload="handleBeforeUpload">
                             <i class="el-icon-upload"></i>
                             <div class="el-upload__text">{{ $t('uploader.drag') }}<em>{{ $t('uploader.click') }}</em></div>
@@ -222,10 +223,10 @@
             <el-tab-pane :label="$t('searchTabs.textImageSimilarity')" name="6">
                 <el-input :placeholder="$t('formPlaceholders.textMatch')" v-model="form.positive" class="input-with-select"></el-input>
                 <el-row>
-                    <el-col :span="6" style="display: flex; justify-content: center; padding-right: 10px">
+                    <el-col :sm="24" :lg="6" style="display: flex; justify-content: center; padding-right: 10px">
                         <el-image fit="contain" :src="imageSearchUrl"></el-image>
                     </el-col>
-                    <el-col :span="18">
+                    <el-col :sm="24" :lg="18">
                         <el-upload ref="upload" drag action="api/upload" :multiple=false :limit="1" :on-exceed="handleExceed" :on-success="handleSuccess" :before-upload="handleBeforeUpload">
                             <i class="el-icon-upload"></i>
                             <div class="el-upload__text">{{ $t('uploader.drag') }}<em>{{ $t('uploader.click') }}</em></div>
