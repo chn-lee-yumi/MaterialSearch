@@ -37,7 +37,7 @@ If you are still using Windows 7, please upgrade your system or switch to a newe
 Tutorial video on Bilibili (Chinese):
 [Click here](https://www.bilibili.com/video/BV1xXKfzCE3v/)
 
-User support group (Chinese, community-driven): **1029566498**
+User support QQ group (Chinese, community-driven): **1029566498**
 (The author has limited time, so the group is mainly for users to help each other.)
 
 First, download the bundle and extract it using **[7-Zip](https://www.7-zip.org/)**.
