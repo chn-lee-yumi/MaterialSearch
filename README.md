@@ -35,7 +35,7 @@ Note: The minimum supported system is Windows 10.
 If you are still using Windows 7, please upgrade your system or switch to a newer computer.
 
 Tutorial video on Bilibili (Chinese):
-[Click here](https://www.bilibili.com/video/BV1xXKfzCE3v/)
+[Click here](https://www.bilibili.com/video/BV1SoqbB4Ehw/)
 
 User support QQ group (Chinese, community-driven): **1029566498**
 (The author has limited time, so the group is mainly for users to help each other.)
