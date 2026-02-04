@@ -13,7 +13,8 @@
     "remainFiles": "待扫描文件数",
     "remainTime": "预估剩余时间",
     "scanProgress": "扫描进度",
-    "calculating": "计算中"
+    "calculating": "计算中",
+    "calculatingFiles": "统计文件中"
   },
   "buttons": {
     "scan": "扫描",

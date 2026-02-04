@@ -37,7 +37,7 @@
         </el-tag>
         <el-tag size="large" v-if="isScanning" type="info" effect="dark">{{ $t("statusLabels.remainTime") }}: {{ status.remain_time }}</el-tag>
         <el-tag size="large" v-if="isScanning" type="danger" effect="dark">
-            {{ $t("statusLabels.scanProgress") }}: {{ Math.trunc(status.progress * 100) }}%
+            {{ $t("statusLabels.scanProgress") }}: {{ status.scanning_files === 0 && status.remain_files === 0 ? $t('statusLabels.calculatingFiles') : Math.trunc(status.progress * 100) + '%' }}
         </el-tag>
         <el-button-group v-if="!isScanning">
             <el-button round type="primary" size="default" @click="scan">{{ $t("buttons.scan") }}</el-button>
@@ -50,7 +50,7 @@
                 <el-button round type="danger" size="default">{{ $t("buttons.logout") }}</el-button>
             </a>
         </el-button-group>
-        <el-progress style="width:100%" v-if="isScanning" :percentage="Math.trunc(status.progress*100)" :stroke-width="10"></el-progress>
+        <el-progress style="width:100%" v-if="isScanning && !(status.scanning_files === 0 && status.remain_files === 0)" :percentage="Math.trunc(status.progress*100)" :stroke-width="10"></el-progress>
     </el-row>
 
     <el-row>
