@@ -27,6 +27,8 @@ Note: AI-generated code contributions are not accepted. Please ensure that any s
 - Image-based video search (searches for video segments based on screenshots)
 - Calculation of image-text similarity (provides a score, not very useful)
 
+![Screenshot](docs/screenshot_zh_1.png)
+
 ## Deploy Instructions
 
 ### Windows Bundle

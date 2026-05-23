@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MaterialSearch - 本地素材智能搜索工具 | 文字搜图·以图搜图·视频搜索</title>
+  <meta name="description" content="MaterialSearch 是一款开源的本地素材智能搜索工具，支持用自然语言文字搜图、以图搜图、文字搜视频、以图搜视频，基于 CLIP 模型，完全本地运行，保护隐私。" />
+  <meta name="keywords" content="MaterialSearch,本地搜图,以图搜图,文字搜图,视频搜索,CLIP,自然语言搜索,本地素材搜索,开源,免费" />
+  <meta name="author" content="chn-lee-yumi" />
+  <link rel="canonical" href="https://chn-lee-yumi.github.io/MaterialSearch/docs/" />
+
+  <!-- Open Graph -->
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="MaterialSearch - 本地素材智能搜索工具" />
+  <meta property="og:description" content="用自然语言搜索本地图片和视频。开源、免费、完全本地运行，保护隐私。" />
+  <meta property="og:image" content="./screenshot_zh_1.png" />
+  <meta property="og:locale" content="zh_CN" />
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --primary: #5b6af0;
+      --primary-dark: #3d4de0;
+      --bg: #f7f8ff;
+      --card-bg: #ffffff;
+      --text: #1a1a2e;
+      --muted: #6b7280;
+      --border: #e5e7eb;
+    }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Segoe UI", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.7;
+    }
+
+    /* NAV */
+    nav {
+      position: sticky; top: 0; z-index: 100;
+      background: rgba(255,255,255,0.92);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+      padding: 0 2rem;
+      display: flex; align-items: center; justify-content: space-between;
+      height: 60px;
+    }
+    .nav-logo { font-weight: 800; font-size: 1.2rem; color: var(--primary); text-decoration: none; }
+    .nav-links { display: flex; gap: 1.5rem; align-items: center; }
+    .nav-links a { text-decoration: none; color: var(--muted); font-size: 0.95rem; transition: color .2s; }
+    .nav-links a:hover { color: var(--primary); }
+    .nav-links .btn-nav {
+      background: var(--primary); color: #fff;
+      padding: 0.4rem 1.1rem; border-radius: 6px; font-weight: 600;
+    }
+    .nav-links .btn-nav:hover { background: var(--primary-dark); color: #fff; }
+    .lang-switch { font-size: 0.88rem; border: 1px solid var(--border); border-radius: 5px; padding: 0.25rem 0.6rem; color: var(--muted); }
+
+    /* HERO */
+    .hero {
+      text-align: center;
+      padding: 90px 1.5rem 70px;
+      background: linear-gradient(135deg, #eef0ff 0%, #f7f8ff 60%, #fdf0ff 100%);
+    }
+    .hero-badge {
+      display: inline-block; background: #ede9fe; color: #6d28d9;
+      font-size: 0.8rem; font-weight: 600; padding: 0.3rem 0.9rem;
+      border-radius: 99px; margin-bottom: 1.4rem; letter-spacing: .04em;
+    }
+    .hero h1 {
+      font-size: clamp(2rem, 5vw, 3.2rem);
+      font-weight: 900; line-height: 1.2;
+      margin-bottom: 1.2rem;
+      background: linear-gradient(135deg, var(--primary) 0%, #9b59b6 100%);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+    }
+    .hero p {
+      font-size: 1.15rem; color: var(--muted);
+      max-width: 560px; margin: 0 auto 2.2rem;
+    }
+    .hero-cta { display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap; }
+    .btn-primary {
+      background: var(--primary); color: #fff;
+      padding: 0.75rem 2rem; border-radius: 8px;
+      text-decoration: none; font-weight: 700; font-size: 1rem;
+      transition: background .2s, transform .15s;
+      box-shadow: 0 4px 20px rgba(91,106,240,.35);
+    }
+    .btn-primary:hover { background: var(--primary-dark); transform: translateY(-2px); }
+    .btn-secondary {
+      background: #fff; color: var(--primary);
+      padding: 0.75rem 2rem; border-radius: 8px;
+      text-decoration: none; font-weight: 700; font-size: 1rem;
+      border: 2px solid var(--primary);
+      transition: background .2s, transform .15s;
+    }
+    .btn-secondary:hover { background: #f0f1ff; transform: translateY(-2px); }
+
+    /* SCREENSHOT */
+    .screenshot-section {
+      max-width: 960px; margin: 0 auto;
+      padding: 0 1.5rem 70px;
+    }
+    .screenshot-section img {
+      width: 100%; border-radius: 14px;
+      box-shadow: 0 20px 60px rgba(91,106,240,.18);
+      border: 1px solid var(--border);
+    }
+
+    /* FEATURES */
+    .section { padding: 70px 1.5rem; }
+    .section-center { text-align: center; }
+    .section h2 {
+      font-size: clamp(1.5rem, 3.5vw, 2.2rem);
+      font-weight: 800; margin-bottom: 0.6rem;
+    }
+    .section-sub { color: var(--muted); margin-bottom: 3rem; font-size: 1.05rem; }
+
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+      gap: 1.5rem; max-width: 960px; margin: 0 auto;
+    }
+    .feature-card {
+      background: var(--card-bg); border: 1px solid var(--border);
+      border-radius: 14px; padding: 1.8rem 1.5rem;
+      transition: box-shadow .2s, transform .2s;
+    }
+    .feature-card:hover { box-shadow: 0 8px 32px rgba(91,106,240,.14); transform: translateY(-4px); }
+    .feature-icon { font-size: 2rem; margin-bottom: 0.8rem; }
+    .feature-card h3 { font-size: 1.1rem; font-weight: 700; margin-bottom: 0.5rem; }
+    .feature-card p { color: var(--muted); font-size: 0.95rem; }
+
+    /* HOW */
+    .how-section { background: #fff; }
+    .steps { display: flex; gap: 1.5rem; max-width: 860px; margin: 0 auto; flex-wrap: wrap; justify-content: center; }
+    .step {
+      flex: 1; min-width: 220px; text-align: center; padding: 1.5rem 1rem;
+    }
+    .step-num {
+      width: 44px; height: 44px; border-radius: 50%;
+      background: var(--primary); color: #fff;
+      font-weight: 800; font-size: 1.2rem;
+      display: flex; align-items: center; justify-content: center;
+      margin: 0 auto 1rem;
+    }
+    .step h3 { font-weight: 700; margin-bottom: 0.4rem; }
+    .step p { color: var(--muted); font-size: 0.93rem; }
+
+    /* TUTORIAL */
+    .tutorial-section { background: #fff; }
+    .tutorial-video {
+      max-width: 720px; margin: 0 auto;
+      display: flex; align-items: center; gap: 1rem;
+      background: #f7f8ff; padding: 1.5rem 2rem;
+      border-radius: 14px; box-shadow: 0 8px 32px rgba(91,106,240,.14);
+      text-decoration: none; transition: transform .2s;
+    }
+    .tutorial-video:hover { transform: translateY(-3px); }
+    .tutorial-video img {
+      width: 100%; border-radius: 10px;
+      box-shadow: 0 4px 20px rgba(0,0,0,.15);
+    }
+    .tutorial-video h3 {
+      font-size: 1.1rem; font-weight: 700;
+      margin: 0 0 0.5rem;
+      color: var(--text);
+    }
+    .tutorial-video p {
+      color: var(--muted); font-size: 0.95rem;
+      margin: 0;
+    }
+
+    /* DEPLOY */
+    .deploy-grid {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 1.5rem; max-width: 860px; margin: 0 auto;
+    }
+    .deploy-card {
+      background: var(--card-bg); border: 1px solid var(--border);
+      border-radius: 14px; padding: 1.8rem 1.5rem;
+    }
+    .deploy-card h3 { font-weight: 700; margin-bottom: 0.6rem; font-size: 1.1rem; }
+    .deploy-card p { color: var(--muted); font-size: 0.93rem; margin-bottom: 1rem; }
+    .deploy-card a { color: var(--primary); text-decoration: none; font-weight: 600; font-size: 0.93rem; }
+    .deploy-card a:hover { text-decoration: underline; }
+    .tag {
+      display: inline-block; background: #ede9fe; color: #6d28d9;
+      font-size: 0.75rem; font-weight: 600; padding: 0.15rem 0.55rem;
+      border-radius: 5px; margin-right: 0.4rem; margin-bottom: 0.5rem;
+    }
+
+    /* HELP */
+    .help-section { background: #fff; }
+    .help-card {
+      background: var(--card-bg); border: 1px solid var(--border);
+      border-radius: 14px; padding: 1.8rem 1.5rem;
+      text-align: left;
+    }
+    .help-card h3 { font-weight: 700; margin-bottom: 0.6rem; font-size: 1.1rem; }
+    .help-card p { color: var(--muted); font-size: 0.93rem; margin-bottom: 1rem; }
+    .help-card a { color: var(--primary); text-decoration: none; font-weight: 600; font-size: 0.93rem; }
+    .help-card a:hover { text-decoration: underline; }
+
+    /* CTA */
+    .cta-section {
+      background: linear-gradient(135deg, var(--primary) 0%, #9b59b6 100%);
+      text-align: center; padding: 70px 1.5rem; color: #fff;
+    }
+    .cta-section h2 { font-size: clamp(1.5rem, 3.5vw, 2.2rem); font-weight: 800; margin-bottom: 1rem; }
+    .cta-section p { font-size: 1.05rem; opacity: .85; margin-bottom: 2rem; }
+    .btn-white {
+      background: #fff; color: var(--primary);
+      padding: 0.75rem 2.2rem; border-radius: 8px;
+      text-decoration: none; font-weight: 700; font-size: 1rem;
+      transition: transform .15s;
+      box-shadow: 0 4px 20px rgba(0,0,0,.15);
+    }
+    .btn-white:hover { transform: translateY(-2px); }
+
+    /* FOOTER */
+    footer {
+      background: var(--text); color: #9ca3af;
+      text-align: center; padding: 2rem 1.5rem;
+      font-size: 0.9rem;
+    }
+    footer a { color: #9ca3af; text-decoration: none; }
+    footer a:hover { color: #fff; }
+
+    @media (max-width: 600px) {
+      .nav-links .lang-switch, .nav-links a:not(.btn-nav):not(.lang-switch) { display: none; }
+    }
+  </style>
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": "MaterialSearch",
+    "description": "本地素材智能搜索工具，支持文字搜图、以图搜图、视频搜索，基于 CLIP 模型，完全本地运行。",
+    "applicationCategory": "MultimediaApplication",
+    "operatingSystem": "Windows, Linux, macOS",
+    "offers": { "@type": "Offer", "price": "0", "priceCurrency": "CNY" },
+    "url": "https://github.com/chn-lee-yumi/MaterialSearch",
+    "author": { "@type": "Person", "name": "chn-lee-yumi" },
+    "license": "https://www.gnu.org/licenses/gpl-3.0.html"
+  }
+  </script>
+</head>
+<body>
+
+<nav>
+  <a class="nav-logo" href="#">🔍 MaterialSearch</a>
+  <div class="nav-links">
+    <a href="#features">功能</a>
+    <a href="#how">使用方式</a>
+    <a href="#tutorial">使用教程</a>
+    <a href="#deploy">部署</a>
+    <a href="#help">帮助</a>
+    <a href="https://blog.gcc.ac.cn" target="_blank" rel="noopener">博客</a>
+    <a href="./index_en.html" class="lang-switch">English</a>
+    <a href="https://github.com/chn-lee-yumi/MaterialSearch" target="_blank" rel="noopener" class="btn-nav">GitHub ↗</a>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-badge">⭐ 完全开源 · GPLv3 · 免费使用</div>
+  <h1>用自然语言<br/>搜索你的本地素材</h1>
+  <p>扫描本地图片与视频，通过文字描述或图片，秒速找到你想要的内容。完全本地运行，数据不上云。</p>
+  <p style="font-size:.85rem;color:var(--muted);margin-bottom:.2rem;letter-spacing:.05em;text-transform:uppercase;font-weight:600;">⬇ 立即下载</p>
+  <div class="hero-cta">
+    <a class="btn-primary" href="https://github.com/chn-lee-yumi/MaterialSearch/releases/latest" target="_blank" rel="noopener">GitHub Release</a>
+    <a class="btn-secondary" href="https://pan.quark.cn/s/ae137c439484" target="_blank" rel="noopener">夸克网盘</a>
+    <a class="btn-secondary" href="https://pan.baidu.com/s/1uQ8t-4mbYmcfi6FjwzdrrQ?pwd=CHNL" target="_blank" rel="noopener">百度网盘</a>
+  </div>
+</section>
+
+<!-- SCREENSHOT -->
+<section class="screenshot-section">
+  <img src="./screenshot_zh_1.png" alt="MaterialSearch 界面截图 - 本地素材智能搜索" loading="lazy" />
+</section>
+
+<!-- FEATURES -->
+<section class="section section-center" id="features">
+  <h2>强大的搜索能力</h2>
+  <p class="section-sub">基于 CLIP 多模态模型，理解图像语义，而非仅匹配文件名</p>
+  <div class="features-grid">
+    <div class="feature-card">
+      <div class="feature-icon">🖼️</div>
+      <h3>文字搜图</h3>
+      <p>用中文或英文描述，直接找出符合语义的本地图片，无需整理标签。</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">🔄</div>
+      <h3>以图搜图</h3>
+      <p>上传任意一张图片，快速找出本地素材库中视觉相似的图片。</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">🎬</div>
+      <h3>文字搜视频</h3>
+      <p>输入文字描述，系统自动定位并截取符合描述的视频片段，精准到秒。</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">🎯</div>
+      <h3>以图搜视频</h3>
+      <p>上传截图，找到该截图对应的视频来源片段，快速定位素材出处。</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">🔒</div>
+      <h3>隐私优先</h3>
+      <p>完全本地运行，所有数据不离开你的设备，无需联网，无隐私风险。</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">⚡</div>
+      <h3>高性能</h3>
+      <p>支持 GPU 加速，J3455 CPU 也可达每秒 31000 次图片匹配，速度极快。</p>
+    </div>
+  </div>
+</section>
+
+<!-- HOW IT WORKS -->
+<section class="section section-center how-section" id="how">
+  <h2>三步开始使用</h2>
+  <p class="section-sub">简单部署，立即体验智能搜索</p>
+  <div class="steps">
+    <div class="step">
+      <div class="step-num">1</div>
+      <h3>部署服务</h3>
+      <p>Windows 整合包一键解压运行，或通过 Docker 快速部署，无需配置复杂环境。</p>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <h3>扫描素材</h3>
+      <p>配置本地图片和视频目录，系统自动扫描并建立智能索引。</p>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <h3>搜索享用</h3>
+      <p>打开浏览器，输入文字描述或上传图片，即可找到你想要的素材。</p>
+    </div>
+  </div>
+</section>
+
+<!-- TUTORIAL -->
+<section class="section section-center how-section" id="tutorial">
+  <h2>使用教程</h2>
+  <p class="section-sub">观看视频教程，快速上手 MaterialSearch</p>
+  <div style="margin:0 auto;">
+    <iframe style="height:360px;width:640px" src="//player.bilibili.com/player.html?isOutside=true&aid=116255386242108&bvid=BV1LXwyzkEMA&cid=36815046482&p=1&autoplay=0" scrolling="no" border="0" frameborder="no" framespacing="0" allowfullscreen="true"></iframe>
+  </div>
+</section>
+
+<!-- DEPLOY -->
+<section class="section section-center" id="deploy">
+  <h2>多种部署方式</h2>
+  <p class="section-sub">满足不同场景的使用需求</p>
+  <div class="deploy-grid">
+    <div class="deploy-card">
+      <h3>🪟 Windows 整合包 <span class="tag">推荐</span></h3>
+      <p>内置基础模型，开箱即用，自动选择 GPU 加速，适合大部分用户。</p>
+      <a href="https://github.com/chn-lee-yumi/MaterialSearch/releases/latest" target="_blank" rel="noopener">→ GitHub Release 下载</a><br/><br/>
+      <a href="https://pan.quark.cn/s/ae137c439484" target="_blank" rel="noopener">→ 夸克网盘下载</a><br/><br/>
+      <a href="https://pan.baidu.com/s/1uQ8t-4mbYmcfi6FjwzdrrQ?pwd=CHNL" target="_blank" rel="noopener">→ 百度网盘下载</a>
+    </div>
+    <div class="deploy-card">
+      <h3>🐳 Docker 部署</h3>
+      <p>支持 amd64，含基础模型，支持 GPU 加速，适合 Linux 服务器或 NAS。</p>
+      <a href="https://hub.docker.com/r/yumilee/materialsearch" target="_blank" rel="noopener">→ DockerHub 镜像</a><br/><br/>
+      <a href="https://github.com/chn-lee-yumi/MaterialSearch/blob/main/docker-compose.yml" target="_blank" rel="noopener">→ 查看 docker-compose.yml</a>
+    </div>
+    <div class="deploy-card">
+      <h3>🐍 Python 安装</h3>
+      <p>核心逻辑已封装为 pip 包，方便开发者直接调用或二次开发。</p>
+      <a href="https://github.com/chn-lee-yumi/MaterialSearch-core" target="_blank" rel="noopener">→ materialsearch-core</a>
+    </div>
+  </div>
+</section>
+
+<!-- HELP -->
+<section class="section section-center" id="help">
+  <h2>遇到问题？</h2>
+  <p class="section-sub">欢迎加入用户互助 QQ 群，或在 GitHub 提交 Issue</p>
+  <div style="display:flex;gap:1.5rem;max-width:640px;margin:0 auto;flex-wrap:wrap;justify-content:center;">
+    <div class="deploy-card" style="flex:1;min-width:240px;text-align:left;">
+      <h3>💬 用户互助 QQ 群</h3>
+      <p>加入社区，与其他用户互相交流、答疑解惑。群号：<strong>1029566498</strong></p>
+      <a href="https://qun.qq.com/universal-share/share?ac=1&authKey=OzAVy9DU8GFqaxaFvdFydbJWfNKIvOS9OsAEuDVbmwvMDckB2F1rAVC2GB2%2BoOr9&busi_data=eyJncm91cENvZGUiOiIxMDI5NTY2NDk4IiwidG9rZW4iOiIyMG5ScUpHS214Y3ZrQWU1bWVYaFRFQkorSXRSNm9PS3cwanEvTkh1bGhtSk1ucWVmSHdCL3BhYVVqMUtMYWpiIiwidWluIjoiMjk1NTI0OTAwNiJ9&data=xPM7ye66_txakhwwSzMppqGjHpTSZun5a6BgK5eSO883zFRhMLuBTOT45zKsrAU6M0l6GmxWPZQmdkxdz70Gpw&svctype=4&tempid=h5_group_info" target="_blank" rel="noopener">→ 点击加入 QQ 群</a>
+    </div>
+    <div class="deploy-card" style="flex:1;min-width:240px;text-align:left;">
+      <h3>🐛 GitHub Issues</h3>
+      <p>如遇 Bug、功能请求或文档问题，请在 GitHub 提交详细的 Issue。</p>
+      <a href="https://github.com/chn-lee-yumi/MaterialSearch/issues" target="_blank" rel="noopener">→ 提交 Issue</a>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section class="cta-section">
+  <h2>立刻找回你遗忘的素材</h2>
+  <p>免费开源，持续更新，快来加入数千用户的行列</p>
+  <a class="btn-white" href="https://github.com/chn-lee-yumi/MaterialSearch" target="_blank" rel="noopener">前往 GitHub →</a>
+</section>
+
+<footer>
+  <p>
+    <strong style="color:#e5e7eb">MaterialSearch</strong> &nbsp;·&nbsp;
+    开源协议 <a href="https://www.gnu.org/licenses/gpl-3.0.html" target="_blank" rel="noopener">GPLv3</a> &nbsp;·&nbsp;
+    <a href="https://github.com/chn-lee-yumi/MaterialSearch" target="_blank" rel="noopener">GitHub</a> &nbsp;·&nbsp;
+    <a href="./index_en.html">English</a>
+  </p>
+  <p style="margin-top:.5rem; font-size:.82rem">© 2023–2026 chn-lee-yumi. All rights reserved.</p>
+</footer>
+
+</body>
+</html>
+

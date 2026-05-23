@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MaterialSearch - Local Media Smart Search | Text-to-Image · Image-to-Image · Video Search</title>
+  <meta name="description" content="MaterialSearch is an open-source local media search tool. Search your photos and videos using natural language, image similarity, and more. Powered by CLIP, runs 100% locally." />
+  <meta name="keywords" content="MaterialSearch,local image search,text to image search,reverse image search,video search,CLIP,natural language search,open source,free" />
+  <meta name="author" content="chn-lee-yumi" />
+  <link rel="canonical" href="https://chn-lee-yumi.github.io/MaterialSearch/docs/index_en.html" />
+
+  <!-- Open Graph -->
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="MaterialSearch - Local Media Smart Search" />
+  <meta property="og:description" content="Search your local photos and videos using natural language. Open-source, free, runs 100% locally — no cloud, no privacy risks." />
+  <meta property="og:image" content="./screenshot_zh_1.png" />
+  <meta property="og:locale" content="en_US" />
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --primary: #5b6af0;
+      --primary-dark: #3d4de0;
+      --bg: #f7f8ff;
+      --card-bg: #ffffff;
+      --text: #1a1a2e;
+      --muted: #6b7280;
+      --border: #e5e7eb;
+    }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.7;
+    }
+
+    /* NAV */
+    nav {
+      position: sticky; top: 0; z-index: 100;
+      background: rgba(255,255,255,0.92);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+      padding: 0 2rem;
+      display: flex; align-items: center; justify-content: space-between;
+      height: 60px;
+    }
+    .nav-logo { font-weight: 800; font-size: 1.2rem; color: var(--primary); text-decoration: none; }
+    .nav-links { display: flex; gap: 1.5rem; align-items: center; }
+    .nav-links a { text-decoration: none; color: var(--muted); font-size: 0.95rem; transition: color .2s; }
+    .nav-links a:hover { color: var(--primary); }
+    .nav-links .btn-nav {
+      background: var(--primary); color: #fff;
+      padding: 0.4rem 1.1rem; border-radius: 6px; font-weight: 600;
+    }
+    .nav-links .btn-nav:hover { background: var(--primary-dark); color: #fff; }
+    .lang-switch { font-size: 0.88rem; border: 1px solid var(--border); border-radius: 5px; padding: 0.25rem 0.6rem; color: var(--muted); }
+
+    /* HERO */
+    .hero {
+      text-align: center;
+      padding: 90px 1.5rem 70px;
+      background: linear-gradient(135deg, #eef0ff 0%, #f7f8ff 60%, #fdf0ff 100%);
+    }
+    .hero-badge {
+      display: inline-block; background: #ede9fe; color: #6d28d9;
+      font-size: 0.8rem; font-weight: 600; padding: 0.3rem 0.9rem;
+      border-radius: 99px; margin-bottom: 1.4rem; letter-spacing: .04em;
+    }
+    .hero h1 {
+      font-size: clamp(2rem, 5vw, 3.2rem);
+      font-weight: 900; line-height: 1.2;
+      margin-bottom: 1.2rem;
+      background: linear-gradient(135deg, var(--primary) 0%, #9b59b6 100%);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+    }
+    .hero p {
+      font-size: 1.15rem; color: var(--muted);
+      max-width: 580px; margin: 0 auto 2.2rem;
+    }
+    .hero-cta { display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap; }
+    .btn-primary {
+      background: var(--primary); color: #fff;
+      padding: 0.75rem 2rem; border-radius: 8px;
+      text-decoration: none; font-weight: 700; font-size: 1rem;
+      transition: background .2s, transform .15s;
+      box-shadow: 0 4px 20px rgba(91,106,240,.35);
+    }
+    .btn-primary:hover { background: var(--primary-dark); transform: translateY(-2px); }
+    .btn-secondary {
+      background: #fff; color: var(--primary);
+      padding: 0.75rem 2rem; border-radius: 8px;
+      text-decoration: none; font-weight: 700; font-size: 1rem;
+      border: 2px solid var(--primary);
+      transition: background .2s, transform .15s;
+    }
+    .btn-secondary:hover { background: #f0f1ff; transform: translateY(-2px); }
+
+    /* SCREENSHOT */
+    .screenshot-section {
+      max-width: 960px; margin: 0 auto;
+      padding: 0 1.5rem 70px;
+    }
+    .screenshot-section img {
+      width: 100%; border-radius: 14px;
+      box-shadow: 0 20px 60px rgba(91,106,240,.18);
+      border: 1px solid var(--border);
+    }
+
+    /* FEATURES */
+    .section { padding: 70px 1.5rem; }
+    .section-center { text-align: center; }
+    .section h2 {
+      font-size: clamp(1.5rem, 3.5vw, 2.2rem);
+      font-weight: 800; margin-bottom: 0.6rem;
+    }
+    .section-sub { color: var(--muted); margin-bottom: 3rem; font-size: 1.05rem; }
+
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+      gap: 1.5rem; max-width: 960px; margin: 0 auto;
+    }
+    .feature-card {
+      background: var(--card-bg); border: 1px solid var(--border);
+      border-radius: 14px; padding: 1.8rem 1.5rem;
+      transition: box-shadow .2s, transform .2s;
+    }
+    .feature-card:hover { box-shadow: 0 8px 32px rgba(91,106,240,.14); transform: translateY(-4px); }
+    .feature-icon { font-size: 2rem; margin-bottom: 0.8rem; }
+    .feature-card h3 { font-size: 1.1rem; font-weight: 700; margin-bottom: 0.5rem; }
+    .feature-card p { color: var(--muted); font-size: 0.95rem; }
+
+    /* HOW */
+    .how-section { background: #fff; }
+    .steps { display: flex; gap: 1.5rem; max-width: 860px; margin: 0 auto; flex-wrap: wrap; justify-content: center; }
+    .step {
+      flex: 1; min-width: 220px; text-align: center; padding: 1.5rem 1rem;
+    }
+    .step-num {
+      width: 44px; height: 44px; border-radius: 50%;
+      background: var(--primary); color: #fff;
+      font-weight: 800; font-size: 1.2rem;
+      display: flex; align-items: center; justify-content: center;
+      margin: 0 auto 1rem;
+    }
+    .step h3 { font-weight: 700; margin-bottom: 0.4rem; }
+    .step p { color: var(--muted); font-size: 0.93rem; }
+
+    /* DEPLOY */
+    .deploy-grid {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 1.5rem; max-width: 860px; margin: 0 auto;
+    }
+    .deploy-card {
+      background: var(--card-bg); border: 1px solid var(--border);
+      border-radius: 14px; padding: 1.8rem 1.5rem;
+    }
+    .deploy-card h3 { font-weight: 700; margin-bottom: 0.6rem; font-size: 1.1rem; }
+    .deploy-card p { color: var(--muted); font-size: 0.93rem; margin-bottom: 1rem; }
+    .deploy-card a { color: var(--primary); text-decoration: none; font-weight: 600; font-size: 0.93rem; }
+    .deploy-card a:hover { text-decoration: underline; }
+    .tag {
+      display: inline-block; background: #ede9fe; color: #6d28d9;
+      font-size: 0.75rem; font-weight: 600; padding: 0.15rem 0.55rem;
+      border-radius: 5px; margin-right: 0.4rem; margin-bottom: 0.5rem;
+    }
+
+    /* CTA */
+    .cta-section {
+      background: linear-gradient(135deg, var(--primary) 0%, #9b59b6 100%);
+      text-align: center; padding: 70px 1.5rem; color: #fff;
+    }
+    .cta-section h2 { font-size: clamp(1.5rem, 3.5vw, 2.2rem); font-weight: 800; margin-bottom: 1rem; }
+    .cta-section p { font-size: 1.05rem; opacity: .85; margin-bottom: 2rem; }
+    .btn-white {
+      background: #fff; color: var(--primary);
+      padding: 0.75rem 2.2rem; border-radius: 8px;
+      text-decoration: none; font-weight: 700; font-size: 1rem;
+      transition: transform .15s;
+      box-shadow: 0 4px 20px rgba(0,0,0,.15);
+    }
+    .btn-white:hover { transform: translateY(-2px); }
+
+    /* FOOTER */
+    footer {
+      background: var(--text); color: #9ca3af;
+      text-align: center; padding: 2rem 1.5rem;
+      font-size: 0.9rem;
+    }
+    footer a { color: #9ca3af; text-decoration: none; }
+    footer a:hover { color: #fff; }
+
+    @media (max-width: 600px) {
+      .nav-links .lang-switch, .nav-links a:not(.btn-nav):not(.lang-switch) { display: none; }
+    }
+  </style>
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": "MaterialSearch",
+    "description": "Open-source local media search tool. Search photos and videos using natural language or images. Powered by CLIP, runs fully locally.",
+    "applicationCategory": "MultimediaApplication",
+    "operatingSystem": "Windows, Linux, macOS",
+    "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+    "url": "https://github.com/chn-lee-yumi/MaterialSearch",
+    "author": { "@type": "Person", "name": "chn-lee-yumi" },
+    "license": "https://www.gnu.org/licenses/gpl-3.0.html"
+  }
+  </script>
+</head>
+<body>
+
+<nav>
+  <a class="nav-logo" href="#">🔍 MaterialSearch</a>
+  <div class="nav-links">
+    <a href="#features">Features</a>
+    <a href="#how">How It Works</a>
+    <a href="#tutorial">Tutorial</a>
+    <a href="#deploy">Deploy</a>
+    <a href="#help">Help</a>
+    <a href="https://blog.gcc.ac.cn" target="_blank" rel="noopener">Blog</a>
+    <a href="./index.html" class="lang-switch">中文</a>
+    <a href="https://github.com/chn-lee-yumi/MaterialSearch" target="_blank" rel="noopener" class="btn-nav">GitHub ↗</a>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-badge">⭐ Open Source · GPLv3 · Completely Free</div>
+  <h1>Search Your Local Media<br/>with Natural Language</h1>
+  <p>Scan local photos and videos, then find exactly what you need using text descriptions or images. Runs 100% locally — your data never leaves your device.</p>
+  <p style="font-size:.85rem;color:var(--muted);margin-bottom:.2rem;letter-spacing:.05em;text-transform:uppercase;font-weight:600;">⬇ Download Now</p>
+  <div class="hero-cta">
+    <a class="btn-primary" href="https://github.com/chn-lee-yumi/MaterialSearch/releases/latest" target="_blank" rel="noopener">GitHub Release</a>
+    <a class="btn-secondary" href="https://pan.quark.cn/s/ae137c439484" target="_blank" rel="noopener">Quark Cloud</a>
+    <a class="btn-secondary" href="https://pan.baidu.com/s/1uQ8t-4mbYmcfi6FjwzdrrQ?pwd=CHNL" target="_blank" rel="noopener">Baidu Cloud</a>
+  </div>
+</section>
+
+<!-- SCREENSHOT -->
+<section class="screenshot-section">
+  <img src="./screenshot_zh_1.png" alt="MaterialSearch interface screenshot - local media smart search" loading="lazy" />
+</section>
+
+<!-- FEATURES -->
+<section class="section section-center" id="features">
+  <h2>Powerful Search Capabilities</h2>
+  <p class="section-sub">Powered by the CLIP multimodal model — understands image semantics, not just filenames</p>
+  <div class="features-grid">
+    <div class="feature-card">
+      <div class="feature-icon">🖼️</div>
+      <h3>Text-to-Image Search</h3>
+      <p>Describe what you're looking for in plain language and instantly find semantically matching local photos — no tags required.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">🔄</div>
+      <h3>Image-to-Image Search</h3>
+      <p>Upload any photo and quickly find visually similar images from your local library.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">🎬</div>
+      <h3>Text-to-Video Search</h3>
+      <p>Enter a text description and the system automatically locates and extracts matching video clips, pinpointed to the second.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">🎯</div>
+      <h3>Image-to-Video Search</h3>
+      <p>Upload a screenshot to find the exact video segment it came from — perfect for tracing the source of any clip.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">🔒</div>
+      <h3>Privacy First</h3>
+      <p>Everything runs locally on your machine. No cloud uploads, no internet connection required, no privacy risk.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">⚡</div>
+      <h3>High Performance</h3>
+      <p>GPU acceleration supported. Even on a J3455 CPU, it achieves ~31,000 image matches per second.</p>
+    </div>
+  </div>
+</section>
+
+<!-- HOW IT WORKS -->
+<section class="section section-center how-section" id="how">
+  <h2>Get Started in 3 Steps</h2>
+  <p class="section-sub">Simple setup, instant intelligent search</p>
+  <div class="steps">
+    <div class="step">
+      <div class="step-num">1</div>
+      <h3>Deploy</h3>
+      <p>Use the Windows all-in-one bundle (just extract and run) or deploy with Docker in minutes.</p>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <h3>Scan Your Media</h3>
+      <p>Configure your local photo and video directories. The system automatically scans and builds a smart index.</p>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <h3>Search & Enjoy</h3>
+      <p>Open your browser, type a description or upload an image, and find the media you're looking for.</p>
+    </div>
+  </div>
+</section>
+
+<!-- TUTORIAL -->
+<section class="section section-center how-section" id="tutorial">
+  <h2>Video Tutorial</h2>
+  <p class="section-sub">Watch the step-by-step tutorial to get started quickly</p>
+  <div style="margin:0 auto;">
+    <iframe style="height:360px;width:640px" src="//player.bilibili.com/player.html?isOutside=true&aid=116255386242108&bvid=BV1LXwyzkEMA&cid=36815046482&p=1&autoplay=0" scrolling="no" border="0" frameborder="no" framespacing="0" allowfullscreen="true"></iframe>
+  </div>
+</section>
+
+<!-- DEPLOY -->
+<section class="section section-center" id="deploy">
+  <h2>Multiple Deployment Options</h2>
+  <p class="section-sub">Choose the method that fits your workflow</p>
+  <div class="deploy-grid">
+    <div class="deploy-card">
+      <h3>🪟 Windows Bundle <span class="tag">Recommended</span></h3>
+      <p>Includes the base model out of the box. Automatically selects GPU acceleration. Perfect for most users.</p>
+      <a href="https://github.com/chn-lee-yumi/MaterialSearch/releases/latest" target="_blank" rel="noopener">→ GitHub Release</a><br/><br/>
+      <a href="https://pan.quark.cn/s/ae137c439484" target="_blank" rel="noopener">→ Quark Cloud</a><br/><br/>
+      <a href="https://pan.baidu.com/s/1uQ8t-4mbYmcfi6FjwzdrrQ?pwd=CHNL" target="_blank" rel="noopener">→ Baidu Cloud</a>
+    </div>
+    <div class="deploy-card">
+      <h3>🐳 Docker</h3>
+      <p>Supports amd64, includes the base model, and supports GPU acceleration. Ideal for Linux servers or NAS devices.</p>
+      <a href="https://hub.docker.com/r/yumilee/materialsearch" target="_blank" rel="noopener">→ DockerHub Image</a><br/><br/>
+      <a href="https://github.com/chn-lee-yumi/MaterialSearch/blob/main/docker-compose.yml" target="_blank" rel="noopener">→ View docker-compose.yml</a>
+    </div>
+    <div class="deploy-card">
+      <h3>🐍 Python Package</h3>
+      <p>The core logic is packaged as a pip library, making it easy for developers to integrate or extend.</p>
+      <a href="https://github.com/chn-lee-yumi/MaterialSearch-core" target="_blank" rel="noopener">→ materialsearch-core</a>
+    </div>
+  </div>
+</section>
+
+<!-- HELP -->
+<section class="section section-center" id="help">
+  <h2>Need Help?</h2>
+  <p class="section-sub">Got questions? Join the community QQ group or open an issue on GitHub</p>
+  <div style="display:flex;gap:1.5rem;max-width:640px;margin:0 auto;flex-wrap:wrap;justify-content:center;">
+    <div class="deploy-card" style="flex:1;min-width:240px;text-align:left;">
+      <h3>💬 QQ Group (Community)</h3>
+      <p>Join our user community for mutual help and discussion. Group number: <strong>1029566498</strong></p>
+      <a href="https://qun.qq.com/universal-share/share?ac=1&authKey=OzAVy9DU8GFqaxaFvdFydbJWfNKIvOS9OsAEuDVbmwvMDckB2F1rAVC2GB2%2BoOr9&busi_data=eyJncm91cENvZGUiOiIxMDI5NTY2NDk4IiwidG9rZW4iOiIyMG5ScUpHS214Y3ZrQWU1bWVYaFRFQkorSXRSNm9PS3cwanEvTkh1bGhtSk1ucWVmSHdCL3BhYVVqMUtMYWpiIiwidWluIjoiMjk1NTI0OTAwNiJ9&data=xPM7ye66_txakhwwSzMppqGjHpTSZun5a6BgK5eSO883zFRhMLuBTOT45zKsrAU6M0l6GmxWPZQmdkxdz70Gpw&svctype=4&tempid=h5_group_info" target="_blank" rel="noopener">→ Join QQ Group</a>
+    </div>
+    <div class="deploy-card" style="flex:1;min-width:240px;text-align:left;">
+      <h3>🐛 GitHub Issues</h3>
+      <p>For bug reports, feature requests, or documentation issues, please open a detailed issue on GitHub.</p>
+      <a href="https://github.com/chn-lee-yumi/MaterialSearch/issues" target="_blank" rel="noopener">→ Open an Issue</a>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section class="cta-section">
+  <h2>Rediscover Your Forgotten Media Today</h2>
+  <p>Free, open-source, and actively maintained — join thousands of users</p>
+  <a class="btn-white" href="https://github.com/chn-lee-yumi/MaterialSearch" target="_blank" rel="noopener">Go to GitHub →</a>
+</section>
+
+<footer>
+  <p>
+    <strong style="color:#e5e7eb">MaterialSearch</strong> &nbsp;·&nbsp;
+    Licensed under <a href="https://www.gnu.org/licenses/gpl-3.0.html" target="_blank" rel="noopener">GPLv3</a> &nbsp;·&nbsp;
+    <a href="https://github.com/chn-lee-yumi/MaterialSearch" target="_blank" rel="noopener">GitHub</a> &nbsp;·&nbsp;
+    <a href="./index.html">中文</a>
+  </p>
+  <p style="margin-top:.5rem; font-size:.82rem">© 2023–2026 chn-lee-yumi. All rights reserved.</p>
+</footer>
+
+</body>
+</html>
+
